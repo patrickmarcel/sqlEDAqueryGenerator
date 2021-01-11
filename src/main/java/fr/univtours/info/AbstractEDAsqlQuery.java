@@ -2,10 +2,7 @@ package fr.univtours.info;
 
 import org.apache.commons.dbutils.ResultSetIterator;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Set;
 
 public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
@@ -22,15 +19,15 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
 
     int count=0;
     float actualCost =0;
-    float interest=0;
+    double interest=0;
 
-    Set<DatasetDimension> groupby;
+    Set<DatasetDimension> dimensions;
     DatasetMeasure measure;
     String function;
 
     @Override
-    public Set<DatasetDimension> getGroupby(){
-        return this.groupby;
+    public Set<DatasetDimension> getDimensions(){
+        return this.dimensions;
     };
 
     @Override
@@ -48,7 +45,7 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     }
 
     @Override
-    public float getInterest() {
+    public double getInterest() {
         return interest;
     }
 
@@ -109,7 +106,8 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     }
 
     public void computeInterest() throws Exception {
-        this.interestWithPlan();
+       // this.interestWithPlan();
+        this.interestWithZscore();
     }
 
     /**
@@ -121,6 +119,28 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         if (this.explainResultset != null)        {
             this.explainResultset.last();    // moves cursor to the last row
             this.interest = this.explainResultset.getRow(); // get row id
+        }
+
+    }
+
+    public abstract void interestWithZscore() throws Exception;
+
+    public void print(){
+        System.out.println(sql);
+    }
+
+
+    @Override
+    public void printResult() throws SQLException {
+        ResultSetIterator rsit=new ResultSetIterator(resultset);
+        Object[] tab=null;
+        resultset.beforeFirst();
+        while(rsit.hasNext()) { // move to last for getting execution time
+            tab=rsit.next();
+            for(int i=0;i<tab.length;i++){
+                System.out.print(tab[i] + " ") ;
+            }
+
         }
 
     }

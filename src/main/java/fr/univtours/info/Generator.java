@@ -38,10 +38,10 @@ public class Generator {
         System.out.println("Starting generation");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        generateCounts();
-        generateHistograms();
+        //generateCounts();
+        //generateHistograms();
         generateAggregates();
-        generateSiblingAssesses();
+        //generateSiblingAssesses();
 
         stopwatch.stop();
 
@@ -78,6 +78,9 @@ public class Generator {
     static void computeInterests() throws Exception {
         for(EDAsqlQuery q : theQ.theQueries){
             q.computeInterest();
+            q.print();
+            //q.printResult();
+            System.out.println("interestingness: " + q.getInterest());
         }
     }
 

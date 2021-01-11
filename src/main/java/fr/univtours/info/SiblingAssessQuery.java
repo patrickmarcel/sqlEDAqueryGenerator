@@ -2,7 +2,6 @@ package fr.univtours.info;
 
 import java.sql.Connection;
 import java.util.HashSet;
-import java.util.Set;
 
 public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
@@ -12,9 +11,9 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         this.conn=conn;
         this.table=table;
 
-        this.groupby=new HashSet<DatasetDimension>();
-        this.groupby.add(assessed);
-        this.groupby.add(reference);
+        this.dimensions =new HashSet<DatasetDimension>();
+        this.dimensions.add(assessed);
+        this.dimensions.add(reference);
 
         this.measure=m;
         this.function=agg;
@@ -40,7 +39,10 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     }
 
 
+    @Override
+    public void interestWithZscore() throws Exception {
 
+    }
 }
 
 

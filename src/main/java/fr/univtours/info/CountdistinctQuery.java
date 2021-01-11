@@ -2,10 +2,6 @@ package fr.univtours.info;
 
 import java.sql.*;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
-
-import org.apache.commons.dbutils.ResultSetIterator;
 
 
 public class CountdistinctQuery extends AbstractEDAsqlQuery {
@@ -17,8 +13,8 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
         this.conn=conn;
         this.table=table;
 
-        this.groupby=new HashSet<DatasetDimension>();
-        this.groupby.add(attribute);
+        this.dimensions =new HashSet<DatasetDimension>();
+        this.dimensions.add(attribute);
         this.measure=null;
         this.function="count distinct";
 
@@ -35,6 +31,10 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
 
     }
 
+    @Override
+    public void interestWithZscore() throws Exception {
+
+    }
 
 
 }
