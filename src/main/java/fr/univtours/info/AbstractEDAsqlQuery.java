@@ -87,6 +87,7 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     public void explain() throws Exception{
         final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
+        //System.out.println(this.explain);
         ResultSet rs = pstmt.executeQuery(this.explain) ;
         this.explainResultset=rs;
 

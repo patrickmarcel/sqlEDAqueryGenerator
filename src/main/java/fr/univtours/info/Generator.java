@@ -35,6 +35,7 @@ public class Generator {
 
 
         //generation
+        System.out.println("Starting generation");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         generateCounts();
@@ -51,6 +52,7 @@ public class Generator {
 
 
         // interestingness computation
+        System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
         computeInterests();
         stopwatch.stop();
@@ -58,6 +60,7 @@ public class Generator {
         System.out.println("Interestingness computation time in milliseconds: " + timeElapsed);
 
         // actual cost computation
+        System.out.println("Starting actual cost computation");
         stopwatch = Stopwatch.createStarted();
         //computeCosts();
         stopwatch.stop();

@@ -20,23 +20,20 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         this.function=agg;
 
         this.sql= "select t1."+assessed.name+", t1." + reference.name + ", " +
-                "       t1.measure1, t2.measure2 as benchmark" +
+                "       t1.measure1, t2.measure2 as benchmark " +
                 "from " +
-                "  (select "+assessed.name+", "+reference.name+", " + agg+ "(" + m + ") as measure1 " +
+                "  (select "+assessed.name+", "+reference.name+", " + agg+ "(" + m.name + ") as measure1 " +
                 "   from "+ table +"     " +
                 "   where  "+assessed.name+" = '"+val1+"'" +
                 "   group by "+assessed.name+", "+reference.name+") t1," +
 
-                "  (select "+assessed.name+", "+reference.name + "," + agg + "(" + m +") as measure2 " +
+                "  (select "+assessed.name+", "+reference.name + "," + agg + "(" + m.name +") as measure2 " +
                 "   from "+ table +" " +
                 "   where "+assessed.name+" = '"+val2+"'" +
                 "   group by "+assessed.name+", "+reference.name + ") t2 " +
                 "where t1."+reference.name+" = t2."+reference.name+"; ";
 
-
-
-
-        System.out.println(sql);
+        //System.out.println(sql);
         this.explain = "explain  " + sql;
         this.explainAnalyze = "explain analyze " + sql;
 
