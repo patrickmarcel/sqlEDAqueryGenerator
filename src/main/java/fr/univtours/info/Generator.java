@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  *
  *
  */
-public class App {
+public class Generator {
     static Dataset ds;
     static String table;
     static ArrayList<DatasetDimension> theDimensions;
@@ -35,17 +35,34 @@ public class App {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        generateAggregate();
+        generateCounts();
+        generateHistograms();
+        generateAggregates();
 
         stopwatch.stop();
 
         // get elapsed time, expressed in milliseconds
         long timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-
-        System.out.println("Execution time in milliseconds: " + timeElapsed);
+        System.out.println("Generation time in milliseconds: " + timeElapsed);
         System.out.println("Q size: " + theQ.getSize() + " queries generated");
+
+
+
+        stopwatch = Stopwatch.createStarted();
+
+        computeCosts();
+
+        stopwatch.stop();
+        timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+        System.out.println("Actual cost computation time in milliseconds: " + timeElapsed);
     }
 
+
+    static void computeCosts() throws Exception {
+        for(EDAsqlQuery q : theQ.theQueries){
+            q.explainAnalyze();
+        }
+    }
 
     static void loadDataset() throws Exception{
         DBservices db= new DBservices();
@@ -54,7 +71,7 @@ public class App {
         ds=new Dataset(theDimensions, theMeasures);
     }
 
-    static void generateAggregate() throws Exception {
+    static void generateAggregates() throws Exception {
         ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(theDimensions);
         Set<Set<DatasetDimension>> powerSet = Sets.powerSet(set);
 
@@ -74,15 +91,20 @@ public class App {
         }
     }
 
+    static void generateHistograms(){
+        for(DatasetDimension d : theDimensions){
+            HistogramQuery hq = new HistogramQuery(conn, table, d);
+            theQ.addQuery(hq);
+        }
+    }
+
     static void generateCounts() throws Exception {
         for(DatasetDimension dim : theDimensions){
-            CountdistinctQuery cdq= new CountdistinctQuery(conn, table, dim.name) ;
+            CountdistinctQuery cdq= new CountdistinctQuery(conn, table, dim) ;
             theQ.addQuery(cdq);
-            cdq.execute();
-            cdq.explainAnalyze();
-            //System.out.println(cdq.sql);
-            //System.out.println(cdq.count);
-            //System.out.println(cdq.cost);
+            //cdq.execute();
+            //cdq.explainAnalyze();
+
         }
 
     }

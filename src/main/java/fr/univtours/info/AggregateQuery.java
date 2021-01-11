@@ -9,13 +9,11 @@ import java.util.Set;
 public class AggregateQuery extends AbstractEDAsqlQuery{
 
 
-    String attribute;
 
 
     public AggregateQuery(Connection conn, String table, Set<DatasetDimension> dimensions, DatasetMeasure m, String agg){
         this.conn=conn;
         this.table=table;
-        this.attribute=attribute;
         this.sql= "select ";
         String groupby="";
         for (DatasetDimension d :dimensions){
@@ -39,16 +37,6 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
 
     }
 
-    @Override
-    public void execute() throws Exception{
-        final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = pstmt.executeQuery(this.sql) ;
-        this.resultset=rs;
-        rs.next();
-        //this.count=rs.getInt(1);
-
-    }
 
 
 }
