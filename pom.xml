@@ -20,17 +20,23 @@
   </properties>
 
   <dependencies>
-      <dependency>
-          <groupId>org.postgresql</groupId>
-          <artifactId>postgresql</artifactId>
-          <scope>runtime</scope>
-      </dependency>
+    <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.2.18</version>
+    </dependency>
       <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
       <dependency>
           <groupId>com.google.guava</groupId>
           <artifactId>guava</artifactId>
           <version>30.0-jre</version>
       </dependency>
+    <dependency>
+      <groupId>commons-dbutils</groupId>
+      <artifactId>commons-dbutils</artifactId>
+      <version>1.7</version>
+    </dependency>
   </dependencies>
 
   <build>

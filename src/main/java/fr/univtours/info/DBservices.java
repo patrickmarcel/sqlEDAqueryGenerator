@@ -23,7 +23,7 @@ public  class DBservices {
     }
 
 
-    public void connectToPostgresql() throws Exception {
+    public Connection connectToPostgresql() throws Exception {
         final FileReader fr = new FileReader(new File("src/main/resources/application.properties"));
         final Properties props = new Properties();
         props.load(fr);
@@ -32,6 +32,7 @@ public  class DBservices {
         final String url = props.getProperty("datasource.url") + "?user=" + user + "&password=" + passwd;;
         System.out.println(url);
         conn = DriverManager.getConnection(url);
+        return conn;
         /*
         try (final Statement stmt = conn.createStatement();) {
             final String sqlCreate = "CREATE TABLE IF NOT EXISTS Plots (id SERIAL primary key, text TEXT, plot bytea)";

@@ -6,6 +6,7 @@ import org.checkerframework.checker.units.qual.A;
 
 import java.io.File;
 import java.io.FileReader;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Set;
@@ -15,28 +16,43 @@ import java.util.Set;
  *
  */
 public class App {
-    Dataset ds;
-    String table;
-    ArrayList<DatasetDimension> theDimensions;
-    ArrayList<DatasetMeasure> theMeasures;
+    static Dataset ds;
+    static String table;
+    static ArrayList<DatasetDimension> theDimensions;
+    static ArrayList<DatasetMeasure> theMeasures;
+    static Connection conn;
 
-    public static void main( String[] args ) {
+    public static void main( String[] args ) throws Exception{
+        loadDataset();
+        generateCounts();
     }
 
 
-    void loadDataset() throws Exception{
+    static void loadDataset() throws Exception{
         DBservices db= new DBservices();
-        db.connectToPostgresql();
+        conn=db.connectToPostgresql();
         readProperties();
-        ds=new Dataset();
+        ds=new Dataset(theDimensions, theMeasures);
     }
 
-    void generate(){
+    static void generateAggregate(){
         ImmutableSet<String> set = ImmutableSet.of("APPLE", "ORANGE", "MANGO");
         Set<Set<String>> powerSet = Sets.powerSet(set);
     }
 
-    void readProperties() throws Exception{
+    static void generateCounts() throws Exception {
+        for(DatasetDimension dim : theDimensions){
+            CountdistinctQuery cdq= new CountdistinctQuery(conn, table, dim.name) ;
+            cdq.execute();
+            cdq.explainAnalyze();
+            System.out.println(cdq.sql);
+            System.out.println(cdq.count);
+            System.out.println(cdq.cost);
+        }
+
+    }
+
+    static void readProperties() throws Exception{
         final FileReader fr = new FileReader(new File("src/main/resources/application.properties"));
         final Properties props = new Properties();
         props.load(fr);
