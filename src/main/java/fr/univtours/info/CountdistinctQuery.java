@@ -11,7 +11,6 @@ import org.apache.commons.dbutils.ResultSetIterator;
 public class CountdistinctQuery extends AbstractEDAsqlQuery {
 
 
-    ;
 
 
     public CountdistinctQuery(Connection conn, String table, DatasetDimension attribute){

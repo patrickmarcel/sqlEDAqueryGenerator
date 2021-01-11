@@ -40,6 +40,7 @@ public class Generator {
         generateCounts();
         generateHistograms();
         generateAggregates();
+        generateSiblingAssesses();
 
         stopwatch.stop();
 
@@ -82,6 +83,39 @@ public class Generator {
         conn=db.connectToPostgresql();
         readProperties();
         ds=new Dataset(theDimensions, theMeasures);
+    }
+
+
+    static void generateSiblingAssesses() throws Exception{
+        ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(theDimensions);
+        Set<Set<DatasetDimension>> combinations = Sets.combinations(set, 2);
+
+        for(Set<DatasetDimension> s : combinations){
+            for(DatasetMeasure meas : theMeasures) {
+                for (String agg : tabAgg) {
+                    DatasetDimension[] tabdim=new DatasetDimension[2];
+                    int i=0;
+                    for(DatasetDimension d : s){
+                        tabdim[i++]=d;
+                    }
+                    ImmutableSet<String> values = ImmutableSet.copyOf(tabdim[0].getActiveDomain());
+                    Set<Set<String>> combiVals = Sets.combinations(values, 2);
+
+                    for(Set<String> st : combiVals){
+                        i=0;
+                        String[] tabstring = new String[2];
+                        for(String sc : st){
+                            tabstring[i++]=sc;
+                        }
+                        //System.out.println(tabdim[0] + tabstring[0] +  tabstring[1] +  tabdim[1] );
+                        SiblingAssessQuery saq = new SiblingAssessQuery(conn, table, tabdim[0], tabstring[0], tabstring[1], tabdim[1], meas, agg);
+                        //System.out.println(saq);
+                        theQ.addQuery(saq);
+
+                    }
+                }
+            }
+        }
     }
 
     static void generateAggregates() throws Exception {
@@ -133,11 +167,12 @@ public class Generator {
         theMeasures=new ArrayList<>();
         String[] dim=dimensions.split(",");
         for (int x=0; x<dim.length; x++) {
-            theDimensions.add(new DatasetDimension(dim[x]));
+            theDimensions.add(new DatasetDimension(dim[x], conn, table));
+            theDimensions.get(x).setActiveDomain();
         }
         String[] meas=measures.split(",");
         for (int x=0; x<meas.length; x++) {
-            theMeasures.add(new DatasetMeasure(meas[x]));
+            theMeasures.add(new DatasetMeasure(meas[x], conn, table));
         }
     }
 

@@ -1,12 +1,14 @@
 package fr.univtours.info;
 
+import java.sql.Connection;
+
 public class DatasetMeasure extends DatasetAttribute {
-    public DatasetMeasure(String name){
-        super(name);
+    public DatasetMeasure(String name, Connection conn, String table){
+
+        super(name,conn, table);
     }
 
     public void setActiveDomain(){
-
     }
 
     public float getMin(){
