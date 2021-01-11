@@ -14,6 +14,11 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
     public AggregateQuery(Connection conn, String table, Set<DatasetDimension> dimensions, DatasetMeasure m, String agg){
         this.conn=conn;
         this.table=table;
+
+        this.groupby=dimensions;
+        this.measure=m;
+        this.function=agg;
+
         this.sql= "select ";
         String groupby="";
         for (DatasetDimension d :dimensions){
@@ -33,7 +38,8 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
         }
 
         // System.out.println(sql);
-        this.explain = "explain analyze " + sql;
+        this.explain = "explain  " + sql;
+        this.explainAnalyze = "explain analyze " + sql;
 
     }
 

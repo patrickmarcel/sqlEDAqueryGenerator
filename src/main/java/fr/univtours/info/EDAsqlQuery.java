@@ -5,9 +5,12 @@ import java.util.Set;
 public interface EDAsqlQuery {
     void execute() throws Exception;
     void explainAnalyze() throws Exception;
-    float getCost();
+    void explain() throws Exception;
+    float getActualCost();
     float getInterest();
     float getDistance(EDAsqlQuery other);
+
+    void computeInterest() throws Exception;
 
     Set<DatasetDimension> getGroupby();
     DatasetMeasure getMeasure();

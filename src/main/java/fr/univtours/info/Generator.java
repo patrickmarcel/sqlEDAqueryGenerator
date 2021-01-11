@@ -31,8 +31,10 @@ public class Generator {
     public static void main( String[] args ) throws Exception{
         loadDataset();
         theQ=new QtheSetOfGeneratedQueries();
-        //generateCounts();
 
+
+
+        //generation
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         generateCounts();
@@ -47,11 +49,16 @@ public class Generator {
         System.out.println("Q size: " + theQ.getSize() + " queries generated");
 
 
-
+        // interestingness computation
         stopwatch = Stopwatch.createStarted();
+        computeInterests();
+        stopwatch.stop();
+        timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+        System.out.println("Interestingness computation time in milliseconds: " + timeElapsed);
 
-        computeCosts();
-
+        // actual cost computation
+        stopwatch = Stopwatch.createStarted();
+        //computeCosts();
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Actual cost computation time in milliseconds: " + timeElapsed);
@@ -61,6 +68,12 @@ public class Generator {
     static void computeCosts() throws Exception {
         for(EDAsqlQuery q : theQ.theQueries){
             q.explainAnalyze();
+        }
+    }
+
+    static void computeInterests() throws Exception {
+        for(EDAsqlQuery q : theQ.theQueries){
+            q.computeInterest();
         }
     }
 
