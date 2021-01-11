@@ -54,7 +54,9 @@ public class Generator {
         // interestingness computation
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
-        computeInterests();
+
+        //computeInterests();
+
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Interestingness computation time in milliseconds: " + timeElapsed);
@@ -62,10 +64,14 @@ public class Generator {
         // actual cost computation
         System.out.println("Starting actual cost computation");
         stopwatch = Stopwatch.createStarted();
+
         //computeCosts();
+
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Actual cost computation time in milliseconds: " + timeElapsed);
+
+        ds.computeSample(0.1);
     }
 
 
@@ -88,7 +94,7 @@ public class Generator {
         DBservices db= new DBservices();
         conn=db.connectToPostgresql();
         readProperties();
-        ds=new Dataset(theDimensions, theMeasures);
+        ds=new Dataset(conn, table, theDimensions, theMeasures);
     }
 
 
