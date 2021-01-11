@@ -13,4 +13,8 @@ public class QtheSetOfGeneratedQueries {
     public void addQuery(EDAsqlQuery q){
         theQueries.add(q);
     }
+
+    public int getSize(){
+        return theQueries.size();
+    }
 }

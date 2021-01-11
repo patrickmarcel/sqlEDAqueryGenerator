@@ -12,7 +12,7 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
     String attribute;
 
 
-    public AggregateQuery(Connection conn, String table, Set<DatasetDimension> dimensions, DatasetMeasure m){
+    public AggregateQuery(Connection conn, String table, Set<DatasetDimension> dimensions, DatasetMeasure m, String agg){
         this.conn=conn;
         this.table=table;
         this.attribute=attribute;
@@ -22,19 +22,19 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
             groupby = groupby + d.name + ", ";
         }
         if(groupby.length()==0){ // empty set<dim>
-            sql=sql + " avg(" + m.name + ") from " + table + ";";
+            sql=sql + " " + agg + "(" + m.name + ") from " + table + ";";
         }
         else{
             //groupby=groupby.substring(0,groupby.length()-1);
             //System.out.println(groupby);
-            sql=sql + groupby + " avg(" + m.name + ") from " + table +" group by ";
+            sql=sql + groupby + " " + agg+ "(" + m.name + ") from " + table +" group by  ";
             groupby=groupby.substring(0,groupby.length()-2);
-            System.out.println(groupby);
+            //System.out.println(groupby);
             sql=sql + groupby + ";";
             //+ "avg(" + m + ") from " + table +" group by" + ";";
         }
 
-        System.out.println(sql);
+        // System.out.println(sql);
         this.explain = "explain analyze " + sql;
 
     }
