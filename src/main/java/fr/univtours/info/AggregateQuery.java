@@ -38,5 +38,18 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
     }
 
 
+    @Override
+    public Set<DatasetDimension> getGroupby() {
+        return null;
+    }
 
+    @Override
+    public DatasetMeasure getMeasure() {
+        return null;
+    }
+
+    @Override
+    public String getFunction() {
+        return null;
+    }
 }

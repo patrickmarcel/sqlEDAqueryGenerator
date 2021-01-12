@@ -1,6 +1,8 @@
 package fr.univtours.info;
 
 import java.sql.*;
+import java.util.Set;
+
 import org.apache.commons.dbutils.ResultSetIterator;
 
 
@@ -26,6 +28,20 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
 
     }
 
+    @Override
+    public Set<DatasetDimension> getGroupby() {
+        return null;
+    }
+
+    @Override
+    public DatasetMeasure getMeasure() {
+        return null;
+    }
+
+    @Override
+    public String getFunction() {
+        return null;
+    }
 
 
 }
