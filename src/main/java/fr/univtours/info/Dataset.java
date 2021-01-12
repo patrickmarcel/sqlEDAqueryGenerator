@@ -26,6 +26,7 @@ public class Dataset {
         return null;
     }
 
+    // todo : sample table should be indexed as well, using indexes over dimensions
     String computeSample(double percentage) throws SQLException {
         String tablename= "sample_" + sampleNumber ;
         String sql="create table " + tablename +"(";

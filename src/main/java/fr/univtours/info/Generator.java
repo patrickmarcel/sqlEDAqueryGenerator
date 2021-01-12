@@ -38,7 +38,9 @@ public class Generator {
         loadDataset();
         theQ=new QtheSetOfGeneratedQueries();
 
-
+        // compute sample
+        //this.table=ds.computeSample(0.1);
+        //
 
         //generation
         System.out.println("Starting generation");
@@ -46,8 +48,8 @@ public class Generator {
 
         //generateCounts();
         //generateHistograms();
-        generateAggregates();
-        //generateSiblingAssesses();
+        //generateAggregates();
+        generateSiblingAssesses();
 
         stopwatch.stop();
 
@@ -68,22 +70,24 @@ public class Generator {
         System.out.println("Interestingness computation time in milliseconds: " + timeElapsed);
 
         // actual cost computation
-        System.out.println("Starting actual cost computation");
+        System.out.println("Starting cost computation");
         stopwatch = Stopwatch.createStarted();
 
-        //computeCosts();
+        computeCosts();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-        System.out.println("Actual cost computation time in milliseconds: " + timeElapsed);
+        System.out.println("Cost computation time in milliseconds: " + timeElapsed);
 
-        ds.computeSample(0.1);
+
+
     }
 
 
     static void computeCosts() throws Exception {
         for(EDAsqlQuery q : theQ.theQueries){
-            q.explainAnalyze();
+            //q.explainAnalyze();
+            q.explain();
         }
     }
 

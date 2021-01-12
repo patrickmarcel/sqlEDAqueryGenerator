@@ -19,6 +19,7 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
 
     int count=0;
     float actualCost =0;
+    float explainCost=0;
     double interest=0;
 
     Set<DatasetDimension> dimensions;
@@ -88,9 +89,18 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         ResultSet rs = pstmt.executeQuery(this.explain) ;
         this.explainResultset=rs;
 
+        rs.beforeFirst();
+        rs.next();
 
+        String s1 = rs.getString("QUERY PLAN");
 
+        String[] s2 = s1.split("=");
 
+        String[] s3 = s2[1].split("\\.\\.");
+
+        this.explainCost = Float.parseFloat(s3[0]);
+
+        //System.out.println(explainCost);
     }
 
 
