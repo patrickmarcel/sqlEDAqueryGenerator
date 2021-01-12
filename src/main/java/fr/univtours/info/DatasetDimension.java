@@ -28,6 +28,8 @@ public class DatasetDimension extends DatasetAttribute{
             //System.out.println(tab[0].toString());
             activeDomain.add(tab[0].toString());
         }
+        pstmt.close();
+        rs.close();
     }
 
 

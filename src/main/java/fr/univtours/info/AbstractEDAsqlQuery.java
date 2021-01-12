@@ -78,6 +78,8 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         String[] tmp2=tmp1.split(" ms");
         this.actualCost = Float.parseFloat(tmp2[0]);
 
+        pstmt.close();
+        rs.close();
     }
 
 
@@ -93,14 +95,12 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         rs.next();
 
         String s1 = rs.getString("QUERY PLAN");
-
         String[] s2 = s1.split("=");
-
         String[] s3 = s2[1].split("\\.\\.");
-
         this.explainCost = Float.parseFloat(s3[0]);
 
-        //System.out.println(explainCost);
+        pstmt.close();
+        rs.close();
     }
 
 
