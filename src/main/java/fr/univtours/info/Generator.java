@@ -29,6 +29,12 @@ public class Generator {
     static final String[] tabAgg= {"avg", "sum", "min", "max", "stddev"};
 
     public static void main( String[] args ) throws Exception{
+        //Cleanup previous execution
+        DBservices db= new DBservices();
+        conn=db.connectToPostgresql();
+        conn.prepareStatement("Drop table if exists sample_1").execute();
+        conn.close();
+
         loadDataset();
         theQ=new QtheSetOfGeneratedQueries();
 
