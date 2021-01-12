@@ -1,23 +1,26 @@
 package fr.univtours.info;
 
 import java.sql.*;
-import java.util.Set;
-
-import org.apache.commons.dbutils.ResultSetIterator;
+import java.util.HashSet;
 
 
 public class CountdistinctQuery extends AbstractEDAsqlQuery {
 
 
-    ;
 
 
     public CountdistinctQuery(Connection conn, String table, DatasetDimension attribute){
         this.conn=conn;
         this.table=table;
 
+        this.dimensions =new HashSet<DatasetDimension>();
+        this.dimensions.add(attribute);
+        this.measure=null;
+        this.function="count distinct";
+
         this.sql= "select count(distinct " + attribute.name + ") from " + table +";";
-        this.explain = "explain analyze " + sql;
+        this.explain = "explain  " + sql;
+        this.explainAnalyze = "explain analyze " + sql;
 
     }
 
@@ -29,18 +32,8 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
     }
 
     @Override
-    public Set<DatasetDimension> getGroupby() {
-        return null;
-    }
+    public void interestWithZscore() throws Exception {
 
-    @Override
-    public DatasetMeasure getMeasure() {
-        return null;
-    }
-
-    @Override
-    public String getFunction() {
-        return null;
     }
 
 

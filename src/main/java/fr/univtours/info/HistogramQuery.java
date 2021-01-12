@@ -1,7 +1,7 @@
 package fr.univtours.info;
 
 import java.sql.Connection;
-import java.util.Set;
+import java.util.HashSet;
 
 public class HistogramQuery extends AbstractEDAsqlQuery {
 
@@ -11,26 +11,21 @@ public class HistogramQuery extends AbstractEDAsqlQuery {
         this.conn=conn;
         this.table=table;
 
+        this.dimensions =new HashSet<DatasetDimension>();
+        this.dimensions.add(attribute);
+        this.measure=null;
+        this.function="count";
+
         this.sql= "select " + attribute.name + ",count(*) from " + table +" group by " + attribute.name+ ";";
-        this.explain = "explain analyze " + sql;
+        this.explain = "explain  " + sql;
         // System.out.println(sql);
-        this.explain = "explain analyze " + sql;
+        this.explainAnalyze = "explain analyze " + sql;
 
     }
 
 
     @Override
-    public Set<DatasetDimension> getGroupby() {
-        return null;
-    }
+    public void interestWithZscore() throws Exception {
 
-    @Override
-    public DatasetMeasure getMeasure() {
-        return null;
-    }
-
-    @Override
-    public String getFunction() {
-        return null;
     }
 }

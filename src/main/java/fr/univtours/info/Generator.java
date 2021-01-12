@@ -31,13 +31,17 @@ public class Generator {
     public static void main( String[] args ) throws Exception{
         loadDataset();
         theQ=new QtheSetOfGeneratedQueries();
-        //generateCounts();
 
+
+
+        //generation
+        System.out.println("Starting generation");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        generateCounts();
-        generateHistograms();
+        //generateCounts();
+        //generateHistograms();
         generateAggregates();
+        //generateSiblingAssesses();
 
         stopwatch.stop();
 
@@ -47,14 +51,27 @@ public class Generator {
         System.out.println("Q size: " + theQ.getSize() + " queries generated");
 
 
-
+        // interestingness computation
+        System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
 
-        computeCosts();
+        //computeInterests();
+
+        stopwatch.stop();
+        timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+        System.out.println("Interestingness computation time in milliseconds: " + timeElapsed);
+
+        // actual cost computation
+        System.out.println("Starting actual cost computation");
+        stopwatch = Stopwatch.createStarted();
+
+        //computeCosts();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Actual cost computation time in milliseconds: " + timeElapsed);
+
+        ds.computeSample(0.1);
     }
 
 
@@ -64,11 +81,53 @@ public class Generator {
         }
     }
 
+    static void computeInterests() throws Exception {
+        for(EDAsqlQuery q : theQ.theQueries){
+            q.computeInterest();
+            q.print();
+            //q.printResult();
+            System.out.println("interestingness: " + q.getInterest());
+        }
+    }
+
     static void loadDataset() throws Exception{
         DBservices db= new DBservices();
         conn=db.connectToPostgresql();
         readProperties();
-        ds=new Dataset(theDimensions, theMeasures);
+        ds=new Dataset(conn, table, theDimensions, theMeasures);
+    }
+
+
+    static void generateSiblingAssesses() throws Exception{
+        ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(theDimensions);
+        Set<Set<DatasetDimension>> combinations = Sets.combinations(set, 2);
+
+        for(Set<DatasetDimension> s : combinations){
+            for(DatasetMeasure meas : theMeasures) {
+                for (String agg : tabAgg) {
+                    DatasetDimension[] tabdim=new DatasetDimension[2];
+                    int i=0;
+                    for(DatasetDimension d : s){
+                        tabdim[i++]=d;
+                    }
+                    ImmutableSet<String> values = ImmutableSet.copyOf(tabdim[0].getActiveDomain());
+                    Set<Set<String>> combiVals = Sets.combinations(values, 2);
+
+                    for(Set<String> st : combiVals){
+                        i=0;
+                        String[] tabstring = new String[2];
+                        for(String sc : st){
+                            tabstring[i++]=sc;
+                        }
+                        //System.out.println(tabdim[0] + tabstring[0] +  tabstring[1] +  tabdim[1] );
+                        SiblingAssessQuery saq = new SiblingAssessQuery(conn, table, tabdim[0], tabstring[0], tabstring[1], tabdim[1], meas, agg);
+                        //System.out.println(saq);
+                        theQ.addQuery(saq);
+
+                    }
+                }
+            }
+        }
     }
 
     static void generateAggregates() throws Exception {
@@ -120,11 +179,12 @@ public class Generator {
         theMeasures=new ArrayList<>();
         String[] dim=dimensions.split(",");
         for (int x=0; x<dim.length; x++) {
-            theDimensions.add(new DatasetDimension(dim[x]));
+            theDimensions.add(new DatasetDimension(dim[x], conn, table));
+            theDimensions.get(x).setActiveDomain();
         }
         String[] meas=measures.split(",");
         for (int x=0; x<meas.length; x++) {
-            theMeasures.add(new DatasetMeasure(meas[x]));
+            theMeasures.add(new DatasetMeasure(meas[x], conn, table));
         }
     }
 
