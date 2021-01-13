@@ -83,12 +83,37 @@ public class Generator {
 
     }
 
-
+    // todo: check if optimization is reasonable in practice...
     static void computeCosts() throws Exception {
+        float avg=0, i=0, min=Float.MAX_VALUE, max=0, current=0;
+        int nbExplain=0;
+        EDAsqlQuery previous=null;
         for(EDAsqlQuery q : theQ.theQueries){
             //q.explainAnalyze();
-            q.explain();
+
+            // THIS MUST BE CHECKED BECAUSE EVEN WHEN DISTANCE IS 0 THE COST MAY DIFFER
+            // ESPECIALLY WHEN VALUES IN SELECTION PREDICATE ARE ORDERED
+            if(previous!=null && q.getDistance(previous)==0){
+                q.setEstimatedCost(current);
+
+            }
+            else{
+                q.explain();
+                nbExplain++;
+
+            }
+            current=q.getEstimatedCost();
+            previous=q;
+            i++;
+            avg=avg+q.getEstimatedCost();
+            if(q.getEstimatedCost()>max) max = q.getEstimatedCost();
+            if(q.getEstimatedCost()<min) min = q.getEstimatedCost();
+
         }
+        System.out.println("Number of explain: "+nbExplain);
+        System.out.println("Min: "+min);
+        System.out.println("Avg: "+avg/i);
+        System.out.println("Max: "+max);
     }
 
     static void computeInterests() throws Exception {

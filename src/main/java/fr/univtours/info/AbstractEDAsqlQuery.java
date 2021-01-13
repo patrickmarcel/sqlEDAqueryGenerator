@@ -46,9 +46,30 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     }
 
     @Override
+    public float getEstimatedCost() {
+        return explainCost;
+    }
+
+    public void setEstimatedCost(float estimation){
+        this.explainCost=estimation;
+    }
+
+    @Override
     public double getInterest() {
         return interest;
     }
+
+
+    @Override
+    public DatasetDimension getAssessed() {
+        return null;
+    }
+
+    @Override
+    public DatasetDimension getReference() {
+        return null;
+    }
+
 
     @Override
     public float getDistance(EDAsqlQuery other) {
@@ -57,6 +78,10 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
 
     public int getCount(){
         return count;
+    }
+
+    public String getSql(){
+        return this.sql;
     }
 
 

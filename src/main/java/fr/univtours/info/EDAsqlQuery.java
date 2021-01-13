@@ -8,11 +8,19 @@ public interface EDAsqlQuery {
     void explainAnalyze() throws Exception;
     void explain() throws Exception;
     float getActualCost();
+    float getEstimatedCost();
     double getInterest();
     float getDistance(EDAsqlQuery other);
 
-    void computeInterest() throws Exception;
 
+
+
+    void computeInterest() throws Exception;
+    void setEstimatedCost(float estimation);
+
+    String getSql();
+    DatasetDimension getAssessed();
+    DatasetDimension getReference();
     Set<DatasetDimension> getDimensions();
     DatasetMeasure getMeasure();
     String getFunction();
