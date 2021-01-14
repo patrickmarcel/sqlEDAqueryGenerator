@@ -33,9 +33,15 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
     }
 
     @Override
-    public void execute() throws Exception{
+    public void execute() {
         super.execute();
-        this.count=resultset.getInt(1);
+        try {
+            resultset.beforeFirst();
+            resultset.next();
+            this.count=resultset.getInt(1);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
 
     }
 

@@ -63,7 +63,7 @@ public class Generator {
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
 
-        computeInterests();
+        //computeInterests();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -73,7 +73,7 @@ public class Generator {
         System.out.println("Starting cost computation");
         stopwatch = Stopwatch.createStarted();
 
-        //computeCosts();
+        computeCosts();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -101,6 +101,7 @@ public class Generator {
                 q.setEstimatedCost(current);
                 //error check start
                 q.explain();
+                times.add(q.getEstimatedCost());
                 float error = Math.abs(q.getEstimatedCost() - current);
 
                 if (error < 0.1){
@@ -108,7 +109,6 @@ public class Generator {
                 else {
                     wrong += 1;
                     errors.add(error);
-                    times.add(q.getEstimatedCost());
                     if (error > 100)
                         bad += 1;
                 }

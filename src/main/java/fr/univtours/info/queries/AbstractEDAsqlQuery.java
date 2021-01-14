@@ -124,12 +124,18 @@ public abstract class AbstractEDAsqlQuery {
 
 
 
-    public void execute() throws Exception{
-        final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = pstmt.executeQuery(this.getSql()) ;
-        this.resultset=rs;
-        rs.next();
+    public void execute() {
+        final Statement pstmt;
+        try {
+            pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_UPDATABLE);
+            ResultSet rs = pstmt.executeQuery(this.getSql()) ;
+            this.resultset=rs;
+            rs.next();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
 
 
     }
@@ -161,17 +167,29 @@ public abstract class AbstractEDAsqlQuery {
 
 
     public void printResult() throws SQLException {
+        if (resultset == null)
+            this.execute();
+
         System.out.println("--- Result Set ---");
         resultset.beforeFirst();
         ResultSetMetaData rsmd = resultset.getMetaData();
         int columnsNumber = rsmd.getColumnCount();
+        boolean first = true;
         while (resultset.next()) {
+            if (first){
+                for (int i = 1; i <= columnsNumber; i++) {
+                    if (i > 1) System.out.print(",  ");
+                    System.out.print(rsmd.getColumnName(i));
+                }
+                System.out.println();
+                first = false;
+            }
             for (int i = 1; i <= columnsNumber; i++) {
                 if (i > 1) System.out.print(",  ");
                 String columnValue = resultset.getString(i);
-                System.out.print(columnValue + " " + rsmd.getColumnName(i));
+                System.out.print(columnValue);
             }
-            System.out.println("");
+            System.out.println("\n--- Result Set END ---");
         }
 
     }
