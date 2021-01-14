@@ -175,10 +175,11 @@ public class Generator {
 
             //TODO compute if absent in hashmap
             List<Pair<DatasetDimension, DatasetDimension>> toGenerate = new ArrayList<>(2);
-            if (isAllowed.computeIfAbsent(dims, pair -> DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table)))
+            if (isAllowed.computeIfAbsent(dims, pair -> !DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table)) &&
+                    isAllowed.computeIfAbsent(dims_r, pair -> !DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table))) {
                 toGenerate.add(dims);
-            if (isAllowed.computeIfAbsent(dims_r, pair -> DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table)))
                 toGenerate.add(dims_r);
+            }
 
             for (Pair<DatasetDimension, DatasetDimension> dim_pair : toGenerate){
                 for(DatasetMeasure meas : theMeasures) {
