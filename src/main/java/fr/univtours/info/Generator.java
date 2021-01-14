@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
 import fr.univtours.info.queries.*;
+import org.apache.commons.math3.util.Pair;
 
 import java.io.File;
 import java.io.FileReader;
@@ -21,8 +22,8 @@ public class Generator {
     static Dataset ds;
     static String table;
     static String sampleTable;
-    static ArrayList<DatasetDimension> theDimensions;
-    static ArrayList<DatasetMeasure> theMeasures;
+    static List<DatasetDimension> theDimensions;
+    static List<DatasetMeasure> theMeasures;
     static Connection conn;
     static QtheSetOfGeneratedQueries theQ;
 
@@ -63,7 +64,7 @@ public class Generator {
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
 
-        //computeInterests();
+        computeInterests();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -73,7 +74,7 @@ public class Generator {
         System.out.println("Starting cost computation");
         stopwatch = Stopwatch.createStarted();
 
-        computeCosts();
+        //computeCosts();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -164,29 +165,40 @@ public class Generator {
     static void generateSiblingAssesses() throws Exception{
         ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(theDimensions);
         Set<Set<DatasetDimension>> combinations = Sets.combinations(set, 2);
+        Map<Pair<DatasetDimension, DatasetDimension>, Boolean> isAllowed = new HashMap<>();
 
+        //For each pair of dimension attributes
         for(Set<DatasetDimension> s : combinations){
-            for(DatasetMeasure meas : theMeasures) {
-                for (String agg : tabAgg) {
-                    DatasetDimension[] tabdim=new DatasetDimension[2];
-                    int i=0;
-                    for(DatasetDimension d : s){
-                        tabdim[i++]=d;
-                    }
-                    ImmutableSet<String> values = ImmutableSet.copyOf(tabdim[0].getActiveDomain());
-                    Set<Set<String>> combiVals = Sets.combinations(values, 2);
+            Iterator<DatasetDimension> it = s.iterator();
+            Pair<DatasetDimension, DatasetDimension> dims = new Pair<>(it.next(), it.next());
+            Pair<DatasetDimension, DatasetDimension> dims_r = new Pair<>(dims.getSecond(), dims.getFirst());
 
-                    for(Set<String> st : combiVals){
-                        i=0;
-                        String[] tabstring = new String[2];
-                        for(String sc : st){
-                            tabstring[i++]=sc;
+            //TODO compute if absent in hashmap
+            List<Pair<DatasetDimension, DatasetDimension>> toGenerate = new ArrayList<>(2);
+            if (isAllowed.computeIfAbsent(dims, pair -> DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table)))
+                toGenerate.add(dims);
+            if (isAllowed.computeIfAbsent(dims_r, pair -> DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table)))
+                toGenerate.add(dims_r);
+
+            for (Pair<DatasetDimension, DatasetDimension> dim_pair : toGenerate){
+                for(DatasetMeasure meas : theMeasures) {
+                    for (String agg : tabAgg) {
+
+                        ImmutableSet<String> values = ImmutableSet.copyOf(dim_pair.getFirst().getActiveDomain());
+                        Set<Set<String>> combiVals = Sets.combinations(values, 2);
+
+                        for(Set<String> st : combiVals){
+                            int i=0;
+                            String[] tabstring = new String[2];
+                            for(String sc : st){
+                                tabstring[i++]=sc;
+                            }
+                            //System.out.println(tabdim[0] + tabstring[0] +  tabstring[1] +  tabdim[1] );
+                            SiblingAssessQuery saq = new SiblingAssessQuery(conn, table, dim_pair.getFirst(), tabstring[0], tabstring[1], dim_pair.getSecond(), meas, agg);
+                            //System.out.println(saq);
+                            theQ.addQuery(saq);
+
                         }
-                        //System.out.println(tabdim[0] + tabstring[0] +  tabstring[1] +  tabdim[1] );
-                        SiblingAssessQuery saq = new SiblingAssessQuery(conn, table, tabdim[0], tabstring[0], tabstring[1], tabdim[1], meas, agg);
-                        //System.out.println(saq);
-                        theQ.addQuery(saq);
-
                     }
                 }
             }
@@ -243,7 +255,7 @@ public class Generator {
         String[] dim=dimensions.split(",");
         for (int x=0; x<dim.length; x++) {
             theDimensions.add(new DatasetDimension(dim[x], conn, table));
-            theDimensions.get(x).setActiveDomain();
+            theDimensions.get(x).computeActiveDomain();
         }
         String[] meas=measures.split(",");
         for (int x=0; x<meas.length; x++) {

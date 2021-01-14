@@ -8,7 +8,7 @@ public class DatasetMeasure extends DatasetAttribute {
         super(name,conn, table);
     }
 
-    public void setActiveDomain(){
+    public void computeActiveDomain(){
     }
 
     public float getMin(){

@@ -8,15 +8,13 @@ import java.sql.SQLException;
 import java.util.Set;
 
 public abstract class DatasetAttribute {
-    Set activeDomain;
+
     @Getter
     String name;
     Connection conn;
     String table;
 
-    public abstract void setActiveDomain() throws SQLException;
-
-
+    public abstract void computeActiveDomain() throws SQLException;
 
     public DatasetAttribute(String name, Connection conn, String table){
         this.conn=conn;

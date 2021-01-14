@@ -21,6 +21,7 @@ public abstract class AbstractEDAsqlQuery {
     //protected String explainAnalyze ;
 
     int count=0;
+    @Getter
     float actualCost =0;
     float explainCost=0;
     double interest=0;
@@ -41,10 +42,6 @@ public abstract class AbstractEDAsqlQuery {
 
     public Set<DatasetDimension> getDimensions(){
         return this.dimensions;
-    }
-
-    public float getActualCost() {
-        return actualCost;
     }
 
     public float getEstimatedCost() {

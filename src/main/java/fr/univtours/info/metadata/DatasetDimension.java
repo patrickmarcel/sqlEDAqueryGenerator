@@ -11,10 +11,10 @@ public class DatasetDimension extends DatasetAttribute{
     Set<String> activeDomain;
 
     @Override
-    public void setActiveDomain() throws SQLException {
-        activeDomain=new TreeSet<String>();
+    public void computeActiveDomain() throws SQLException {
+        activeDomain = new TreeSet<String>();//TODO check this might prove inefficient
 
-        String sql="select distinct " + name + " from " + table + ";";
+        String sql = "select distinct " + name + " from " + table + ";";
         final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
         ResultSet rs = pstmt.executeQuery(sql) ;
@@ -39,10 +39,14 @@ public class DatasetDimension extends DatasetAttribute{
     }
 
     public Set<String> getActiveDomain(){
+        if (activeDomain == null) {
+            try {
+                computeActiveDomain();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        }
         return activeDomain;
     }
 
-    public int getDistinct(String value){
-        return 0;
-    }
 }

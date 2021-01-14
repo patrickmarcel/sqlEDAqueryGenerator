@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Dataset {
     static int sampleNumber=1;
@@ -15,10 +16,10 @@ public class Dataset {
     DatasetSchema theSchema;
     String table;
 
-     ArrayList<DatasetDimension> theDimensions;
-     ArrayList<DatasetMeasure> theMeasures;
+     List<DatasetDimension> theDimensions;
+     List<DatasetMeasure> theMeasures;
 
-     public Dataset(Connection conn, String table, ArrayList<DatasetDimension> theDimensions, ArrayList<DatasetMeasure> theMeasures ){
+     public Dataset(Connection conn, String table, List<DatasetDimension> theDimensions, List<DatasetMeasure> theMeasures ){
          this.conn=conn;
          this.table=table;
          this.theDimensions=theDimensions;
