@@ -186,8 +186,9 @@ public abstract class AbstractEDAsqlQuery {
                 String columnValue = resultset.getString(i);
                 System.out.print(columnValue);
             }
-            System.out.println("\n--- Result Set END ---");
+            System.out.println();
         }
+        System.out.println("--- Result Set END ---");
 
     }
 

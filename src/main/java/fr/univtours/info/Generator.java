@@ -147,10 +147,10 @@ public class Generator {
     static void computeInterests() throws Exception {
         for(AbstractEDAsqlQuery q : theQ.theQueries.subList(10,20)){
             SampleQuery qs = new SampleQuery(q, sampleTable);
-            qs.computeInterest();
-            qs.print();
-            qs.printResult();
-            System.out.println("interestingness: " + qs.getInterest());
+            //qs.computeInterest();
+            q.print();
+            q.printResult();
+            System.out.println("interestingness: " + q.getInterest());
         }
     }
 
