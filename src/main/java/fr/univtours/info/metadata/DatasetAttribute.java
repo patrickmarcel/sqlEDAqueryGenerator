@@ -1,5 +1,7 @@
-package fr.univtours.info;
+package fr.univtours.info.metadata;
 
+
+import lombok.Getter;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -7,6 +9,7 @@ import java.util.Set;
 
 public abstract class DatasetAttribute {
     Set activeDomain;
+    @Getter
     String name;
     Connection conn;
     String table;

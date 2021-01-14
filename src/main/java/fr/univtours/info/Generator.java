@@ -3,15 +3,14 @@ package fr.univtours.info;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.checkerframework.checker.units.qual.A;
+import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.queries.*;
 
 import java.io.File;
 import java.io.FileReader;
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -87,15 +86,26 @@ public class Generator {
     static void computeCosts() throws Exception {
         float avg=0, i=0, min=Float.MAX_VALUE, max=0, current=0;
         int nbExplain=0;
-        EDAsqlQuery previous=null;
-        for(EDAsqlQuery q : theQ.theQueries){
+        AbstractEDAsqlQuery previous=null;
+        Random r = new Random();
+        int correct = 0, wrong = 0;
+
+        for(AbstractEDAsqlQuery q : theQ.theQueries){
             //q.explainAnalyze();
 
             // THIS MUST BE CHECKED BECAUSE EVEN WHEN DISTANCE IS 0 THE COST MAY DIFFER
             // ESPECIALLY WHEN VALUES IN SELECTION PREDICATE ARE ORDERED
             if(previous!=null && q.getDistance(previous)==0){
                 q.setEstimatedCost(current);
-
+                if (r.nextFloat() < 0.1){
+                    q.explain();
+                    if (Math.abs(q.getEstimatedCost() - current) < 0.1){
+                        correct += 1;
+                    }
+                    else {
+                        wrong += 1;
+                    }
+                }
             }
             else{
                 q.explain();
@@ -114,10 +124,11 @@ public class Generator {
         System.out.println("Min: "+min);
         System.out.println("Avg: "+avg/i);
         System.out.println("Max: "+max);
+        System.out.printf("Checking optimization : Correct %s, Wrong %s%n", correct, wrong);
     }
 
     static void computeInterests() throws Exception {
-        for(EDAsqlQuery q : theQ.theQueries){
+        for(AbstractEDAsqlQuery q : theQ.theQueries){
             q.computeInterest();
             q.print();
             //q.printResult();

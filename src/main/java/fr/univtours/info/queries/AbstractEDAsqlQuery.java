@@ -1,11 +1,13 @@
-package fr.univtours.info;
+package fr.univtours.info.queries;
 
+import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.metadata.DatasetMeasure;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
 import java.util.Set;
 
-public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
+public abstract class AbstractEDAsqlQuery {
 
     Connection conn;
     ResultSet resultset;
@@ -13,9 +15,9 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     ResultSet explainAnalyzeResultset;
     String table;
 
-    String sql;
-    String explain ;
-    String explainAnalyze ;
+    private String sql;
+    //protected String explain ;
+    //protected String explainAnalyze ;
 
     int count=0;
     float actualCost =0;
@@ -26,12 +28,18 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     DatasetMeasure measure;
     String function;
 
-    @Override
+
+    protected abstract String getSqlInt();
+    public String getSql(){
+        if (sql == null)
+            sql = this.getSqlInt();
+        return sql;
+    }
+
     public Set<DatasetDimension> getDimensions(){
         return this.dimensions;
     };
 
-    @Override
     public DatasetMeasure getMeasure(){
         return measure;
     }
@@ -40,12 +48,10 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         return function;
     }
 
-    @Override
     public float getActualCost() {
         return actualCost;
     }
 
-    @Override
     public float getEstimatedCost() {
         return explainCost;
     }
@@ -54,25 +60,21 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         this.explainCost=estimation;
     }
 
-    @Override
     public double getInterest() {
         return interest;
     }
 
 
-    @Override
     public DatasetDimension getAssessed() {
         return null;
     }
 
-    @Override
     public DatasetDimension getReference() {
         return null;
     }
 
 
-    @Override
-    public float getDistance(EDAsqlQuery other) {
+    public float getDistance(AbstractEDAsqlQuery other) {
         return 0;
     }
 
@@ -80,15 +82,12 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         return count;
     }
 
-    public String getSql(){
-        return this.sql;
-    }
 
 
     public void explainAnalyze() throws Exception{
         final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = pstmt.executeQuery(this.explainAnalyze) ;
+        ResultSet rs = pstmt.executeQuery("explain analyze " + this.getSql()) ;
         this.explainAnalyzeResultset=rs;
 
         ResultSetMetaData rmsd = rs.getMetaData();
@@ -113,7 +112,7 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
         final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
         //System.out.println(this.explain);
-        ResultSet rs = pstmt.executeQuery(this.explain) ;
+        ResultSet rs = pstmt.executeQuery("explain  " + this.getSql()) ;
         this.explainResultset=rs;
 
         rs.beforeFirst();
@@ -129,11 +128,11 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     }
 
 
-    @Override
+
     public void execute() throws Exception{
         final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                 ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = pstmt.executeQuery(this.sql) ;
+        ResultSet rs = pstmt.executeQuery(this.getSql()) ;
         this.resultset=rs;
         rs.next();
 
@@ -161,11 +160,11 @@ public abstract class AbstractEDAsqlQuery implements EDAsqlQuery {
     public abstract void interestWithZscore() throws Exception;
 
     public void print(){
-        System.out.println(sql);
+        System.out.println(this.getSql());
     }
 
 
-    @Override
+
     public void printResult() throws SQLException {
         ResultSetIterator rsit=new ResultSetIterator(resultset);
         Object[] tab=null;

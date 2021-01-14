@@ -1,7 +1,10 @@
 package fr.univtours.info;
 
+import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.metadata.DatasetSchema;
+
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -32,10 +35,10 @@ public class Dataset {
         String sql="create table " + tablename +"(";
 
         for(DatasetDimension d : theDimensions){
-            sql = sql + d.name + " varchar, ";
+            sql = sql + d.getName() + " varchar, ";
         }
         for(DatasetMeasure m : theMeasures){
-            sql = sql + m.name + " float, ";
+            sql = sql + m.getName() + " float, ";
         }
         sql =sql.substring(0,sql.length()-2);
         sql=sql+");";
@@ -47,10 +50,10 @@ public class Dataset {
 
         sql="insert into "+ tablename + " (select ";
         for(DatasetDimension d : theDimensions){
-            sql = sql + d.name + ", ";
+            sql = sql + d.getName() + ", ";
         }
         for(DatasetMeasure m : theMeasures){
-            sql = sql + m.name + ", ";
+            sql = sql + m.getName() + ", ";
         }
         sql =sql.substring(0,sql.length()-2);
         sql=sql+ " from "+ table + " where random()< " + percentage + ");";

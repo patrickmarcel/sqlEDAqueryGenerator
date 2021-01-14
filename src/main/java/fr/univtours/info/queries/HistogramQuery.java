@@ -1,28 +1,32 @@
-package fr.univtours.info;
+package fr.univtours.info.queries;
+
+import fr.univtours.info.metadata.DatasetDimension;
 
 import java.sql.Connection;
 import java.util.HashSet;
 
 public class HistogramQuery extends AbstractEDAsqlQuery {
 
-
+    private final DatasetDimension attrib;
 
     public HistogramQuery(Connection conn, String table, DatasetDimension attribute){
         this.conn=conn;
         this.table=table;
 
-        this.dimensions =new HashSet<DatasetDimension>();
+        this.dimensions =new HashSet<>();
+        this.attrib = attribute;
         this.dimensions.add(attribute);
         this.measure=null;
         this.function="count";
 
-        this.sql= "select " + attribute.name + ",count(*) from " + table +" group by " + attribute.name+ ";";
-        this.explain = "explain  " + sql;
-        // System.out.println(sql);
-        this.explainAnalyze = "explain analyze " + sql;
 
     }
 
+
+    @Override
+    protected String getSqlInt() {
+        return "select " + attrib.getName() + ",count(*) from " + table +" group by " + attrib.getName()+ ";";
+    }
 
     @Override
     public void interestWithZscore() throws Exception {

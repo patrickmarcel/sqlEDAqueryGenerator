@@ -1,16 +1,19 @@
 package fr.univtours.info;
 
+import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.EDAsqlQuery;
+
 import java.util.ArrayList;
 
 public class QtheSetOfGeneratedQueries {
 
-    ArrayList<EDAsqlQuery> theQueries;
+    ArrayList<AbstractEDAsqlQuery> theQueries;
 
     public QtheSetOfGeneratedQueries(){
-        theQueries=new ArrayList<EDAsqlQuery>();
+        theQueries=new ArrayList<AbstractEDAsqlQuery>();
     }
 
-    public void addQuery(EDAsqlQuery q){
+    public void addQuery(AbstractEDAsqlQuery q){
         theQueries.add(q);
     }
 

@@ -1,4 +1,4 @@
-package fr.univtours.info;
+package fr.univtours.info.metadata;
 
 import org.apache.commons.dbutils.ResultSetIterator;
 

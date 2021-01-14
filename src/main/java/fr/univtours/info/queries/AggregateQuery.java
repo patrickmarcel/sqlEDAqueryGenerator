@@ -1,5 +1,7 @@
-package fr.univtours.info;
+package fr.univtours.info.queries;
 
+import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.metadata.DatasetMeasure;
 import org.apache.commons.dbutils.ResultSetIterator;
 import org.apache.commons.math3.stat.StatUtils;
 
@@ -20,30 +22,36 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
         this.measure=m;
         this.function=agg;
 
-        this.sql= "select ";
+
+
+        // System.out.println(sql);
+        //this.explain = "explain  " + sql;
+        //this.explainAnalyze = "explain analyze " + sql;
+
+    }
+
+
+    @Override
+    public String getSqlInt() {
+        String sql= "select ";
         String groupby="";
         for (DatasetDimension d :dimensions){
-            groupby = groupby + d.name + ", ";
+            groupby = groupby + d.getName() + ", ";
         }
         if(groupby.length()==0){ // empty set<dim>
-            sql=sql + " " + agg + "(" + m.name + ") as " + m.name +" from " + table + ";";
+            sql=sql + " " + this.function + "(" + this.measure.getName() + ") as " + this.measure.getName() +" from " + table + ";";
         }
         else{
             //groupby=groupby.substring(0,groupby.length()-1);
             //System.out.println(groupby);
-            sql=sql + groupby + " " + agg+ "(" + m.name + ") as " + m.name + " from " + table +" group by  ";
+            sql=sql + groupby + " " + this.function+ "(" + this.measure.getName() + ") as " + this.measure.getName() + " from " + table +" group by  ";
             groupby=groupby.substring(0,groupby.length()-2);
             //System.out.println(groupby);
             sql=sql + groupby + ";";
             //+ "avg(" + m + ") from " + table +" group by" + ";";
         }
-
-        // System.out.println(sql);
-        this.explain = "explain  " + sql;
-        this.explainAnalyze = "explain analyze " + sql;
-
+        return sql;
     }
-
 
     public void interestWithZscore() throws Exception {
 
@@ -57,8 +65,8 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
         int colNumber=0;
         int nbColumn=rmsd.getColumnCount();
         for(int i=1;i<=nbColumn;i++){
-            //System.out.println(i + " " + rmsd.getColumnName(i) + " " + this.measure.name);
-            if(rmsd.getColumnName(i).compareTo(this.measure.name)==0){
+            //System.out.println(i + " " + rmsd.getColumnName(i) + " " + this.measure.getName());
+            if(rmsd.getColumnName(i).compareTo(this.measure.getName())==0){
 
                 colNumber=i;
             }

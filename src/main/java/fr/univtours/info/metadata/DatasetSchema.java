@@ -1,4 +1,4 @@
-package fr.univtours.info;
+package fr.univtours.info.metadata;
 
 import java.util.ArrayList;
 

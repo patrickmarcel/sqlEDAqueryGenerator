@@ -1,8 +1,12 @@
-package fr.univtours.info;
+package fr.univtours.info.queries;
+
+import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.metadata.DatasetMeasure;
 
 import java.sql.SQLException;
 import java.util.Set;
 
+@Deprecated
 public interface EDAsqlQuery {
     void execute() throws Exception;
     void explainAnalyze() throws Exception;
