@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class Generator {
     static Dataset ds;
     static String table;
+    static String sampleTable;
     static ArrayList<DatasetDimension> theDimensions;
     static ArrayList<DatasetMeasure> theMeasures;
     static Connection conn;
@@ -37,9 +38,9 @@ public class Generator {
         loadDataset();
         theQ=new QtheSetOfGeneratedQueries();
 
-        // compute sample
-        //this.table=ds.computeSample(0.1);
-        //
+        //compute sample
+        sampleTable = ds.computeSample(0.1);
+
 
         //generation
         System.out.println("Starting generation");
@@ -62,7 +63,7 @@ public class Generator {
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
 
-        //computeInterests();
+        computeInterests();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -72,7 +73,7 @@ public class Generator {
         System.out.println("Starting cost computation");
         stopwatch = Stopwatch.createStarted();
 
-        computeCosts();
+        //computeCosts();
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -84,11 +85,12 @@ public class Generator {
 
     // todo: check if optimization is reasonable in practice...
     static void computeCosts() throws Exception {
-        float avg=0, i=0, min=Float.MAX_VALUE, max=0, current=0;
+        float current=0;
         int nbExplain=0;
         AbstractEDAsqlQuery previous=null;
-        Random r = new Random();
-        int correct = 0, wrong = 0;
+        int correct = 0, wrong = 0, bad = 0;
+        ArrayList<Float> errors = new ArrayList<>(10000);
+        ArrayList<Float> times = new ArrayList<>(theQ.getSize());
 
         for(AbstractEDAsqlQuery q : theQ.theQueries){
             //q.explainAnalyze();
@@ -97,15 +99,22 @@ public class Generator {
             // ESPECIALLY WHEN VALUES IN SELECTION PREDICATE ARE ORDERED
             if(previous!=null && q.getDistance(previous)==0){
                 q.setEstimatedCost(current);
-                if (r.nextFloat() < 0.1){
-                    q.explain();
-                    if (Math.abs(q.getEstimatedCost() - current) < 0.1){
-                        correct += 1;
-                    }
-                    else {
-                        wrong += 1;
-                    }
+                //error check start
+                q.explain();
+                float error = Math.abs(q.getEstimatedCost() - current);
+
+                if (error < 0.1){
+                    correct += 1; }
+                else {
+                    wrong += 1;
+                    errors.add(error);
+                    times.add(q.getEstimatedCost());
+                    if (error > 100)
+                        bad += 1;
                 }
+                //error check end
+                q.setEstimatedCost(current);
+
             }
             else{
                 q.explain();
@@ -114,25 +123,33 @@ public class Generator {
             }
             current=q.getEstimatedCost();
             previous=q;
-            i++;
-            avg=avg+q.getEstimatedCost();
-            if(q.getEstimatedCost()>max) max = q.getEstimatedCost();
-            if(q.getEstimatedCost()<min) min = q.getEstimatedCost();
+
 
         }
-        System.out.println("Number of explain: "+nbExplain);
-        System.out.println("Min: "+min);
-        System.out.println("Avg: "+avg/i);
-        System.out.println("Max: "+max);
-        System.out.printf("Checking optimization : Correct %s, Wrong %s%n", correct, wrong);
+        float mean = (float) times.stream().mapToDouble(Float::doubleValue).average().orElse(-1);
+        double variance = times.stream()
+                .map(k -> k - mean)
+                .map(k -> k*k)
+                .mapToDouble(k -> k).average().getAsDouble();
+
+        System.out.printf("Global time infos, Min %s, Max %s, AVG %s, STD %s%n", times.stream().mapToDouble(Float::doubleValue).min(), times.stream().mapToDouble(Float::doubleValue).max(),mean,Math.sqrt(variance));
+        System.out.println("Number of explain executed: "+nbExplain);
+        System.out.printf("Checking optimization : Correct %s, Wrong %s, >100ms  %s%n", correct, wrong, bad);
+        float mae = (float) errors.stream().mapToDouble(Float::doubleValue).average().orElse(-1);
+        double mae_variance = errors.stream()
+                .map(k -> k - mae)
+                .map(k -> k*k)
+                .mapToDouble(k -> k).average().getAsDouble();
+        System.out.printf("MAE %s, std %s%n",mae , Math.sqrt(mae_variance));
     }
 
     static void computeInterests() throws Exception {
-        for(AbstractEDAsqlQuery q : theQ.theQueries){
-            q.computeInterest();
-            q.print();
-            //q.printResult();
-            System.out.println("interestingness: " + q.getInterest());
+        for(AbstractEDAsqlQuery q : theQ.theQueries.subList(10,20)){
+            SampleQuery qs = new SampleQuery(q, sampleTable);
+            qs.computeInterest();
+            qs.print();
+            qs.printResult();
+            System.out.println("interestingness: " + qs.getInterest());
         }
     }
 

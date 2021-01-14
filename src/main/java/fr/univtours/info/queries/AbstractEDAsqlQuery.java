@@ -2,6 +2,7 @@ package fr.univtours.info.queries;
 
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
+import lombok.Getter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
@@ -25,7 +26,9 @@ public abstract class AbstractEDAsqlQuery {
     double interest=0;
 
     Set<DatasetDimension> dimensions;
+    @Getter
     DatasetMeasure measure;
+    @Getter
     String function;
 
 
@@ -38,14 +41,6 @@ public abstract class AbstractEDAsqlQuery {
 
     public Set<DatasetDimension> getDimensions(){
         return this.dimensions;
-    };
-
-    public DatasetMeasure getMeasure(){
-        return measure;
-    }
-
-    public String getFunction(){
-        return function;
     }
 
     public float getActualCost() {
@@ -166,15 +161,17 @@ public abstract class AbstractEDAsqlQuery {
 
 
     public void printResult() throws SQLException {
-        ResultSetIterator rsit=new ResultSetIterator(resultset);
-        Object[] tab=null;
+        System.out.println("--- Result Set ---");
         resultset.beforeFirst();
-        while(rsit.hasNext()) { // move to last for getting execution time
-            tab=rsit.next();
-            for(int i=0;i<tab.length;i++){
-                System.out.print(tab[i] + " ") ;
+        ResultSetMetaData rsmd = resultset.getMetaData();
+        int columnsNumber = rsmd.getColumnCount();
+        while (resultset.next()) {
+            for (int i = 1; i <= columnsNumber; i++) {
+                if (i > 1) System.out.print(",  ");
+                String columnValue = resultset.getString(i);
+                System.out.print(columnValue + " " + rsmd.getColumnName(i));
             }
-
+            System.out.println("");
         }
 
     }
