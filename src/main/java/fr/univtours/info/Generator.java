@@ -1,16 +1,17 @@
 package fr.univtours.info;
 
+import com.alexscode.utilities.collection.Pair;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
 import fr.univtours.info.queries.*;
-import org.apache.commons.math3.util.Pair;
 
-import java.io.File;
-import java.io.FileReader;
+
+import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +26,7 @@ public class Generator {
     static List<DatasetDimension> theDimensions;
     static List<DatasetMeasure> theMeasures;
     static Connection conn;
-    static QtheSetOfGeneratedQueries theQ;
+    public static CandidateQuerySet theQ = new CandidateQuerySet();
 
     static final String[] tabAgg= {"avg", "sum", "min", "max", "stddev"};
 
@@ -37,7 +38,6 @@ public class Generator {
         conn.close();
 
         loadDataset();
-        theQ=new QtheSetOfGeneratedQueries();
 
         //compute sample
         sampleTable = ds.computeSample(0.1);
@@ -57,7 +57,7 @@ public class Generator {
         // get elapsed time, expressed in milliseconds
         long timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Generation time in milliseconds: " + timeElapsed);
-        System.out.println("Q size: " + theQ.getSize() + " queries generated");
+        System.out.println("Q size: " + theQ.size() + " queries generated");
 
 
         // interestingness computation
@@ -91,7 +91,7 @@ public class Generator {
         AbstractEDAsqlQuery previous=null;
         int correct = 0, wrong = 0, bad = 0;
         ArrayList<Float> errors = new ArrayList<>(10000);
-        ArrayList<Float> times = new ArrayList<>(theQ.getSize());
+        ArrayList<Float> times = new ArrayList<>(theQ.size());
 
         for(AbstractEDAsqlQuery q : theQ.theQueries){
             //q.explainAnalyze();
@@ -144,7 +144,7 @@ public class Generator {
         System.out.printf("MAE %s, std %s%n",mae , Math.sqrt(mae_variance));
     }
 
-    static void computeInterests() throws Exception {
+    public static void computeInterests() throws Exception {
         for(AbstractEDAsqlQuery q : theQ.theQueries.subList(10,20)){
             SampleQuery qs = new SampleQuery(q, sampleTable);
             //qs.computeInterest();
@@ -154,15 +154,18 @@ public class Generator {
         }
     }
 
-    static void loadDataset() throws Exception{
+    public static void loadDataset() throws SQLException, IOException {
         DBservices db= new DBservices();
         conn=db.connectToPostgresql();
-        readProperties();
+        Config config = Config.readProperties();
+        table = config.getTable();
+        theDimensions = config.getDimensions();
+        theMeasures = config.getMeasures();
         ds=new Dataset(conn, table, theDimensions, theMeasures);
     }
 
 
-    static void generateSiblingAssesses() throws Exception{
+    public static void generateSiblingAssesses() {
         ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(theDimensions);
         Set<Set<DatasetDimension>> combinations = Sets.combinations(set, 2);
         Map<Pair<DatasetDimension, DatasetDimension>, Boolean> isAllowed = new HashMap<>();
@@ -242,26 +245,6 @@ public class Generator {
 
         }
 
-    }
-
-    static void readProperties() throws Exception{
-        final FileReader fr = new FileReader(new File("src/main/resources/application.properties"));
-        final Properties props = new Properties();
-        props.load(fr);
-        table = props.getProperty("datasource.table");
-        String dimensions=props.getProperty("datasource.dimensions");
-        String measures=props.getProperty("datasource.measures");
-        theDimensions=new ArrayList<>();
-        theMeasures=new ArrayList<>();
-        String[] dim=dimensions.split(",");
-        for (int x=0; x<dim.length; x++) {
-            theDimensions.add(new DatasetDimension(dim[x], conn, table));
-            theDimensions.get(x).computeActiveDomain();
-        }
-        String[] meas=measures.split(",");
-        for (int x=0; x<meas.length; x++) {
-            theMeasures.add(new DatasetMeasure(meas[x], conn, table));
-        }
     }
 
 }

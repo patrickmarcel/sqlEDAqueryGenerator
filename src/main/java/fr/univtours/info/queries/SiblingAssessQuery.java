@@ -2,6 +2,7 @@ package fr.univtours.info.queries;
 
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
+import lombok.Getter;
 
 import java.sql.Connection;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     DatasetDimension assessed;
     DatasetDimension reference;
+    @Getter
     private final String val1, val2;
 
     public SiblingAssessQuery(Connection conn, String table, DatasetDimension assessed, String val1, String val2, DatasetDimension reference, DatasetMeasure m, String agg){

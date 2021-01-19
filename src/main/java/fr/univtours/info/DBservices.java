@@ -2,8 +2,10 @@ package fr.univtours.info;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
@@ -23,8 +25,8 @@ public  class DBservices {
     }
 
 
-    public Connection connectToPostgresql() throws Exception {
-        final FileReader fr = new FileReader(new File("src/main/resources/application.properties"));
+    public Connection connectToPostgresql() throws SQLException, IOException {
+        final FileReader fr = new FileReader(new File(Config.CONF_FILE_PATH));
         final Properties props = new Properties();
         props.load(fr);
         final String passwd = props.getProperty("datasource.password");

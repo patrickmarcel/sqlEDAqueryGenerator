@@ -1,0 +1,177 @@
+package fr.univtours.info.optimize.time;
+
+import com.google.common.base.Stopwatch;
+import fr.univtours.info.Config;
+import fr.univtours.info.DBservices;
+import fr.univtours.info.Generator;
+import fr.univtours.info.CandidateQuerySet;
+import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.SiblingAssessQuery;
+
+
+import java.io.*;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class TimeCallibration {
+
+
+    static final String outCSV = "./data/stats/timed_queries.csv";
+    static String table;
+    static List<DatasetDimension> theDimensions;
+    static List<DatasetMeasure> theMeasures;
+
+
+    public static void main(String[] args) throws IOException, SQLException {
+        Config config = Config.readProperties();
+        table = config.getTable();
+        theDimensions = config.getDimensions();
+        theMeasures = config.getMeasures();
+
+
+        // Pre compute stats
+        HashMap<DatasetDimension, Integer> adSize = new HashMap<>();
+        HashMap<DatasetDimension, HashMap<String, Integer>> frequency = new HashMap<>();
+        int rows;
+
+        DBservices db = new DBservices();
+        Connection conn = db.connectToPostgresql();
+
+        // Active domain size
+        for (DatasetDimension dim : theDimensions) {
+            String sql = "select count(distinct " + dim.getName() + ") from " + table + ";";
+            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            ResultSet rs = st.executeQuery(sql) ;
+            rs.next();
+            adSize.put(dim, rs.getInt(1));
+            st.close();
+        }
+        // Absolute frequency
+        for (DatasetDimension dim : theDimensions) {
+            HashMap<String, Integer> tmp = new HashMap<>();
+            String sql = "select " + dim.getName() + ", count(*) from " + table + " group by " + dim.getName() + ";";
+            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            ResultSet rs = st.executeQuery(sql) ;
+            while (rs.next()) {
+                tmp.put(rs.getString(1), rs.getInt(2));
+            }
+            st.close();
+            frequency.put(dim, tmp);
+        }
+        //Count rows
+        String sql = "select count(*) from " + table + ";";
+        Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+        ResultSet rs = st.executeQuery(sql) ;
+        rs.next();
+        rows = rs.getInt(1);
+        st.close();
+
+        conn.close();
+
+
+        //Open csv
+        PrintWriter out = new PrintWriter(new FileOutputStream(new File(outCSV)));
+        out.println("id,left_sel,right_sel,gb_size,time_ms");
+
+        Generator.loadDataset();
+        Generator.generateSiblingAssesses();
+        CandidateQuerySet theQ = Generator.theQ;
+
+        conn = db.connectToPostgresql();
+        double sample_rate = 0.005;
+        Random rd = new Random();
+        int count = 0;
+        for (AbstractEDAsqlQuery q : theQ){
+            if (rd.nextFloat() < sample_rate){
+                count +=1;
+
+                double time = timeQuery(q.getSql(), conn);
+                String id = q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((SiblingAssessQuery) q).getVal1() + ":" + ((SiblingAssessQuery) q).getVal2();
+                double left_sel = frequency.get(q.getAssessed()).get(((SiblingAssessQuery) q).getVal1()) / (double) rows;
+                double right_sel =  frequency.get(q.getAssessed()).get(((SiblingAssessQuery) q).getVal2()) / (double) rows;
+                int gb_size = adSize.get(q.getReference());
+
+                out.printf("%s,%s,%s,%s,%s%n", id, left_sel, right_sel, gb_size, time);
+                if (count%100 == 0)
+                    out.flush();
+            }
+        }
+        conn.close();
+
+        //Close file
+        out.flush();
+        out.close();
+    }
+
+    public static double timeQuery(String query, java.sql.Connection con){
+        try {
+            Statement planON = con.createStatement();
+            //planON.execute("set statistics time on;");
+
+            Stopwatch sw = Stopwatch.createStarted();
+            ResultSet rs = planON.executeQuery(query);
+
+            //Dummy loop don't need the results but go through the ResultSet to be realistic
+            int sum = 0;
+            while (rs.next()){
+                sum = sum + 1; //Should fool any optimizer
+            }
+
+            //double t = parseWarning(planON);
+            double t = sw.stop().elapsed(TimeUnit.MILLISECONDS);
+
+            planON.close();
+            return t;
+
+        } catch (SQLException e){
+            System.err.printf("Offending query : [%s]%n", query);
+            //e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public static int explainQueryRows(String query, java.sql.Connection con){
+        try {
+            Statement planON = con.createStatement();
+            ResultSet rs = planON.executeQuery("EXPLAIN " + query);
+
+            int sum = 1;
+            while (rs.next()){
+                sum += rs.getInt("rows");
+            }
+
+            planON.close();
+            return sum;
+
+        } catch (SQLException e){
+            System.err.printf("Offending query : [%s]%n", query);
+            //e.printStackTrace();
+        }
+        return -1;
+    }
+
+    static Pattern timePattern = Pattern.compile(".*elapsed time = (\\d*) ms\\.", Pattern.MULTILINE|Pattern.DOTALL);
+    public static double parseWarning(Statement st) throws SQLException {
+        List<SQLWarning> warnings = new ArrayList<>();
+        SQLWarning w = st.getWarnings();
+        warnings.add(w);
+        while ((w = w.getNextWarning()) != null){
+            warnings.add(w);
+        }
+
+        for (SQLWarning warning : warnings){
+            Matcher m = timePattern.matcher(warning.getMessage());
+            boolean status = m.matches();
+            if (m.matches()){
+                return Double.parseDouble(m.group(1))/1000;
+            }
+        }
+        return -1;
+    }
+
+}

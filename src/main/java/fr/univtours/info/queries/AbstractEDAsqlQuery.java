@@ -2,18 +2,21 @@ package fr.univtours.info.queries;
 
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.optimize.time.CostModelProvider;
+import fr.univtours.info.optimize.time.TimeableOp;
 import lombok.Getter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
 import java.util.Set;
 
-public abstract class AbstractEDAsqlQuery {
+public abstract class AbstractEDAsqlQuery implements TimeableOp {
 
     Connection conn;
     ResultSet resultset;
     ResultSet explainResultset;
     ResultSet explainAnalyzeResultset;
+
     String table;
 
     private String sql;
@@ -32,6 +35,15 @@ public abstract class AbstractEDAsqlQuery {
     @Getter
     String function;
 
+    @Override
+    public long estimatedTime() {
+        return CostModelProvider.getModelFor(this).estimateCost(this);
+    }
+
+    @Override
+    public long actualTime() {
+        return (long) actualCost;
+    }
 
     protected abstract String getSqlInt();
     public String getSql(){
