@@ -91,7 +91,7 @@ public class TimeCallibration {
                 count +=1;
 
                 double time = timeQuery(q.getSql(), conn);
-                String id = q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((SiblingAssessQuery) q).getVal1() + ":" + ((SiblingAssessQuery) q).getVal2();
+                String id = "\"" + q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((SiblingAssessQuery) q).getVal1() + ":" + ((SiblingAssessQuery) q).getVal2() + "\"";
                 double left_sel = frequency.get(q.getAssessed()).get(((SiblingAssessQuery) q).getVal1()) / (double) rows;
                 double right_sel =  frequency.get(q.getAssessed()).get(((SiblingAssessQuery) q).getVal2()) / (double) rows;
                 int gb_size = adSize.get(q.getReference());
