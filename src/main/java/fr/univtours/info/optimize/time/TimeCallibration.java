@@ -1,12 +1,10 @@
 package fr.univtours.info.optimize.time;
 
 import com.google.common.base.Stopwatch;
-import fr.univtours.info.Config;
-import fr.univtours.info.DBservices;
-import fr.univtours.info.Generator;
-import fr.univtours.info.CandidateQuerySet;
+import fr.univtours.info.*;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.metadata.DatasetStats;
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
 import fr.univtours.info.queries.SiblingAssessQuery;
 
@@ -35,43 +33,11 @@ public class TimeCallibration {
 
 
         // Pre compute stats
-        HashMap<DatasetDimension, Integer> adSize = new HashMap<>();
-        HashMap<DatasetDimension, HashMap<String, Integer>> frequency = new HashMap<>();
-        int rows;
-
         DBservices db = new DBservices();
-        Connection conn = db.connectToPostgresql();
-
-        // Active domain size
-        for (DatasetDimension dim : theDimensions) {
-            String sql = "select count(distinct " + dim.getName() + ") from " + table + ";";
-            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            ResultSet rs = st.executeQuery(sql) ;
-            rs.next();
-            adSize.put(dim, rs.getInt(1));
-            st.close();
-        }
-        // Absolute frequency
-        for (DatasetDimension dim : theDimensions) {
-            HashMap<String, Integer> tmp = new HashMap<>();
-            String sql = "select " + dim.getName() + ", count(*) from " + table + " group by " + dim.getName() + ";";
-            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            ResultSet rs = st.executeQuery(sql) ;
-            while (rs.next()) {
-                tmp.put(rs.getString(1), rs.getInt(2));
-            }
-            st.close();
-            frequency.put(dim, tmp);
-        }
-        //Count rows
-        String sql = "select count(*) from " + table + ";";
-        Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = st.executeQuery(sql) ;
-        rs.next();
-        rows = rs.getInt(1);
-        st.close();
-
-        conn.close();
+        DatasetStats stats = new DatasetStats();
+        HashMap<DatasetDimension, Integer> adSize = stats.getAdSize();
+        HashMap<DatasetDimension, HashMap<String, Integer>> frequency = stats.getFrequency();
+        int rows = stats.getRows();
 
 
         //Open csv
@@ -82,7 +48,7 @@ public class TimeCallibration {
         Generator.generateSiblingAssesses();
         CandidateQuerySet theQ = Generator.theQ;
 
-        conn = db.connectToPostgresql();
+        Connection conn = db.connectToPostgresql();
         double sample_rate = 0.005;
         Random rd = new Random();
         int count = 0;
