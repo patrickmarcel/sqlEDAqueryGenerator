@@ -53,7 +53,7 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
         return sql;
     }
 
-    public void interestWithZscore() throws Exception {
+    public void interestFromResult() throws Exception {
 
         this.execute();
 

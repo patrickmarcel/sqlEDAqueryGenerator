@@ -29,7 +29,7 @@ public class Tests {
             Statement stmt = con.createStatement();
             //stmt.executeUpdate( "DROP TABLE table1" );
             stmt.executeUpdate( "CREATE TABLE table1 ( user varchar(50) )" );
-            stmt.executeUpdate( "INSERT INTO table1 ( user ) VALUES ( 'Claudio' )" );
+            stmt.executeUpdate( "INSERT INTO table1 ( user ) VALUES ( 'toto' )" );
             stmt.executeUpdate( "INSERT INTO table1 ( user ) VALUES ( 'Bernasconi' )" );
             ResultSet rs = stmt.executeQuery("SELECT * FROM table1");
             while( rs.next() )

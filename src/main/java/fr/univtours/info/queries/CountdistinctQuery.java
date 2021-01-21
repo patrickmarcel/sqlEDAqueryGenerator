@@ -46,7 +46,7 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
     }
 
     @Override
-    public void interestWithZscore() throws Exception {
+    public void interestFromResult() throws Exception {
 
     }
 

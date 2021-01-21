@@ -44,7 +44,7 @@ public class TimeCallibration {
         PrintWriter out = new PrintWriter(new FileOutputStream(new File(outCSV)));
         out.println("id,left_sel,right_sel,gb_size,time_ms");
 
-        Generator.loadDataset();
+        Generator.init();
         Generator.generateSiblingAssesses();
         CandidateQuerySet theQ = Generator.theQ;
 

@@ -151,7 +151,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp {
 
     public void computeInterest() throws Exception {
        // this.interestWithPlan();
-        this.interestWithZscore();
+        this.interestFromResult();
     }
 
     /**
@@ -167,7 +167,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp {
 
     }
 
-    public abstract void interestWithZscore() throws Exception;
+    public abstract void interestFromResult() throws Exception;
 
     public void print(){
         System.out.println(this.getSql());

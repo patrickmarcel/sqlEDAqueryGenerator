@@ -1,8 +1,10 @@
 package fr.univtours.info.queries;
 
+import fr.univtours.info.Dataset;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Set;
 
@@ -11,19 +13,19 @@ import java.util.Set;
  */
 public class SampleQuery extends AbstractEDAsqlQuery{
     private final AbstractEDAsqlQuery original;
-    private final String sampleTable;
+    private final Dataset sampleTable;
 
 
-    public SampleQuery(AbstractEDAsqlQuery original, String sampleTable){
+    public SampleQuery(AbstractEDAsqlQuery original, Dataset sampleTable){
         this.original = original;
         this.sampleTable = sampleTable;
-        this.conn = original.conn;
+        this.conn = sampleTable.getConn();
     }
 
     @Override
     protected String getSqlInt() {
         String originalTable = original.table;
-        original.table = sampleTable;
+        original.table = sampleTable.getTable();
         String sql = original.getSqlInt();
         original.table = originalTable;
         return sql;
@@ -61,9 +63,13 @@ public class SampleQuery extends AbstractEDAsqlQuery{
     }
 
     @Override
-    public void interestWithZscore() throws Exception {
+    public void interestFromResult() throws Exception {
         execute();
-
+        ResultSet orRs = original.resultset;
+        original.resultset = this.resultset;
+        original.interestFromResult();
+        this.interest = original.interest;
+        original.resultset = orRs;
     }
 
 

@@ -22,6 +22,7 @@ public class Config {
     List<DatasetDimension> dimensions;
     List<DatasetMeasure> measures;
     String table;
+    String sampleURL, samplePassword, sampleUser, sampleDriver;
 
     public static Config readProperties() throws IOException, SQLException {
         final FileReader fr = new FileReader(new File(CONF_FILE_PATH));
@@ -45,6 +46,6 @@ public class Config {
         }
         conn.close();
 
-        return new Config(theDimensions, theMeasures, table);
+        return new Config(theDimensions, theMeasures, table, props.getProperty("sample.url"), props.getProperty("sample.password"), props.getProperty("sample.user"), props.getProperty("sample.driver"));
     }
 }

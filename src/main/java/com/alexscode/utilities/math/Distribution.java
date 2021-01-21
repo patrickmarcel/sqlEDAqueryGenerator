@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Discrete probability distribution over a Set X
@@ -54,6 +55,22 @@ public class Distribution<T> {
         return map.keySet();
     }
 
+    public Set<Double> getValues(){
+        return new HashSet<>(map.values());
+    }
+
+    public void normalize(){
+        double sum = 0;
+        for (Map.Entry<T, Double> entry : map.entrySet()){
+            sum += entry.getValue();
+        }
+        HashMap<T, Double> clean = new HashMap<>();
+        for (Map.Entry<T, Double> entry : map.entrySet()){
+            clean.put(entry.getKey(), entry.getValue()/sum);
+        }
+        map = clean;
+    }
+
     public static <E> double hellinger(Distribution<E> p, Distribution <E> q){
         Set<E> universe = new HashSet<>(p.map.keySet());
         universe.addAll(q.map.keySet());
@@ -75,9 +92,20 @@ public class Distribution<T> {
         double sum = 0;
         for (E e : universe){
             if (q.getProba(e) == 0 && p.getProba(e) != 0) {
-                //System.out.println(e);
+                throw new IllegalArgumentException("Absolute continuity is required ! If q(i) = 0 then p(i) must be 0.");
+            }
+            sum += p.getProba(e)*log2(p.getProba(e)/q.getProba(e));
+        }
+        return sum;
+    }
+
+    public static <E> double kullbackLeiblerDirty(Distribution<E> p, Distribution<E> q){
+        Set<E> universe = new HashSet<>(p.map.keySet());
+        universe.addAll(q.map.keySet());
+        double sum = 0;
+        for (E e : universe){
+            if (Math.abs(q.getProba(e)) < 10e-8 || Math.abs(p.getProba(e)) < 10e-8) {
                 continue;
-                //throw new IllegalArgumentException("Absolute continuity is required ! If q(i) = 0 then p(i) must be 0.");
             }
             sum += p.getProba(e)*log2(p.getProba(e)/q.getProba(e));
         }

@@ -10,8 +10,7 @@ import fr.univtours.info.queries.*;
 
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -26,21 +25,23 @@ public class Generator {
     static List<DatasetDimension> theDimensions;
     static List<DatasetMeasure> theMeasures;
     static Connection conn;
+    static Connection sample_db;
+    static Config config;
     public static CandidateQuerySet theQ = new CandidateQuerySet();
 
     static final String[] tabAgg= {"avg", "sum", "min", "max", "stddev"};
 
     public static void main( String[] args ) throws Exception{
-        //Cleanup previous execution
-        DBservices db= new DBservices();
-        conn=db.connectToPostgresql();
-        conn.prepareStatement("Drop table if exists sample_1").execute();
-        conn.close();
-
-        loadDataset();
+        //Load config and base dataset
+        init();
 
         //compute sample
-        sampleTable = ds.computeSample(0.1);
+        //PreparedStatement cleanup = conn.prepareStatement("Drop table if exists sample_covid");
+        //cleanup.execute();
+        //cleanup.close();
+        Class.forName(config.getSampleDriver());
+        sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
+        Dataset sample = ds.computeSample(0.25, sample_db);
 
 
         //generation
@@ -64,7 +65,7 @@ public class Generator {
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
 
-        computeInterests();
+        computeInterests(sample);
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -81,7 +82,18 @@ public class Generator {
         System.out.println("Cost computation time in milliseconds: " + timeElapsed);
 
 
+        conn.close();
+        sample_db.close();
+    }
 
+    public static void init() throws IOException, SQLException{
+        DBservices db= new DBservices();
+        conn=db.connectToPostgresql();
+        config = Config.readProperties();
+        table = config.getTable();
+        theDimensions = config.getDimensions();
+        theMeasures = config.getMeasures();
+        ds=new Dataset(conn, table, theDimensions, theMeasures);
     }
 
     // todo: check if optimization is reasonable in practice...
@@ -144,25 +156,15 @@ public class Generator {
         System.out.printf("MAE %s, std %s%n",mae , Math.sqrt(mae_variance));
     }
 
-    public static void computeInterests() throws Exception {
-        for(AbstractEDAsqlQuery q : theQ.theQueries.subList(10,20)){
-            SampleQuery qs = new SampleQuery(q, sampleTable);
-            //qs.computeInterest();
-            q.print();
-            q.printResult();
-            System.out.println("interestingness: " + q.getInterest());
+    public static void computeInterests(Dataset sample) throws Exception {
+        for(AbstractEDAsqlQuery q : theQ.theQueries.subList(42310,42320)){
+            SampleQuery qs = new SampleQuery(q, sample);
+            qs.printResult();
+            qs.computeInterest();
+            //System.out.println("interestingness: " + q.getInterest());
         }
     }
 
-    public static void loadDataset() throws SQLException, IOException {
-        DBservices db= new DBservices();
-        conn=db.connectToPostgresql();
-        Config config = Config.readProperties();
-        table = config.getTable();
-        theDimensions = config.getDimensions();
-        theMeasures = config.getMeasures();
-        ds=new Dataset(conn, table, theDimensions, theMeasures);
-    }
 
 
     public static void generateSiblingAssesses() {
