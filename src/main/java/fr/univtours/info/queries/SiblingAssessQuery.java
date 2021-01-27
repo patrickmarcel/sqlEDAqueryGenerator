@@ -67,24 +67,24 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     public float getDistance(SiblingAssessQuery other){
         float result=0;
         if(this.function.compareTo(other.getFunction())!=0)  result ++;
-        if(this.measure!=other.measure) result++;
+        if(this.measure!=other.measure) result+=2;
         if(this.assessed!=other.getAssessed()) {
             if(DBUtils.checkAimpliesB(this.assessed, other.getAssessed() , conn, table)
                     || DBUtils.checkAimpliesB(other.getAssessed(), this.assessed , conn, table)){
-                result++;
+                result+=3;
             }
             else {
-                result+=2;
+                result+=4;
             }
             if(this.reference==other.getReference()) {
                 if(this.val1.compareTo(other.val1)!=0){
-                    result++;
+                    result+=5;
                 }
                 if(this.val2.compareTo(other.val2)!=0){
-                    result++;
+                    result+=6;
                 }
             }
-            if(this.reference!=other.getReference()) result+=6;
+            if(this.reference!=other.getReference()) result+=7;
         }
         return result;
     }
