@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
         {
             "cell_type": "markdown",
             "source": [
-                "# Demo Genration"
+                "# TAP Notebook Demo"
             ]
         },
         {
@@ -42,26 +42,9 @@ import java.util.stream.Collectors;
 
 public class Notebook {
     List<AbstractEDAsqlQuery> queries;
-    JsonObj root;
-    ArrayList<JsonObj> cells;
 
     public Notebook(){
         queries = new ArrayList<>();
-        cells = new ArrayList<>();
-        root = new JsonObj();
-
-        JsonObj language_info = new JsonObj();
-        language_info.addNode("name", "sql");
-        language_info.addNode("version", "");
-        JsonObj kernelspec = new JsonObj();
-        kernelspec.addNode("name", "SQL");
-        kernelspec.addNode("display_name", "sql");
-        JsonObj metadata = new JsonObj();
-        metadata.addNode("kernelspec", kernelspec);
-        metadata.addNode("language_info", language_info);
-        root.addNode("metadata", metadata);
-        root.addNode("nbformat_minor", 2);
-        root.addNode("nbformat", 4);
     }
 
     public boolean addQuery(AbstractEDAsqlQuery q){
@@ -70,15 +53,64 @@ public class Notebook {
 
 
     public String toJson(){
-        for (AbstractEDAsqlQuery q : queries){
-            JsonObj  cell = new JsonObj();
-            cell.addNode("cell_type", "code");
-            List<String> source =  q.getSql().lines().collect(Collectors.toList());
-            cell.addNode("source", source);
-            cells.add(cell);
+        StringBuilder sb = new StringBuilder("{\n" +
+                "    \"metadata\": {\n" +
+                "        \"kernelspec\": {\n" +
+                "            \"name\": \"SQL\",\n" +
+                "            \"display_name\": \"SQL\",\n" +
+                "            \"language\": \"sql\"\n" +
+                "        },\n" +
+                "        \"language_info\": {\n" +
+                "            \"name\": \"sql\",\n" +
+                "            \"version\": \"\"\n" +
+                "        }\n" +
+                "    },\n" +
+                "    \"nbformat_minor\": 2,\n" +
+                "    \"nbformat\": 4,\n" +
+                "    \"cells\": [");
+
+        sb.append("        {\n" +
+                "            \"cell_type\": \"markdown\",\n" +
+                "            \"source\": [\n" +
+                "                \"# TAP Notebook Demonstration\\n\",\n" +
+                "                \"\\n\",\n" +
+                "                \"Patrick Marcel, Alexandre Chanson, Nicolas Labroche, Vincent T'Kindt\"\n" +
+                "            ]\n" +
+                "        },\n");
+
+        // for each query
+        for (int i = 0; i < queries.size(); i++) {
+            sb.append("        {\n" +
+                    "            \"cell_type\": \"markdown\",\n" +
+                    "            \"source\": [\n" +
+                    "                \"### Q"+i+"\\n\",\n" +
+                    "                \"\\n\",\n" +
+                    "                \"I="+queries.get(i).getInterest()+"\"\n" +
+                    "            ]\n" +
+                    "        },\n");
+
+
+            sb.append("{\n" +
+                    "            \"cell_type\": \"code\",\n" +
+                    "            \"source\": [");
+            String[] qlines = queries.get(i).getSql().split("\\r?\\n");
+            for (int j = 0; j < qlines.length; j++) {
+                sb.append(JsonObj.getLineRepr(qlines[j]));
+                if (j != qlines.length - 1)
+                    sb.append(",\n");
+            }
+            sb.append("]\n" +
+                    "        }");
+            if (i != queries.size() - 1)
+                sb.append(",\n");
         }
-        root.addNode("cells", cells);
-        return root.toString();
+
+
+        sb.append("    ]\n" +
+                "}");
+
+
+        return sb.toString();
     }
 
 }

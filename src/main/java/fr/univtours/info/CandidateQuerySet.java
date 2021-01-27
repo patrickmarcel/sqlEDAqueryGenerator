@@ -3,14 +3,11 @@ package fr.univtours.info;
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
 import fr.univtours.info.queries.EDAsqlQuery;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 
 public class CandidateQuerySet implements Collection<AbstractEDAsqlQuery> {
 
-    ArrayList<AbstractEDAsqlQuery> theQueries;
+    List<AbstractEDAsqlQuery> theQueries;
 
     public CandidateQuerySet(){
         theQueries=new ArrayList<AbstractEDAsqlQuery>();
@@ -84,5 +81,11 @@ public class CandidateQuerySet implements Collection<AbstractEDAsqlQuery> {
     @Override
     public void clear() {
 
+    }
+
+    //debug use only
+    @Deprecated
+    public void shrink(){
+        theQueries = theQueries.subList(0,999);
     }
 }

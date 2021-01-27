@@ -55,19 +55,18 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Override
     protected String getSqlInt() {
-        return "select t1."+assessed.getName()+", t1." + reference.getName() + ", " +
-                "       t1.measure1, t2.measure2 " +
-                "from " +
-                "  (select "+assessed.getName()+", "+reference.getName()+", " + this.function + "(" + this.measure.getName() + ") as measure1 " +
-                "   from "+ table +"     " +
-                "   where  "+assessed.getName()+" = '"+val1+"'" +
-                "   group by "+assessed.getName()+", "+reference.getName()+") t1," +
-
-                "  (select "+assessed.getName()+", "+reference.getName() + "," + this.function + "(" + this.measure.getName() +") as measure2 " +
-                "   from "+ table +" " +
-                "   where "+assessed.getName()+" = '"+val2+"'" +
-                "   group by "+assessed.getName()+", "+reference.getName() + ") t2 " +
-                "where t1."+reference.getName()+" = t2."+reference.getName()+"; ";
+        return "select t1."+assessed.getName()+", t1." + reference.getName() + ",\n" +
+                "       t1.measure1, t2.measure2\n" +
+                "from\n" +
+                "  (select "+assessed.getName()+", "+reference.getName()+", " + this.function + "(" + this.measure.getName() + ") as measure1\n" +
+                "   from "+ table +"\n" +
+                "   where  "+assessed.getName()+" = '"+val1+"'\n" +
+                "   group by "+assessed.getName()+", "+reference.getName()+") t1,\n" +
+                "  (select "+assessed.getName()+", "+reference.getName() + "," + this.function + "(" + this.measure.getName() +") as measure2\n" +
+                "   from "+ table +"\n" +
+                "   where "+assessed.getName()+" = '"+val2+"'\n" +
+                "   group by "+assessed.getName()+", "+reference.getName() + ") t2\n" +
+                "where t1."+reference.getName()+" = t2."+reference.getName()+";";
     }
 
     @Override
@@ -84,16 +83,21 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     public void interestFromResult() throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();
-        Distribution<Integer> p = new Distribution<>();
-        Distribution<Integer> q = new Distribution<>();
+        //Distribution<Integer> p = new Distribution<>();
+        //Distribution<Integer> q = new Distribution<>();
         resultset.beforeFirst();
         int row = 0;
+        int bothZeros = 0;
         while (resultset.next()) {
-            p.setProba(row, (double) resultset.getFloat("measure1"));
-            left.add((double) resultset.getFloat("measure1"));
-            q.setProba(row, (double) resultset.getFloat("measure2"));
-            right.add((double) resultset.getFloat("measure2"));
+            //p.setProba(row, resultset.getFloat("measure1"));
+            double m1 = resultset.getDouble("measure1");
+            left.add(m1);
+            //q.setProba(row, resultset.getFloat("measure2"));
+            double m2 = resultset.getDouble("measure2");
+            right.add(m2);
             row++;
+            if (m2 == 0d && m1 == 0d)
+                bothZeros++;
         }
         double correlation;
         try {
@@ -102,12 +106,15 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         } catch (MathIllegalArgumentException e){
             correlation = Double.NaN;
         }
-        EuclideanDistance d = new EuclideanDistance();
-        double euc = d.compute(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
-        p.normalize();
-        q.normalize();
+        //EuclideanDistance d = new EuclideanDistance();
+        //double euc = d.compute(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
+        //p.normalize();
+        //q.normalize();
         //Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
-        interest = euc;//Distribution.kullbackLeiblerDirty(p, q);
+
+        if (Double.isNaN(correlation)) correlation = 0d;
+        correlation = correlation * (1 - (bothZeros/(double) row));
+        interest = Math.abs(correlation);
         resultset.close();
     }
 

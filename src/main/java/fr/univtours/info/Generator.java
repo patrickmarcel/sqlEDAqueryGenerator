@@ -80,7 +80,7 @@ public class Generator {
         // interestingness computation
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
-
+        //theQ.shrink();
         computeInterests(sample);
 
         stopwatch.stop();
@@ -101,7 +101,7 @@ public class Generator {
         // Do the TAP dance
         List<AbstractEDAsqlQuery> toRun = new ArrayList<>(theQ);
         toRun.sort(Comparator.comparingDouble(AbstractEDAsqlQuery::getInterest).reversed());
-        toRun = toRun.subList(0, 19);
+        toRun = toRun.subList(0, 20);
 
         toRun = TSP.orderByTSP(toRun);
         Notebook out = new Notebook();
