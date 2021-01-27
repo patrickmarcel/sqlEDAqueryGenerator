@@ -56,7 +56,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     @Override
     protected String getSqlInt() {
         return "select t1."+assessed.getName()+", t1." + reference.getName() + ", " +
-                "       t1.measure1, t2.measure2 as benchmark " +
+                "       t1.measure1, t2.measure2 " +
                 "from " +
                 "  (select "+assessed.getName()+", "+reference.getName()+", " + this.function + "(" + this.measure.getName() + ") as measure1 " +
                 "   from "+ table +"     " +
@@ -106,8 +106,9 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         double euc = d.compute(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
         p.normalize();
         q.normalize();
-        Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
-        interest = Distribution.kullbackLeiblerDirty(p, q);
+        //Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
+        interest = euc;//Distribution.kullbackLeiblerDirty(p, q);
+        resultset.close();
     }
 
 

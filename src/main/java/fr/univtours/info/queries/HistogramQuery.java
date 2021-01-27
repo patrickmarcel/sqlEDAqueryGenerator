@@ -29,6 +29,11 @@ public class HistogramQuery extends AbstractEDAsqlQuery {
     }
 
     @Override
+    public float getDistance(AbstractEDAsqlQuery other) {
+        return 0;
+    }
+
+    @Override
     public void interestFromResult() throws Exception {
 
     }

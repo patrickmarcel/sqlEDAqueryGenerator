@@ -64,12 +64,16 @@ public class SampleQuery extends AbstractEDAsqlQuery{
 
     @Override
     public void interestFromResult() throws Exception {
+        long startTime = System.nanoTime();
         execute();
         ResultSet orRs = original.resultset;
         original.resultset = this.resultset;
         original.interestFromResult();
         this.interest = original.interest;
         original.resultset = orRs;
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
+        System.out.println(duration/1000000);
     }
 
 

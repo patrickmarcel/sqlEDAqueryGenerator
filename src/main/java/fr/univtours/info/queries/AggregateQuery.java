@@ -53,6 +53,11 @@ public class AggregateQuery extends AbstractEDAsqlQuery{
         return sql;
     }
 
+    @Override
+    public float getDistance(AbstractEDAsqlQuery other) {
+        return 0;
+    }
+
     public void interestFromResult() throws Exception {
 
         this.execute();

@@ -6,15 +6,25 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.optimize.AprioriMetric;
+import fr.univtours.info.optimize.BudgetManager;
+import fr.univtours.info.optimize.KnapsackManager;
+import fr.univtours.info.optimize.tsp.LinKernighan;
+import fr.univtours.info.optimize.tsp.TSP;
 import fr.univtours.info.queries.*;
 
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  *
@@ -47,7 +57,7 @@ public class Generator {
         //cleanup.close();
         Class.forName(config.getSampleDriver());
         sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
-        Dataset sample = ds.computeSample(1, sample_db);
+        Dataset sample = ds.computeSample(10, sample_db);
 
 
         //generation
@@ -82,10 +92,22 @@ public class Generator {
         stopwatch = Stopwatch.createStarted();
 
         //computeCosts();
+        theQ.theQueries.forEach(q -> q.setEstimatedCost(5));//TODO useless for now as everything takes about 5ms
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Cost computation time in milliseconds: " + timeElapsed);
+
+        // Do the TAP dance
+        List<AbstractEDAsqlQuery> toRun = new ArrayList<>(theQ);
+        toRun.sort(Comparator.comparingDouble(AbstractEDAsqlQuery::getInterest).reversed());
+        toRun = toRun.subList(0, 19);
+
+        toRun = TSP.orderByTSP(toRun);
+        Notebook out = new Notebook();
+        toRun.forEach(out::addQuery);
+        System.out.println(out.toJson());
+        Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
 
         conn.close();
@@ -163,12 +185,16 @@ public class Generator {
     }
 
     public static void computeInterests(Dataset sample) throws Exception {
+        int i = 0;
         for(AbstractEDAsqlQuery q : theQ.theQueries){
-            SampleQuery qs = new SampleQuery(q, sample);
-            //qs.printResult();
-            devOut.print(getId((SiblingAssessQuery) q) + ",");
-            qs.computeInterest();
+            //SampleQuery qs = new SampleQuery(q, sample);
+            //q.printResult();
+            //devOut.print(getId((SiblingAssessQuery) q) + ",");
+            q.execute();
+            q.computeInterest();
             //System.out.println("interestingness: " + q.getInterest());
+            if (i++ % 10000 == 0)
+                System.out.println("Q"+i);
         }
     }
 

@@ -22,6 +22,9 @@ public class KnapsackManager implements BudgetManager {
     public KnapsackManager(AprioriMetric value, double epsilon) {
         metric = value;
         this.epsilon = epsilon;
+
+    }public KnapsackManager(AprioriMetric value) {
+        metric = value;
     }
 
     @Override

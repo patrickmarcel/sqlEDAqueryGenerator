@@ -33,6 +33,11 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
     }
 
     @Override
+    public float getDistance(AbstractEDAsqlQuery other) {
+        return 0;
+    }
+
+    @Override
     public void execute() {
         super.execute();
         try {

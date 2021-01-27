@@ -4,13 +4,14 @@ import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
 import fr.univtours.info.optimize.time.CostModelProvider;
 import fr.univtours.info.optimize.time.TimeableOp;
+import fr.univtours.info.optimize.tsp.Measurable;
 import lombok.Getter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
 import java.util.Set;
 
-public abstract class AbstractEDAsqlQuery implements TimeableOp {
+public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
 
     Connection conn;
     ResultSet resultset;
@@ -78,9 +79,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp {
     }
 
 
-    public float getDistance(AbstractEDAsqlQuery other) {
-        return 0;
-    }
+    public abstract float getDistance(AbstractEDAsqlQuery other);
 
     public int getCount(){
         return count;
@@ -204,4 +203,8 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp {
 
     }
 
+    @Override
+    public double dist(Object other) {
+        return getDistance((AbstractEDAsqlQuery) other);
+    }
 }
