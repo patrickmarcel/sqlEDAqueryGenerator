@@ -2,9 +2,12 @@ package fr.univtours.info.queries;
 
 import com.alexscode.utilities.math.Distribution;
 import com.google.common.collect.Streams;
+import fr.univtours.info.Generator;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
 import lombok.Getter;
+import org.apache.commons.math3.exception.MathIllegalArgumentException;
+import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
 import java.sql.Connection;
@@ -92,13 +95,18 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             right.add((double) resultset.getFloat("measure2"));
             row++;
         }
-
-        PearsonsCorrelation corr = new PearsonsCorrelation();
-        double correlation = corr.correlation(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
-
+        double correlation;
+        try {
+            PearsonsCorrelation corr = new PearsonsCorrelation();
+            correlation = corr.correlation(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
+        } catch (MathIllegalArgumentException e){
+            correlation = Double.NaN;
+        }
+        EuclideanDistance d = new EuclideanDistance();
+        double euc = d.compute(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
         p.normalize();
         q.normalize();
-        System.out.println("Kullback " + Distribution.kullbackLeiblerDirty(p, q) + " | Correlation " + correlation );
+        Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
         interest = Distribution.kullbackLeiblerDirty(p, q);
     }
 

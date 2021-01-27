@@ -9,7 +9,9 @@ import fr.univtours.info.metadata.DatasetMeasure;
 import fr.univtours.info.queries.*;
 
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -29,9 +31,13 @@ public class Generator {
     static Config config;
     public static CandidateQuerySet theQ = new CandidateQuerySet();
 
+    public static PrintStream devOut;
+
     static final String[] tabAgg= {"avg", "sum", "min", "max", "stddev"};
 
     public static void main( String[] args ) throws Exception{
+        //DEBUG
+        devOut = new PrintStream(new FileOutputStream("data/logs/log_100.txt"));
         //Load config and base dataset
         init();
 
@@ -41,7 +47,7 @@ public class Generator {
         //cleanup.close();
         Class.forName(config.getSampleDriver());
         sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
-        Dataset sample = ds.computeSample(0.25, sample_db);
+        Dataset sample = ds.computeSample(1, sample_db);
 
 
         //generation
@@ -157,9 +163,10 @@ public class Generator {
     }
 
     public static void computeInterests(Dataset sample) throws Exception {
-        for(AbstractEDAsqlQuery q : theQ.theQueries.subList(42310,42320)){
+        for(AbstractEDAsqlQuery q : theQ.theQueries){
             SampleQuery qs = new SampleQuery(q, sample);
-            qs.printResult();
+            //qs.printResult();
+            devOut.print(getId((SiblingAssessQuery) q) + ",");
             qs.computeInterest();
             //System.out.println("interestingness: " + q.getInterest());
         }
@@ -247,6 +254,11 @@ public class Generator {
 
         }
 
+    }
+
+    static String getId(SiblingAssessQuery q){
+        String id = "\"" + q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((SiblingAssessQuery) q).getVal1() + ":" + ((SiblingAssessQuery) q).getVal2() + "\"";
+        return id;
     }
 
 }
