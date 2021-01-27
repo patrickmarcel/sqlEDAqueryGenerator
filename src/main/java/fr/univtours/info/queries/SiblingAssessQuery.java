@@ -2,6 +2,7 @@ package fr.univtours.info.queries;
 
 import com.alexscode.utilities.math.Distribution;
 import com.google.common.collect.Streams;
+import fr.univtours.info.DBUtils;
 import fr.univtours.info.Generator;
 import fr.univtours.info.metadata.DatasetDimension;
 import fr.univtours.info.metadata.DatasetMeasure;
@@ -21,8 +22,17 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     DatasetDimension assessed;
     DatasetDimension reference;
+
+    public String getVal1() {
+        return val1;
+    }
+
+    public String getVal2() {
+        return val2;
+    }
+
     @Getter
-    private final String val1, val2;
+    final String val1, val2;
 
     public SiblingAssessQuery(Connection conn, String table, DatasetDimension assessed, String val1, String val2, DatasetDimension reference, DatasetMeasure m, String agg){
         this.conn=conn;
@@ -42,6 +52,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         this.val2 = val2;
     }
 
+    /*
     public float getDistance(AbstractEDAsqlQuery other){
         int result=0;
         //System.out.println(this.sql + "  other: " + other.sql);
@@ -52,6 +63,33 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         if(this.function.compareTo(other.getFunction())!=0) result=result+1;
         return result;
     }
+*/
+    public float getDistance(SiblingAssessQuery other){
+        float result=0;
+        if(this.function.compareTo(other.getFunction())!=0)  result ++;
+        if(this.measure!=other.measure) result++;
+        if(this.assessed!=other.getAssessed()) {
+            if(DBUtils.checkAimpliesB(this.assessed, other.getAssessed() , conn, table)
+                    || DBUtils.checkAimpliesB(other.getAssessed(), this.assessed , conn, table)){
+                result++;
+            }
+            else {
+                result+=2;
+            }
+            if(this.reference==other.getReference()) {
+                if(this.val1.compareTo(other.val1)!=0){
+                    result++;
+                }
+                if(this.val2.compareTo(other.val2)!=0){
+                    result++;
+                }
+            }
+            if(this.reference!=other.getReference()) result+=6;
+        }
+        return result;
+    }
+
+
 
     @Override
     protected String getSqlInt() {
@@ -77,6 +115,11 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     @Override
     public DatasetDimension getReference() {
         return reference;
+    }
+
+    @Override
+    public float getDistance(AbstractEDAsqlQuery other) {
+        return getDistance(other);
     }
 
     @Override
