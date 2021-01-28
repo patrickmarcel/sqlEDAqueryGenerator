@@ -168,6 +168,10 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
 
     public abstract void interestFromResult() throws Exception;
 
+    public String getDescription(){
+        return "Default query descriptor";
+    }
+
     public void print(){
         System.out.println(this.getSql());
     }

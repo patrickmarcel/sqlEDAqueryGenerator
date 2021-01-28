@@ -211,10 +211,10 @@ public class Generator {
             Pair<DatasetDimension, DatasetDimension> dims = new Pair<>(it.next(), it.next());
             Pair<DatasetDimension, DatasetDimension> dims_r = new Pair<>(dims.getSecond(), dims.getFirst());
 
-            //TODO compute if absent in hashmap
             List<Pair<DatasetDimension, DatasetDimension>> toGenerate = new ArrayList<>(2);
             if (isAllowed.computeIfAbsent(dims, pair -> !DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table)) &&
                     isAllowed.computeIfAbsent(dims_r, pair -> !DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table))) {
+                // generate comparisons 'both ways'
                 toGenerate.add(dims);
                 toGenerate.add(dims_r);
             }

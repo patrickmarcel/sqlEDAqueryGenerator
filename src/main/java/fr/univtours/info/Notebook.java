@@ -85,7 +85,7 @@ public class Notebook {
                     "            \"source\": [\n" +
                     "                \"### Q"+i+"\\n\",\n" +
                     "                \"\\n\",\n" +
-                    "                \"I="+queries.get(i).getInterest()+"\"\n" +
+                    "                \"I="+queries.get(i).getInterest()+" | \",\n" + JsonObj.getLineRepr(queries.get(i).getDescription()) +
                     "            ]\n" +
                     "        },\n");
 

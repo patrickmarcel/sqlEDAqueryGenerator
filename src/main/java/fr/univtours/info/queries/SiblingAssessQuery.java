@@ -15,10 +15,21 @@ import java.sql.Connection;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
 public class SiblingAssessQuery extends AbstractEDAsqlQuery{
+
+    static HashMap<String, String> convivialNames;
+    static {
+        convivialNames = new HashMap<>();
+        convivialNames.put("avg", "Average");
+        convivialNames.put("sum", "Sum");
+        convivialNames.put("min", "Minima");
+        convivialNames.put("max", "Maxima");
+        convivialNames.put("stddev", "Standard Deviation");
+    }
 
     DatasetDimension assessed;
     DatasetDimension reference;
@@ -81,6 +92,12 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
                 "   where "+assessed.getName()+" = '"+val2+"'\n" +
                 "   group by "+assessed.getName()+", "+reference.getName() + ") t2\n" +
                 "where t1."+reference.getName()+" = t2."+reference.getName()+";";
+    }
+
+    @Override
+    public String getDescription(){
+        return "measure1 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val1
+                + " \\n" + "measure2 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val2;
     }
 
     @Override
