@@ -64,30 +64,6 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         return result;
     }
 */
-    public float getDistance(SiblingAssessQuery other){
-        float result=0;
-        if(this.function.compareTo(other.getFunction())!=0)  result ++;
-        if(this.measure!=other.measure) result+=2;
-        if(this.assessed!=other.getAssessed()) {
-            if(DBUtils.checkAimpliesB(this.assessed, other.getAssessed() , conn, table)
-                    || DBUtils.checkAimpliesB(other.getAssessed(), this.assessed , conn, table)){
-                result+=3;
-            }
-            else {
-                result+=4;
-            }
-            if(this.reference==other.getReference()) {
-                if(this.val1.compareTo(other.val1)!=0){
-                    result+=5;
-                }
-                if(this.val2.compareTo(other.val2)!=0){
-                    result+=6;
-                }
-            }
-            if(this.reference!=other.getReference()) result+=7;
-        }
-        return result;
-    }
 
 
 
@@ -119,7 +95,29 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Override
     public float getDistance(AbstractEDAsqlQuery other) {
-        return getDistance(other);
+
+        float result=0;
+        if(this.function.compareTo(other.getFunction())!=0)  result ++;
+        if(this.measure!=other.measure) result+=2;
+        if(this.assessed!=other.getAssessed()) {
+            if(DBUtils.checkAimpliesB(this.assessed, other.getAssessed() , conn, table)
+                    || DBUtils.checkAimpliesB(other.getAssessed(), this.assessed , conn, table)){
+                result+=3;
+            }
+            else {
+                result+=4;
+            }
+            if(this.reference==other.getReference()) {
+                if(this.val1.compareTo(((SiblingAssessQuery)other).val1)!=0){
+                    result+=5;
+                }
+                if(this.val2.compareTo(((SiblingAssessQuery)other).val2)!=0){
+                    result+=6;
+                }
+            }
+            if(this.reference!=other.getReference()) result+=7;
+        }
+        return result;
     }
 
     @Override
@@ -147,6 +145,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             PearsonsCorrelation corr = new PearsonsCorrelation();
             correlation = corr.correlation(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
         } catch (MathIllegalArgumentException e){
+            System.out.println("--- Offending query ---" + getSql());
             correlation = Double.NaN;
         }
         //EuclideanDistance d = new EuclideanDistance();
@@ -155,8 +154,8 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         //q.normalize();
         //Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
 
-        if (Double.isNaN(correlation)) correlation = 0d;
         correlation = correlation * (1 - (bothZeros/(double) row));
+        if (Double.isNaN(correlation)) correlation = 0d;
         interest = Math.abs(correlation);
         resultset.close();
     }
