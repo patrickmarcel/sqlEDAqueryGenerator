@@ -140,12 +140,16 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             if (m2 == 0d && m1 == 0d)
                 bothZeros++;
         }
+        if (row == 0){
+            interest = 0;
+            return;
+        }
         double correlation;
         try {
             PearsonsCorrelation corr = new PearsonsCorrelation();
             correlation = corr.correlation(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
         } catch (MathIllegalArgumentException e){
-            System.out.println("--- Offending query ---" + getSql());
+            //System.out.println("--- Offending query ---\n" + getSql());
             correlation = Double.NaN;
         }
         //EuclideanDistance d = new EuclideanDistance();
