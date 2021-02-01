@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Datatype {
-    STRING(2), INTEGER(1), REAL(0);
+    DATE(3), STRING(2), INTEGER(1), REAL(0);
 
     private int value;
     private static Map map = new HashMap<>();
@@ -46,6 +46,8 @@ public enum Datatype {
     public boolean isReal(){
         return value == 0;
     }
+
+    public boolean isDate(){return value == 3;}
 
 
 }

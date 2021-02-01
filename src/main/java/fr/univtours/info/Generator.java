@@ -43,7 +43,7 @@ public class Generator {
 
     public static PrintStream devOut;
 
-    static final String[] tabAgg= {"avg", "sum", "min", "max", "stddev"};
+    static final String[] tabAgg= {"avg", "sum", "stddev"};//"min", "max",
 
     public static void main( String[] args ) throws Exception{
         //DEBUG
@@ -216,7 +216,7 @@ public class Generator {
                     isAllowed.computeIfAbsent(dims_r, pair -> !DBUtils.checkAimpliesB(pair.getFirst(), pair.getSecond(), conn, table))) {
                 // generate comparisons 'both ways'
                 toGenerate.add(dims);
-                toGenerate.add(dims_r);
+                //toGenerate.add(dims_r);
             }
 
             for (Pair<DatasetDimension, DatasetDimension> dim_pair : toGenerate){

@@ -4,14 +4,11 @@ import com.alexscode.utilities.Future;
 import com.alexscode.utilities.collection.Pair;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A 2D (CSV like) representation of a result that can be processed by a MLModel
+ * A basic in memory column store
  */
 public class CStore {
 
@@ -28,10 +25,12 @@ public class CStore {
     HashMap<String, Integer> posReal;
     HashMap<String, Integer> posInt;
     HashMap<String, Integer> posString;
+    HashMap<String, Integer> posDate;
 
     double[][] dataReal;
     int[][] dataInt;
     String[][] dataStr;
+    Date[][] dataDate;
 
 
     public CStore(List<Pair<String, Datatype>> columnsDef, int size) {
@@ -86,6 +85,18 @@ public class CStore {
             posString.put(cols.get(i), i);
         }
 
+        /*
+            Build the Date store
+         */
+        // Get relevant columns
+        cols = columnsDef.stream().filter(p -> p.right.isDate()).map(p -> p.left).collect(Collectors.toList());
+        // Build the index map and malloc arrays
+        posDate = new HashMap<>(cols.size());
+        dataDate = new Date[cols.size()][];
+        for (int i = 0; i < cols.size(); i++) {
+            posDate.put(cols.get(i), i);
+        }
+
     }
 
     /**
@@ -101,6 +112,9 @@ public class CStore {
         for (int i = 0; i < dataStr.length; i++) {
             dataStr[i] = new String[depth];
         }
+        for (int i = 0; i < dataDate.length; i++) {
+            dataDate[i] = new Date[depth];
+        }
 
         allocated = true;
     }
@@ -112,6 +126,7 @@ public class CStore {
                 case 0 : res[j] = dataReal[posReal.get(lineOrder.get(j))][line]; break;
                 case 1 : res[j] = dataInt[posInt.get(lineOrder.get(j))][line]; break;
                 case 2 : res[j] = dataStr[posString.get(lineOrder.get(j))][line]; break;
+                case 3 : res[j] = dataDate[posDate.get(lineOrder.get(j))][line]; break;
             }
         }
         return res;
@@ -133,6 +148,7 @@ public class CStore {
                 } break;
                 case 1 : dataInt[posInt.get(lineOrder.get(i))][row_index] = (int) input[i]; break;
                 case 2 : dataStr[posString.get(lineOrder.get(i))][row_index] = (String) input[i]; break;
+                case 3 : dataDate[posDate.get(lineOrder.get(i))][row_index] = (Date) input[i]; break;
             }
         }
     }
@@ -157,6 +173,7 @@ public class CStore {
                 case 0 : vec = p.getBinaryVector(getDoubleColumn(p.getCol())); break;
                 case 1 : vec = p.getBinaryVector(getIntColumn(p.getCol())); break;
                 case 2 : vec = p.getBinaryVector(getStringColumn(p.getCol())); break;
+                case 3 : vec = p.getBinaryVector(getDateColumn(p.getCol())); break;
             }
             for (int j = 0; j < vec.length; j++) {
                 sel[j] = sel[j] && vec[j];
@@ -180,6 +197,9 @@ public class CStore {
     }
     public void setColumn(String name, String[] array){
         dataStr[posString.get(name)] = array;
+    }
+    public void setColumn(String name, Date[] array){
+        dataDate[posDate.get(name)] = array;
     }
 
     public int getNumberOfColumns(){
@@ -210,6 +230,12 @@ public class CStore {
     public String[] getStringColumn(String column_name) {
         return dataStr[posString.get(column_name)];
     }
+    public Date[] getDateColumn(int column_index) {
+        return dataDate[column_index];
+    }
+    public Date[] getDateColumn(String column_name) {
+        return dataDate[posDate.get(column_name)];
+    }
 
     public String getColName(int column_index) {
         return  lineOrder.get(column_index);
@@ -223,6 +249,7 @@ public class CStore {
             case 0 : return Datatype.REAL;
             case 1 : return Datatype.INTEGER;
             case 2 : return Datatype.STRING;
+            case 3 : return Datatype.DATE;
         }
         throw new IllegalStateException("Illegal datatype for column " + column_index + " : " + typeMap[column_index]);
     }

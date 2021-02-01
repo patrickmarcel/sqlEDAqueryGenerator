@@ -176,6 +176,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         //Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
 
         correlation = correlation * (1 - (bothZeros/(double) row));
+        correlation = correlation * (1. - (1./(row+1.)));
         if (Double.isNaN(correlation)) correlation = 0d;
         interest = Math.abs(correlation);
         resultset.close();
