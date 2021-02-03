@@ -1,7 +1,6 @@
 package fr.univtours.info;
 
-import fr.univtours.info.metadata.DatasetDimension;
-import org.apache.commons.dbutils.ResultSetIterator;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
 
 import java.sql.*;
 import java.util.HashMap;

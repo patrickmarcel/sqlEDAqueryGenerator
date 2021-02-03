@@ -1,7 +1,7 @@
 package fr.univtours.info.optimize.time;
 
 
-import fr.univtours.info.metadata.DatasetStats;
+import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
 
 import java.io.IOException;

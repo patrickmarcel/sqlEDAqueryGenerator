@@ -1,7 +1,7 @@
 package fr.univtours.info.queries;
 
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.optimize.time.CostModelProvider;
 import fr.univtours.info.optimize.time.TimeableOp;
 import fr.univtours.info.optimize.tsp.Measurable;
@@ -9,14 +9,30 @@ import lombok.Getter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
+import java.util.HashMap;
 import java.util.Set;
 
 public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
+
+    static HashMap<String, String> convivialNames;
+    static {
+        convivialNames = new HashMap<>();
+        convivialNames.put("avg", "Average");
+        convivialNames.put("sum", "Sum");
+        convivialNames.put("min", "Minima");
+        convivialNames.put("max", "Maxima");
+        convivialNames.put("stddev", "Standard Deviation");
+    }
 
     Connection conn;
     ResultSet resultset;
     ResultSet explainResultset;
     ResultSet explainAnalyzeResultset;
+
+    @Getter
+    DatasetDimension assessed;
+    @Getter
+    DatasetDimension reference;
 
     String table;
 
@@ -28,6 +44,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
     @Getter
     float actualCost =0;
     float explainCost=0;
+    @Getter
     double interest=0;
 
     Set<DatasetDimension> dimensions;
@@ -63,19 +80,6 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
 
     public void setEstimatedCost(float estimation){
         this.explainCost=estimation;
-    }
-
-    public double getInterest() {
-        return interest;
-    }
-
-
-    public DatasetDimension getAssessed() {
-        return null;
-    }
-
-    public DatasetDimension getReference() {
-        return null;
     }
 
 

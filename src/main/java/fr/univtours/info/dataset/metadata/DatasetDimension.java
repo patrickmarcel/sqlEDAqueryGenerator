@@ -1,4 +1,4 @@
-package fr.univtours.info.metadata;
+package fr.univtours.info.dataset.metadata;
 
 import org.apache.commons.dbutils.ResultSetIterator;
 
@@ -9,6 +9,16 @@ import java.util.TreeSet;
 public class DatasetDimension extends DatasetAttribute{
 
     Set<String> activeDomain;
+    boolean time;
+    boolean all;
+
+    public boolean isTime() {
+        return time;
+    }
+
+    public boolean isAll() {
+        return all;
+    }
 
     @Override
     public void computeActiveDomain() throws SQLException {
@@ -49,4 +59,8 @@ public class DatasetDimension extends DatasetAttribute{
         return activeDomain;
     }
 
+    @Override
+    public String toString() {
+        return "D{" + name +"}";
+    }
 }

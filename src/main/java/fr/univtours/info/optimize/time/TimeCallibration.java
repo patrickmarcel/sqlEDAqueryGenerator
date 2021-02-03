@@ -2,10 +2,12 @@ package fr.univtours.info.optimize.time;
 
 import com.google.common.base.Stopwatch;
 import fr.univtours.info.*;
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
-import fr.univtours.info.metadata.DatasetStats;
+import fr.univtours.info.dataset.DBConfig;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.CandidateQuerySet;
 import fr.univtours.info.queries.SiblingAssessQuery;
 
 
@@ -26,14 +28,13 @@ public class TimeCallibration {
 
 
     public static void main(String[] args) throws IOException, SQLException {
-        Config config = Config.readProperties();
+        DBConfig config = DBConfig.readProperties();
         table = config.getTable();
         theDimensions = config.getDimensions();
         theMeasures = config.getMeasures();
 
 
         // Pre compute stats
-        DBservices db = new DBservices();
         DatasetStats stats = new DatasetStats();
         HashMap<DatasetDimension, Integer> adSize = stats.getAdSize();
         HashMap<DatasetDimension, HashMap<String, Integer>> frequency = stats.getFrequency();
@@ -48,7 +49,7 @@ public class TimeCallibration {
         Generator.generateSiblingAssesses();
         CandidateQuerySet theQ = Generator.theQ;
 
-        Connection conn = db.connectToPostgresql();
+        Connection conn = config.getConnection();
         double sample_rate = 0.005;
         Random rd = new Random();
         int count = 0;

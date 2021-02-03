@@ -1,33 +1,35 @@
-package fr.univtours.info;
+package fr.univtours.info.dataset;
 
-import com.alexscode.utilities.dataset.DatasetRAMBuffer;
-import fr.univtours.info.metadata.DatasetAttribute;
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
-import fr.univtours.info.metadata.DatasetSchema;
+import fr.univtours.info.dataset.metadata.DatasetAttribute;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetSchema;
 import lombok.Getter;
 
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Dataset {
     @Getter
     Connection conn;
+    @Getter
     DatasetSchema theSchema;
     @Getter
     String table;
-
-     List<DatasetDimension> theDimensions;
-     List<DatasetMeasure> theMeasures;
+    @Getter
+    List<DatasetDimension> theDimensions;
+    @Getter
+    List<DatasetMeasure> theMeasures;
 
      public Dataset(Connection conn, String table, List<DatasetDimension> theDimensions, List<DatasetMeasure> theMeasures ){
          this.conn=conn;
          this.table=table;
          this.theDimensions=theDimensions;
          this.theMeasures=theMeasures;
+         theSchema = new DatasetSchema(this);
+         //theSchema.getIndividualHierarchies();
      }
 
     DatasetSchema getSchema(){

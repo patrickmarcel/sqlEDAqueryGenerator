@@ -1,6 +1,6 @@
 package fr.univtours.info.queries;
 
-import fr.univtours.info.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
 
 import java.sql.Connection;
 import java.util.HashSet;

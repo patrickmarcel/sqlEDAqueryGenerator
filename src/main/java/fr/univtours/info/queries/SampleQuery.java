@@ -1,11 +1,10 @@
 package fr.univtours.info.queries;
 
-import fr.univtours.info.Dataset;
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.Dataset;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Set;
 
 /**

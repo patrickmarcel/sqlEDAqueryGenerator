@@ -33,6 +33,11 @@
           <version>30.0-jre</version>
       </dependency>
     <dependency>
+      <groupId>org.jgrapht</groupId>
+      <artifactId>jgrapht-core</artifactId>
+      <version>1.5.0</version>
+    </dependency>
+    <dependency>
       <groupId>commons-dbutils</groupId>
       <artifactId>commons-dbutils</artifactId>
       <version>1.7</version>
@@ -51,14 +56,6 @@
         <scope>provided</scope>
       </dependency>
 
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>1.4.200</version>
-    </dependency>
-
-
-    <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>

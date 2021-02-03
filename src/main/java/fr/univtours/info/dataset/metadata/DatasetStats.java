@@ -1,7 +1,6 @@
-package fr.univtours.info.metadata;
+package fr.univtours.info.dataset.metadata;
 
-import fr.univtours.info.Config;
-import fr.univtours.info.DBservices;
+import fr.univtours.info.dataset.DBConfig;
 import lombok.Getter;
 
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,18 +23,16 @@ public class DatasetStats {
     int rows;
 
     public DatasetStats() throws SQLException, IOException {
-        Config config = Config.readProperties();
+        DBConfig config = DBConfig.readProperties();
         table = config.getTable();
         List<DatasetDimension> theDimensions;
         theDimensions = config.getDimensions();
+        Connection conn = config.getConnection();
 
 
         // Pre compute stats
         adSize = new HashMap<>();
         frequency = new HashMap<>();
-
-        DBservices db = new DBservices();
-        Connection conn = db.connectToPostgresql();
 
         // Active domain size
         for (DatasetDimension dim : theDimensions) {

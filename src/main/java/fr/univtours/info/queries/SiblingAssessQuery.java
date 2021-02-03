@@ -1,46 +1,22 @@
 package fr.univtours.info.queries;
 
-import com.alexscode.utilities.math.Distribution;
-import com.google.common.collect.Streams;
 import fr.univtours.info.DBUtils;
-import fr.univtours.info.Generator;
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import lombok.Getter;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
-import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
 import java.sql.Connection;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
 
 public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
-    static HashMap<String, String> convivialNames;
-    static {
-        convivialNames = new HashMap<>();
-        convivialNames.put("avg", "Average");
-        convivialNames.put("sum", "Sum");
-        convivialNames.put("min", "Minima");
-        convivialNames.put("max", "Maxima");
-        convivialNames.put("stddev", "Standard Deviation");
-    }
 
-    DatasetDimension assessed;
-    DatasetDimension reference;
 
-    public String getVal1() {
-        return val1;
-    }
 
-    public String getVal2() {
-        return val2;
-    }
 
     @Getter
     final String val1, val2;
@@ -97,7 +73,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     @Override
     public String getDescription(){
         return "measure1 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val1
-                + " \\n" + "measure2 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val2;
+                + " \n" + "measure2 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val2;
     }
 
     @Override

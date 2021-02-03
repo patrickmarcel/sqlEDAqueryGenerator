@@ -1,7 +1,6 @@
-package fr.univtours.info;
+package fr.univtours.info.queries;
 
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
-import fr.univtours.info.queries.EDAsqlQuery;
 
 import java.util.*;
 

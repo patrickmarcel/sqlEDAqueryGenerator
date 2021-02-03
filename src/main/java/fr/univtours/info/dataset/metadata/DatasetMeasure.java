@@ -1,4 +1,4 @@
-package fr.univtours.info.metadata;
+package fr.univtours.info.dataset.metadata;
 
 import java.sql.Connection;
 

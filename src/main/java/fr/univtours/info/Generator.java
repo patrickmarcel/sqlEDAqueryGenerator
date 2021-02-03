@@ -4,12 +4,10 @@ import com.alexscode.utilities.collection.Pair;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
-import fr.univtours.info.optimize.AprioriMetric;
-import fr.univtours.info.optimize.BudgetManager;
-import fr.univtours.info.optimize.KnapsackManager;
-import fr.univtours.info.optimize.tsp.LinKernighan;
+import fr.univtours.info.dataset.DBConfig;
+import fr.univtours.info.dataset.Dataset;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.optimize.tsp.TSP;
 import fr.univtours.info.queries.*;
 
@@ -23,13 +21,9 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-/**
- *
- *
- */
+
+
 public class Generator {
     static Dataset ds;
     static String table;
@@ -38,7 +32,7 @@ public class Generator {
     static List<DatasetMeasure> theMeasures;
     static Connection conn;
     static Connection sample_db;
-    static Config config;
+    static DBConfig config;
     public static CandidateQuerySet theQ = new CandidateQuerySet();
 
     public static PrintStream devOut;
@@ -58,7 +52,6 @@ public class Generator {
         Class.forName(config.getSampleDriver());
         sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
         Dataset sample = ds.computeSample(10, sample_db);
-
 
         //generation
         System.out.println("Starting generation");
@@ -80,7 +73,7 @@ public class Generator {
         // interestingness computation
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
-        //theQ.shrink();
+        theQ.shrink();
         computeInterests(sample);
 
         stopwatch.stop();
@@ -92,7 +85,7 @@ public class Generator {
         stopwatch = Stopwatch.createStarted();
 
         //computeCosts();
-        theQ.theQueries.forEach(q -> q.setEstimatedCost(5));//TODO useless for now as everything takes about 5ms
+        theQ.forEach(q -> q.setEstimatedCost(5));//TODO useless for now as everything takes about 5ms
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -104,7 +97,7 @@ public class Generator {
         toRun = toRun.subList(0, 20);
 
         toRun = TSP.orderByTSP(toRun);
-        Notebook out = new Notebook();
+        NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         toRun.forEach(out::addQuery);
         System.out.println(out.toJson());
         Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -115,9 +108,8 @@ public class Generator {
     }
 
     public static void init() throws IOException, SQLException{
-        DBservices db= new DBservices();
-        conn=db.connectToPostgresql();
-        config = Config.readProperties();
+        config = DBConfig.readProperties();
+        conn = config.getConnection();
         table = config.getTable();
         theDimensions = config.getDimensions();
         theMeasures = config.getMeasures();
@@ -133,7 +125,7 @@ public class Generator {
         ArrayList<Float> errors = new ArrayList<>(10000);
         ArrayList<Float> times = new ArrayList<>(theQ.size());
 
-        for(AbstractEDAsqlQuery q : theQ.theQueries){
+        for(AbstractEDAsqlQuery q : theQ){
             //q.explainAnalyze();
 
             // THIS MUST BE CHECKED BECAUSE EVEN WHEN DISTANCE IS 0 THE COST MAY DIFFER
@@ -186,7 +178,7 @@ public class Generator {
 
     public static void computeInterests(Dataset sample) throws Exception {
         int i = 0;
-        for(AbstractEDAsqlQuery q : theQ.theQueries){
+        for(AbstractEDAsqlQuery q : theQ){
             //SampleQuery qs = new SampleQuery(q, sample);
             //q.printResult();
             //devOut.print(getId((SiblingAssessQuery) q) + ",");

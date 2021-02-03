@@ -1,7 +1,7 @@
 package fr.univtours.info.queries;
 
-import fr.univtours.info.metadata.DatasetDimension;
-import fr.univtours.info.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetDimension;
+import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import org.apache.commons.dbutils.ResultSetIterator;
 import org.apache.commons.math3.stat.StatUtils;
 
