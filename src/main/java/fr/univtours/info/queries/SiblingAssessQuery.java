@@ -7,6 +7,7 @@ import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import lombok.Getter;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.math3.stat.inference.TTest;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -39,20 +40,6 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         this.val1 = val1;
         this.val2 = val2;
     }
-
-    /*
-    public float getDistance(AbstractEDAsqlQuery other){
-        int result=0;
-        //System.out.println(this.sql + "  other: " + other.sql);
-        //System.out.println(this.assessed + "  other: " + other.assessed);
-        if(this.assessed!=other.getAssessed()) result=result+1;
-        if(this.reference!=other.getReference()) result=result+1;
-        if(this.measure!=other.getMeasure()) result=result+1;
-        if(this.function.compareTo(other.getFunction())!=0) result=result+1;
-        return result;
-    }
-*/
-
 
 
     @Override
@@ -119,7 +106,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         //PLACEHOLDER
     }
 
-    public Pair<Double, Double> pearsonTest() throws SQLException {
+    public Pair<Double, Double> pearsonTest(boolean close) throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();
         resultset.beforeFirst();
@@ -131,6 +118,8 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             right.add(m2);
             row++;
         }
+        if (close)
+            resultset.close();
         if (row == 0){
             interest = 0;
             return new Pair<>(0., 1.);
@@ -138,7 +127,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         double correlation, pvalue = 1;
         try {
             if (right.size() != left.size())
-                throw new IllegalArgumentException("array must have same length");
+                throw new IllegalArgumentException("arrays must have same length");
             double[][] matrix = new double[left.size()][2];
             for (int i = 0; i < left.size(); i++) {
                 matrix[i] = new double[]{left.get(i), right.get(i)};
@@ -156,8 +145,46 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             correlation = 0d;
             pvalue = 1d;
         }
-        resultset.close();
+
         return new Pair<>(correlation, pvalue);
+    }
+
+    public double TTest(boolean close) throws SQLException {
+        ArrayList<Double> left = new ArrayList<>();
+        ArrayList<Double> right = new ArrayList<>();
+        resultset.beforeFirst();
+        int row = 0;
+        while (resultset.next()) {
+            double m1 = resultset.getDouble("measure1");
+            left.add(m1);
+            double m2 = resultset.getDouble("measure2");
+            right.add(m2);
+            row++;
+        }
+        if (close)
+            resultset.close();
+        if (row == 0){
+            interest = 0;
+            return 1d;
+        }
+        double pvalue = 1d;
+        try {
+            if (right.size() != left.size())
+                throw new IllegalArgumentException("arrays must have same length");
+            double[] x = left.stream().mapToDouble(i -> i).toArray();
+            double[] y = right.stream().mapToDouble(i -> i).toArray();
+            TTest tTest = new TTest();
+            pvalue = tTest.t(x, y);
+
+        } catch (IllegalArgumentException e){
+            System.out.println("--- Offending query ---\n" + getSql());
+        }
+
+        if (Double.isNaN(pvalue)) {
+            pvalue = 1d;
+        }
+
+        return pvalue;
     }
 
 

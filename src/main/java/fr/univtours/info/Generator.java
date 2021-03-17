@@ -10,6 +10,7 @@ import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.optimize.tsp.TSP;
 import fr.univtours.info.queries.*;
+import me.tongfei.progressbar.ProgressBar;
 
 
 import java.io.FileOutputStream;
@@ -177,16 +178,33 @@ public class Generator {
     }
 
     public static void computeInterests(Dataset sample) throws Exception {
-        int i = 0;
-        for(AbstractEDAsqlQuery q : theQ){
-            //SampleQuery qs = new SampleQuery(q, sample);
-            //q.printResult();
-            //devOut.print(getId((SiblingAssessQuery) q) + ",");
-            q.execute();
-            q.computeInterest();
-            //System.out.println("interestingness: " + q.getInterest());
-            if (i++ % 10000 == 0)
-                System.out.println("Q"+i);
+        List<AbstractEDAsqlQuery> toEvaluate = new ArrayList<>(theQ);
+        double[] pPearson = new double[toEvaluate.size()];
+        double[] pT = new double[toEvaluate.size()];
+        try (ProgressBar progress = new ProgressBar("Performing statistical tests", toEvaluate.size())) {
+            for (int i = 0; i < toEvaluate.size(); i++){
+                //Run the query
+                SiblingAssessQuery assess = (SiblingAssessQuery) toEvaluate.get(i);
+                assess.execute();
+                //Perform statistical tests on output
+                Pair<Double, Double> res = assess.pearsonTest(false);
+                pPearson[i] = res.getB();
+                pT[i] = assess.TTest(true);
+                //Progress
+                progress.step();
+            }
+        }
+        // Account for MCP
+        BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(pPearson);
+        corrector.calculate();
+        pPearson = corrector.getAdjustedPvalues();
+        corrector = new BenjaminiHochbergFDR(pT);
+        corrector.calculate();
+        pT = corrector.getAdjustedPvalues();
+
+        for (int j = 0; j < toEvaluate.size(); j++) {
+            double mostSignificant = Math.max(pPearson[j], pT[j]);
+            toEvaluate.get(j).setInterest(1d - mostSignificant);
         }
     }
 

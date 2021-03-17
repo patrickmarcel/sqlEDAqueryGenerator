@@ -6,6 +6,7 @@ import fr.univtours.info.optimize.time.CostModelProvider;
 import fr.univtours.info.optimize.time.TimeableOp;
 import fr.univtours.info.optimize.tsp.Measurable;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
@@ -44,7 +45,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
     @Getter
     float actualCost =0;
     float explainCost=0;
-    @Getter
+    @Getter @Setter
     double interest = 0;
 
     Set<DatasetDimension> dimensions;
