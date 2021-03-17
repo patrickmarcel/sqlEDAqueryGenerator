@@ -74,7 +74,7 @@ public class Generator {
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
         theQ.shrink();
-        computeInterests(sample);
+        computeInterests(ds);
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
@@ -99,7 +99,7 @@ public class Generator {
         toRun = TSP.orderByTSP(toRun);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         toRun.forEach(out::addQuery);
-        System.out.println(out.toJson());
+        //System.out.println(out.toJson());
         Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
 

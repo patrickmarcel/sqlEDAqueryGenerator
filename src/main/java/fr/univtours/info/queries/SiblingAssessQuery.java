@@ -1,5 +1,6 @@
 package fr.univtours.info.queries;
 
+import com.alexscode.utilities.collection.Pair;
 import fr.univtours.info.DBUtils;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
@@ -114,48 +115,49 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     }
 
     @Override
-    public void interestFromResult() throws SQLException {
+    public void interestFromResult() throws Exception {
+        //PLACEHOLDER
+    }
+
+    public Pair<Double, Double> pearsonTest() throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();
-        //Distribution<Integer> p = new Distribution<>();
-        //Distribution<Integer> q = new Distribution<>();
         resultset.beforeFirst();
         int row = 0;
-        int bothZeros = 0;
         while (resultset.next()) {
-            //p.setProba(row, resultset.getFloat("measure1"));
             double m1 = resultset.getDouble("measure1");
             left.add(m1);
-            //q.setProba(row, resultset.getFloat("measure2"));
             double m2 = resultset.getDouble("measure2");
             right.add(m2);
             row++;
-            if (m2 == 0d && m1 == 0d)
-                bothZeros++;
         }
         if (row == 0){
             interest = 0;
-            return;
+            return new Pair<>(0., 1.);
         }
-        double correlation;
+        double correlation, pvalue = 1;
         try {
-            PearsonsCorrelation corr = new PearsonsCorrelation();
-            correlation = corr.correlation(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
-        } catch (MathIllegalArgumentException e){
-            //System.out.println("--- Offending query ---\n" + getSql());
+            if (right.size() != left.size())
+                throw new IllegalArgumentException("array must have same length");
+            double[][] matrix = new double[left.size()][2];
+            for (int i = 0; i < left.size(); i++) {
+                matrix[i] = new double[]{left.get(i), right.get(i)};
+            }
+            PearsonsCorrelation corr = new PearsonsCorrelation(matrix);
+            correlation = corr.getCorrelationMatrix().getEntry(0, 1);
+            pvalue = corr.getCorrelationPValues().getEntry(0, 1);
+
+        } catch (IllegalArgumentException e){
+            System.out.println("--- Offending query ---\n" + getSql());
             correlation = Double.NaN;
         }
-        //EuclideanDistance d = new EuclideanDistance();
-        //double euc = d.compute(right.stream().mapToDouble(i -> i).toArray(), left.stream().mapToDouble(i -> i).toArray());
-        //p.normalize();
-        //q.normalize();
-        //Generator.devOut.println(Distribution.kullbackLeiblerDirty(p, q) + "," + correlation + "," + euc);
 
-        correlation = correlation * (1 - (bothZeros/(double) row));
-        correlation = correlation * (1. - (1./(row+1.)));
-        if (Double.isNaN(correlation)) correlation = 0d;
-        interest = Math.abs(correlation);
+        if (Double.isNaN(correlation) || Double.isNaN(pvalue)) {
+            correlation = 0d;
+            pvalue = 1d;
+        }
         resultset.close();
+        return new Pair<>(correlation, pvalue);
     }
 
 

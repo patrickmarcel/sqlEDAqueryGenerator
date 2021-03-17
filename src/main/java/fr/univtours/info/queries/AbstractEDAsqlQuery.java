@@ -45,7 +45,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
     float actualCost =0;
     float explainCost=0;
     @Getter
-    double interest=0;
+    double interest = 0;
 
     Set<DatasetDimension> dimensions;
     @Getter

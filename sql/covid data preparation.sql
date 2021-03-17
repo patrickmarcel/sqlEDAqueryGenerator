@@ -2,13 +2,13 @@
 drop table if exists countries;
 create table countries(country varchar, Alpha2 char(2), Alpha3 char(3), code int, Latitude float, Longitude float);
 
-copy countries from 'C:\Users\achan\IdeaProjects\sqlEDAqueryGenerator\sql\countries-2.csv' (format csv,header,delimiter ';');
+copy countries from 'C:\Users\chanson\IdeaProjects\sqlEDAqueryGenerator\sql\countries-2.csv' (format csv,header,delimiter ';');
 
 drop table if exists covid;
 create table covid(dateRep date, day integer, month integer, year integer, cases integer, deaths integer, countriesAndTerritories varchar, geoId varchar, countryterritoryCode varchar, popData2018 integer, continentExp varchar);
 
 set datestyle="DMY";
-copy covid from 'C:\Users\achan\IdeaProjects\sqlEDAqueryGenerator\sql\COVID-19-geographic-disbtribution-worldwide-2020-05-29.csv'  (format CSV,header,delimiter ';');
+copy covid from 'C:\Users\chanson\IdeaProjects\sqlEDAqueryGenerator\sql\COVID-19-geographic-disbtribution-worldwide-2020-05-29.csv'  (format CSV,header,delimiter ';');
 
 
 drop table if exists covid19backup;
