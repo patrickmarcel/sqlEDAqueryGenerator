@@ -5,7 +5,7 @@ import fr.univtours.info.DBUtils;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import lombok.Getter;
-import org.apache.commons.math3.exception.MathIllegalArgumentException;
+import lombok.Setter;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.inference.TTest;
 
@@ -22,6 +22,8 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Getter
     final String val1, val2;
+    @Getter @Setter
+    String testComment;
 
     public SiblingAssessQuery(Connection conn, String table, DatasetDimension assessed, String val1, String val2, DatasetDimension reference, DatasetMeasure m, String agg){
         this.conn=conn;
@@ -44,8 +46,8 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Override
     protected String getSqlInt() {
-        return "select t1."+assessed.getName()+", t1." + reference.getName() + ",\n" +
-                "       t1.measure1, t2.measure2\n" +
+        return "select t1." + reference.getName() + ",\n" +
+                "       t1.measure1 as \"" + m1PrettyName() + "\", t2.measure2 as \"" + m2PrettyName() + "\" \n" +
                 "from\n" +
                 "  (select "+assessed.getName()+", "+reference.getName()+", " + this.function + "(" + this.measure.getName() + ") as measure1\n" +
                 "   from "+ table +"\n" +
@@ -58,10 +60,34 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
                 "where t1."+reference.getName()+" = t2."+reference.getName()+";";
     }
 
+    public String m1PrettyName(){
+        return convivialNames.get(getFunction()) + "(" + measure.getName() + ") for " + assessed.getName() + " = " + val1;
+    }
+
+    public String m2PrettyName(){
+        return convivialNames.get(getFunction()) + "(" + measure.getName() + ") for " + assessed.getName() + " = " + val2;
+    }
+
     @Override
     public String getDescription(){
-        return "measure1 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val1
-                + " \n" + "measure2 is the " + convivialNames.get(this.function) + " of " + this.measure.getName() + " for " + assessed.getName() + " = " + val2;
+        return "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 + "\" on " + convivialNames.get(function) + " " + measure.getName() + "\n\\n" + testComment;
+    }
+
+    public String getDiffs(SiblingAssessQuery previous){
+        StringBuilder sb = new StringBuilder("\r\n\\n Differences from Previous Query: ");
+        if (!measure.getName().equals(previous.measure.getName()))
+            sb.append(previous.measure.getName()).append(" -> ").append(measure.getName()).append(" | ");
+        if (!function.equals(previous.function))
+            sb.append(previous.function).append(" -> ").append(function).append(" | ");
+        if (!previous.getAssessed().getName().equals(getAssessed().getName()))
+            sb.append(previous.getAssessed().getName()).append(" -> ").append(assessed.getName()).append(" | ");
+        if (!val1.equals(previous.val1))
+            sb.append(previous.val1).append(" -> ").append(val1).append(" | ");
+        if (!val2.equals(previous.val2))
+            sb.append(previous.val2).append(" -> ").append(val2).append(" | ");
+        if(!reference.getName().equals(previous.reference.getName()))
+            sb.append(previous.reference.getName()).append(" -> ").append(reference.getName()).append(" | ");
+        return sb.toString();
     }
 
     @Override
@@ -112,9 +138,9 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         resultset.beforeFirst();
         int row = 0;
         while (resultset.next()) {
-            double m1 = resultset.getDouble("measure1");
+            double m1 = resultset.getDouble(2);
             left.add(m1);
-            double m2 = resultset.getDouble("measure2");
+            double m2 = resultset.getDouble(3);
             right.add(m2);
             row++;
         }
@@ -137,7 +163,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             pvalue = corr.getCorrelationPValues().getEntry(0, 1);
 
         } catch (IllegalArgumentException e){
-            System.out.println("--- Offending query ---\n" + getSql());
+            //System.out.println("--- Offending query ---\n" + getSql());
             correlation = Double.NaN;
         }
 
@@ -155,9 +181,9 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
         resultset.beforeFirst();
         int row = 0;
         while (resultset.next()) {
-            double m1 = resultset.getDouble("measure1");
+            double m1 = resultset.getDouble(2);
             left.add(m1);
-            double m2 = resultset.getDouble("measure2");
+            double m2 = resultset.getDouble(3);
             right.add(m2);
             row++;
         }
@@ -174,10 +200,10 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             double[] x = left.stream().mapToDouble(i -> i).toArray();
             double[] y = right.stream().mapToDouble(i -> i).toArray();
             TTest tTest = new TTest();
-            pvalue = tTest.t(x, y);
+            pvalue = tTest.tTest(x, y);
 
         } catch (IllegalArgumentException e){
-            System.out.println("--- Offending query ---\n" + getSql());
+            //System.out.println("--- Offending query ---\n" + getSql());
         }
 
         if (Double.isNaN(pvalue)) {

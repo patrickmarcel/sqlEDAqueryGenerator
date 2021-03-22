@@ -18,7 +18,7 @@ import java.util.Properties;
 @Data
 @AllArgsConstructor
 public class DBConfig {
-    public static String CONF_FILE_PATH = "src/main/resources/application.properties";
+    public static String CONF_FILE_PATH = "src/main/resources/vaccines.properties";
 
     List<DatasetDimension> dimensions;
     List<DatasetMeasure> measures;

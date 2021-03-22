@@ -2,6 +2,7 @@ package fr.univtours.info;
 
 
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.SiblingAssessQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ public class NotebookJupyter {
         return sb.toString();
     }
 
-    private String queryDescriptor(AbstractEDAsqlQuery q, int qnb) {
+    private String queryDescriptor(AbstractEDAsqlQuery q, int qnb, String diffs) {
         StringBuilder sb = new StringBuilder("  {\n" +
                 "   \"cell_type\": \"markdown\",\n" +
                 "   \"metadata\": {},\n" +
@@ -49,7 +50,7 @@ public class NotebookJupyter {
         sb.append("\"### Q").append(qnb).append("\\n\",\n");
         sb.append("\"Interestingness = ").append(q.getInterest()).append("\\n\",\n");
 
-        String[] qlines = q.getDescription().split("\\r?\\n");
+        String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
         for (int j = 0; j < qlines.length; j++) {
             sb.append(getLineRepr(qlines[j]));
             if (j != qlines.length - 1)
@@ -68,7 +69,10 @@ public class NotebookJupyter {
         sb.append(loadCell.replace("<db_url>", dbUrl)).append(",\n");
 
         for (int i = 0; i < queries.size(); i++) {
-            sb.append(queryDescriptor(queries.get(i), i + 1));
+            if (i == 0)
+                sb.append(queryDescriptor(queries.get(i), i + 1, ""));
+            else
+                sb.append(queryDescriptor(queries.get(i), i + 1, ((SiblingAssessQuery)queries.get(i)).getDiffs((SiblingAssessQuery) queries.get(i-1))));
             sb.append(",\n");
             sb.append(queryToJSON(queries.get(i)));
             if (i < queries.size() - 1)
@@ -84,7 +88,7 @@ public class NotebookJupyter {
     private static String getLineRepr(Object value) {
         String in = (String) value;
         String out = in.replace("\r\n", "\\r\\n").replace("\n", "\\n");
-        return "\"" + out + " \\n\"";
+        return "\"" + out.replace("\"", "\\\"") + " \\n\"";
     }
 
     private static final String metadata = " \"metadata\": {\n" +
@@ -124,7 +128,8 @@ public class NotebookJupyter {
             "    \"import sqlalchemy\\n\",\n" +
             "    \"sqlalchemy.create_engine(\\\"<db_url>\\\")\\n\",\n" +
             "    \"%load_ext sql\\n\",\n" +
-            "    \"%sql <db_url>\"\n" +
+            "    \"%sql <db_url>\\n\",\n" +
+            "    \"%config SqlMagic.displaycon=False\"\n" +
             "   ]\n" +
             "  }";
 

@@ -1,5 +1,6 @@
 package fr.univtours.info;
 
+import com.alexscode.utilities.Stuff;
 import com.alexscode.utilities.collection.Pair;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +75,7 @@ public class Generator {
         // interestingness computation
         System.out.println("Starting interestingness computation");
         stopwatch = Stopwatch.createStarted();
-        theQ.shrink();
+        //theQ.shrink();
         computeInterests(ds);
 
         stopwatch.stop();
@@ -202,8 +203,11 @@ public class Generator {
         corrector.calculate();
         pT = corrector.getAdjustedPvalues();
 
+        String[] testNames = new String[]{"Correlation", "Different Means", "Different Variances"};
         for (int j = 0; j < toEvaluate.size(); j++) {
-            double mostSignificant = Math.max(pPearson[j], pT[j]);
+            double mostSignificant = Stuff.arrayMin(pPearson[j], pT[j]);
+            int idx = Stuff.argMin(pPearson[j], pT[j]);
+            ((SiblingAssessQuery) toEvaluate.get(j)).setTestComment(testNames[idx]);
             toEvaluate.get(j).setInterest(1d - mostSignificant);
         }
     }

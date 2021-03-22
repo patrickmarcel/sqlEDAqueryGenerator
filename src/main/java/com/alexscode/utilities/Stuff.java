@@ -11,6 +11,29 @@ import java.security.NoSuchAlgorithmException;
 import java.util.zip.GZIPOutputStream;
 
 public class Stuff {
+
+    public static int argMin(double... a) {
+        double v = Integer.MAX_VALUE;
+        int ind = -1;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] < v) {
+                v = a[i];
+                ind = i;
+            }
+        }
+        return ind;
+    }
+
+    public static double arrayMin(double... a) {
+        double v = Integer.MAX_VALUE;
+        for (double j : a) {
+            if (j < v) {
+                v = j;
+            }
+        }
+        return v;
+    }
+
     public static void exportString(String path, String data){
         try {
             Files.write(Paths.get(path), data.getBytes());
