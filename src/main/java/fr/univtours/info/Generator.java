@@ -95,16 +95,20 @@ public class Generator {
         //TAP
         List<AbstractEDAsqlQuery> queries = new ArrayList<>(theQ);
 
-        TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
-        List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries);
-        NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
-        exactSolution.forEach(out::addQuery);
-        Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+        if (theQ.size() < 1000){
+            TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
+            List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries);
+            NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
+            exactSolution.forEach(out::addQuery);
+            Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+        } else {
+            System.err.println("[WARNING] Couldn't run exact solver : too many queries");
+        }
 
         //Naive heuristic from 2020 paper
         TAPEngine naive = new NaiveTAP();
         List<AbstractEDAsqlQuery> naiveSolution = naive.solve(queries);
-        out = new NotebookJupyter(config.getBaseURL());
+        NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
@@ -217,13 +221,13 @@ public class Generator {
         String[] testNames = new String[]{"Correlation", "Different Means", "Different Variances"};
         for (int j = 0; j < toEvaluate.size(); j++) {
             double mostSignificant = Stuff.arrayMin(pPearson[j], pT[j], pF[j]);
-            String tests = "";
+            String tests = "Statistically significant relation(s) (p<0.05) between columns: ";
             if (pPearson[j] < 0.05)
                 tests += testNames[0];
             if (pT[j] < 0.05)
-                tests += " " + testNames[1];
+                tests += ", " + testNames[1];
             if (pF[j] < 0.05)
-                tests += " " + testNames[2];
+                tests += ", " + testNames[2];
 
             ((SiblingAssessQuery) toEvaluate.get(j)).setTestComment(tests);
             toEvaluate.get(j).setInterest(1d - mostSignificant);

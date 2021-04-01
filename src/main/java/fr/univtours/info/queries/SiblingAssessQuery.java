@@ -71,7 +71,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Override
     public String getDescription(){
-        return "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 + "\" on " + convivialNames.get(function) + " " + measure.getName() + "\n\\n" + testComment;
+        return "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 + "\" on " + convivialNames.get(function) + " of " + measure.getName() + " grouped by " + reference.getName();// + "\n\\n" + testComment;
     }
 
     public String getDiffs(SiblingAssessQuery previous){

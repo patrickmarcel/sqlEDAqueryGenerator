@@ -4,12 +4,15 @@ package fr.univtours.info;
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
 import fr.univtours.info.queries.SiblingAssessQuery;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NotebookJupyter {
     List<AbstractEDAsqlQuery> queries;
     String dbUrl = "<db_url>";
+    NumberFormat formatter = new DecimalFormat("#0.00");
 
     public NotebookJupyter(){
         queries = new ArrayList<>();
@@ -48,7 +51,6 @@ public class NotebookJupyter {
                 "   \"metadata\": {},\n" +
                 "   \"source\": [");
         sb.append("\"### Q").append(qnb).append("\\n\",\n");
-        sb.append("\"Interestingness = ").append(q.getInterest()).append("\\n\",\n");
 
         String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
         for (int j = 0; j < qlines.length; j++) {
@@ -56,6 +58,9 @@ public class NotebookJupyter {
             if (j != qlines.length - 1)
                 sb.append(",\n");
         }
+        sb.append(",\n\"\\n\",\n");
+        sb.append(getLineRepr(((SiblingAssessQuery)q).getTestComment())).append(",\n\"\\n\",\n");
+        sb.append("\"Interestingness (1 - MIN(p-values)) = ").append(formatter.format(q.getInterest())).append("\\n\"\n");
 
         sb.append("]");
         sb.append("}");
