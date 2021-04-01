@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 /**
  * This is the interface for the interestingness vs runtime part of the TAP heuristics
  */
+@Deprecated
 public interface BudgetManager {
     /**
      * Time budget is an integer in milliseconds (simpler to solve)

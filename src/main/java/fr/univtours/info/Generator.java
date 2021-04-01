@@ -2,6 +2,7 @@ package fr.univtours.info;
 
 import com.alexscode.utilities.Stuff;
 import com.alexscode.utilities.collection.Pair;
+import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -9,7 +10,9 @@ import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
-import fr.univtours.info.optimize.tsp.TSP;
+import fr.univtours.info.optimize.CPLEXTAP;
+import fr.univtours.info.optimize.NaiveTAP;
+import fr.univtours.info.optimize.TAPEngine;
 import fr.univtours.info.queries.*;
 import me.tongfei.progressbar.ProgressBar;
 
@@ -23,7 +26,6 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
 
 
 public class Generator {
@@ -48,9 +50,6 @@ public class Generator {
         init();
 
         //compute sample
-        //PreparedStatement cleanup = conn.prepareStatement("Drop table if exists sample_covid");
-        //cleanup.execute();
-        //cleanup.close();
         Class.forName(config.getSampleDriver());
         sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
         Dataset sample = ds.computeSample(10, sample_db);
@@ -59,9 +58,6 @@ public class Generator {
         System.out.println("Starting generation");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        //generateCounts();
-        //generateHistograms();
-        //generateAggregates();
         generateSiblingAssesses();
 
         stopwatch.stop();
@@ -87,21 +83,29 @@ public class Generator {
         stopwatch = Stopwatch.createStarted();
 
         //computeCosts();
-        theQ.forEach(q -> q.setEstimatedCost(5));//TODO useless for now as everything takes about 5ms
+        //TODO useless for now as everything takes about 5ms
+        for (AbstractEDAsqlQuery abstractEDAsqlQuery : theQ) {
+            abstractEDAsqlQuery.explainAnalyze();
+        }
 
         stopwatch.stop();
         timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         System.out.println("Cost computation time in milliseconds: " + timeElapsed);
 
-        // Do the TAP dance
-        List<AbstractEDAsqlQuery> toRun = new ArrayList<>(theQ);
-        toRun.sort(Comparator.comparingDouble(AbstractEDAsqlQuery::getInterest).reversed());
-        toRun = toRun.subList(0, 20);
+        //TAP
+        List<AbstractEDAsqlQuery> queries = new ArrayList<>(theQ);
 
-        toRun = TSP.orderByTSP(toRun);
+        TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
+        List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
-        toRun.forEach(out::addQuery);
-        //System.out.println(out.toJson());
+        exactSolution.forEach(out::addQuery);
+        Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+
+        //Naive heuristic from 2020 paper
+        TAPEngine naive = new NaiveTAP();
+        List<AbstractEDAsqlQuery> naiveSolution = naive.solve(queries);
+        out = new NotebookJupyter(config.getBaseURL());
+        naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
 
@@ -182,6 +186,7 @@ public class Generator {
         List<AbstractEDAsqlQuery> toEvaluate = new ArrayList<>(theQ);
         double[] pPearson = new double[toEvaluate.size()];
         double[] pT = new double[toEvaluate.size()];
+        double[] pF = new double[toEvaluate.size()];
         try (ProgressBar progress = new ProgressBar("Performing statistical tests", toEvaluate.size())) {
             for (int i = 0; i < toEvaluate.size(); i++){
                 //Run the query
@@ -190,7 +195,8 @@ public class Generator {
                 //Perform statistical tests on output
                 Pair<Double, Double> res = assess.pearsonTest(false);
                 pPearson[i] = res.getB();
-                pT[i] = assess.TTest(true);
+                pT[i] = assess.TTest(false);
+                pF[i] = assess.FTest(true);
                 //Progress
                 progress.step();
             }
@@ -199,15 +205,27 @@ public class Generator {
         BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(pPearson);
         corrector.calculate();
         pPearson = corrector.getAdjustedPvalues();
+
         corrector = new BenjaminiHochbergFDR(pT);
         corrector.calculate();
         pT = corrector.getAdjustedPvalues();
 
+        corrector = new BenjaminiHochbergFDR(pF);
+        corrector.calculate();
+        pF = corrector.getAdjustedPvalues();
+
         String[] testNames = new String[]{"Correlation", "Different Means", "Different Variances"};
         for (int j = 0; j < toEvaluate.size(); j++) {
-            double mostSignificant = Stuff.arrayMin(pPearson[j], pT[j]);
-            int idx = Stuff.argMin(pPearson[j], pT[j]);
-            ((SiblingAssessQuery) toEvaluate.get(j)).setTestComment(testNames[idx]);
+            double mostSignificant = Stuff.arrayMin(pPearson[j], pT[j], pF[j]);
+            String tests = "";
+            if (pPearson[j] < 0.05)
+                tests += testNames[0];
+            if (pT[j] < 0.05)
+                tests += " " + testNames[1];
+            if (pF[j] < 0.05)
+                tests += " " + testNames[2];
+
+            ((SiblingAssessQuery) toEvaluate.get(j)).setTestComment(tests);
             toEvaluate.get(j).setInterest(1d - mostSignificant);
         }
     }

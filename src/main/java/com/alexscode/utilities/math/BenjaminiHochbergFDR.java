@@ -31,7 +31,7 @@
 */
 
 
-package fr.univtours.info;
+package com.alexscode.utilities.math;
 
 import com.alexscode.utilities.collection.Element;
 

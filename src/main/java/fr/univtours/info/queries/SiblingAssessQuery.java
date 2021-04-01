@@ -1,6 +1,7 @@
 package fr.univtours.info.queries;
 
 import com.alexscode.utilities.collection.Pair;
+import com.alexscode.utilities.math.FTest;
 import fr.univtours.info.DBUtils;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
@@ -102,7 +103,7 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Override
     public float getDistance(AbstractEDAsqlQuery other) {
-
+        return getDistanceHamming(other);/*
         float result=0;
         if(this.function.compareTo(other.getFunction())!=0)  result ++;
         if(this.measure!=other.measure) result+=2;
@@ -124,7 +125,44 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             }
             if(this.reference!=other.getReference()) result+=7;
         }
-        return result;
+        return result;*/
+    }
+
+    public float getDistanceHamming(AbstractEDAsqlQuery other) {
+        SiblingAssessQuery o = (SiblingAssessQuery) other;
+        float diffs = 0;
+        // Agg function changed ?
+        if(this.function.compareTo(o.getFunction())!=0)  diffs += 1;
+        // Measure changed ?
+        if(this.measure!=o.measure) diffs += 1;
+
+        // if we select on same dimension check differences on predicates
+        // else we assume they have changed
+        float sel_unit_weight = 0.5f;
+        if(this.assessed.equals(o.getAssessed())) {
+            if(this.val1.compareTo(o.val1)!=0){
+                diffs += sel_unit_weight;
+            }
+            if(this.val2.compareTo(o.val2)!=0){
+                diffs += sel_unit_weight;
+            }
+        } else{
+            diffs += sel_unit_weight * 2 ;
+
+            if (DBUtils.checkAimpliesB(this.assessed, o.assessed, conn, table) || DBUtils.checkAimpliesB(o.assessed, this.assessed, conn, table))
+                diffs += 0.5;
+            else
+                diffs += 1;
+        }
+        // Group by dimension
+        if (!this.reference.equals(o.reference)){
+            if (DBUtils.checkAimpliesB(this.reference, o.reference, conn, table) || DBUtils.checkAimpliesB(o.reference, this.reference, conn, table))
+                diffs += 0.5;
+            else
+                diffs += 1;
+        }
+
+        return diffs;
     }
 
     @Override
@@ -214,6 +252,43 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
     }
 
 
+    public double FTest(boolean close) throws SQLException {
+        ArrayList<Double> left = new ArrayList<>();
+        ArrayList<Double> right = new ArrayList<>();
+        resultset.beforeFirst();
+        int row = 0;
+        while (resultset.next()) {
+            double m1 = resultset.getDouble(2);
+            left.add(m1);
+            double m2 = resultset.getDouble(3);
+            right.add(m2);
+            row++;
+        }
+        if (close)
+            resultset.close();
+        if (row == 0){
+            interest = 0;
+            return 1d;
+        }
+        double pvalue = 1d;
+        try {
+            if (right.size() != left.size())
+                throw new IllegalArgumentException("arrays must have same length");
+            double[] x = left.stream().mapToDouble(i -> i).toArray();
+            double[] y = right.stream().mapToDouble(i -> i).toArray();
+            FTest test = new FTest(x, y);
+            pvalue = test.getPValue();
+
+        } catch (IllegalArgumentException e){
+            //System.out.println("--- Offending query ---\n" + getSql());
+        }
+
+        if (Double.isNaN(pvalue)) {
+            pvalue = 1d;
+        }
+
+        return pvalue;
+    }
 
 }
 
