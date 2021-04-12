@@ -17,10 +17,6 @@ import java.util.HashSet;
 
 public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
-
-
-
-
     @Getter
     final String val1, val2;
     @Getter @Setter
@@ -103,42 +99,20 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
 
     @Override
     public float getDistance(AbstractEDAsqlQuery other) {
-        return getDistanceHamming(other);/*
-        float result=0;
-        if(this.function.compareTo(other.getFunction())!=0)  result ++;
-        if(this.measure!=other.measure) result+=2;
-        if(this.assessed!=other.getAssessed()) {
-            if(DBUtils.checkAimpliesB(this.assessed, other.getAssessed() , conn, table)
-                    || DBUtils.checkAimpliesB(other.getAssessed(), this.assessed , conn, table)){
-                result+=3;
-            }
-            else {
-                result+=4;
-            }
-            if(this.reference==other.getReference()) {
-                if(this.val1.compareTo(((SiblingAssessQuery)other).val1)!=0){
-                    result+=5;
-                }
-                if(this.val2.compareTo(((SiblingAssessQuery)other).val2)!=0){
-                    result+=6;
-                }
-            }
-            if(this.reference!=other.getReference()) result+=7;
-        }
-        return result;*/
+        return getDistanceHamming(other);
     }
 
     public float getDistanceHamming(AbstractEDAsqlQuery other) {
         SiblingAssessQuery o = (SiblingAssessQuery) other;
-        float diffs = 0;
+        int diffs = 0;
         // Agg function changed ?
         if(this.function.compareTo(o.getFunction())!=0)  diffs += 1;
         // Measure changed ?
-        if(this.measure!=o.measure) diffs += 1;
+        if(this.measure!=o.measure) diffs += 2;
 
         // if we select on same dimension check differences on predicates
         // else we assume they have changed
-        float sel_unit_weight = 0.5f;
+        int sel_unit_weight = 4;
         if(this.assessed.equals(o.getAssessed())) {
             if(this.val1.compareTo(o.val1)!=0){
                 diffs += sel_unit_weight;
@@ -150,16 +124,16 @@ public class SiblingAssessQuery extends AbstractEDAsqlQuery{
             diffs += sel_unit_weight * 2 ;
 
             if (DBUtils.checkAimpliesB(this.assessed, o.assessed, conn, table) || DBUtils.checkAimpliesB(o.assessed, this.assessed, conn, table))
-                diffs += 0.5;
-            else
                 diffs += 1;
+            else
+                diffs += 2;
         }
         // Group by dimension
         if (!this.reference.equals(o.reference)){
             if (DBUtils.checkAimpliesB(this.reference, o.reference, conn, table) || DBUtils.checkAimpliesB(o.reference, this.reference, conn, table))
-                diffs += 0.5;
+                diffs += 3;
             else
-                diffs += 1;
+                diffs += 4;
         }
 
         return diffs;

@@ -6,5 +6,5 @@ import fr.univtours.info.queries.CandidateQuerySet;
 import java.util.List;
 
 public interface TAPEngine {
-    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ);
+    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ, int timeBudget, int maxDistance);
 }

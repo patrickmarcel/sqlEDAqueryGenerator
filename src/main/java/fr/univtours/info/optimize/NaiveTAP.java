@@ -10,7 +10,7 @@ import java.util.List;
 
 public class NaiveTAP implements TAPEngine{
     @Override
-    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ) {
+    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ, int timeBudget, int maxDistance) {
 
         theQ.sort(Comparator.comparingDouble(AbstractEDAsqlQuery::getInterest).reversed());
         theQ = theQ.subList(0, 20);

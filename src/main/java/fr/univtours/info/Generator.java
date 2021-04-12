@@ -97,7 +97,7 @@ public class Generator {
 
         if (theQ.size() < 1000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
-            List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries);
+            List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries, 25, 150);
             NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
             Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -107,7 +107,7 @@ public class Generator {
 
         //Naive heuristic from 2020 paper
         TAPEngine naive = new NaiveTAP();
-        List<AbstractEDAsqlQuery> naiveSolution = naive.solve(queries);
+        List<AbstractEDAsqlQuery> naiveSolution = naive.solve(queries, 25, 150);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));

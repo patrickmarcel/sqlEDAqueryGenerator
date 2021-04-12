@@ -19,7 +19,7 @@ public class CPLEXTAP implements TAPEngine{
     }
 
     @Override
-    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ) {
+    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ, int timeBudget, int maxDistance) {
 
         try {
             FileOutputStream fos = new FileOutputStream(temp_file_path);
@@ -48,12 +48,14 @@ public class CPLEXTAP implements TAPEngine{
                 }
                 io.print('\n');
             }
+            io.flush();
+            fos.close();
         } catch (IOException e){
             System.err.println("Could not save temp file !");
         }
 
         System.out.println("Running CPLEX");
-        String[] cplex_cmd = new String[]{binary_path, Paths.get(temp_file_path).toAbsolutePath().toString(), "50", "200"};
+        String[] cplex_cmd = new String[]{binary_path, Paths.get(temp_file_path).toAbsolutePath().toString(), String.valueOf(timeBudget), String.valueOf(maxDistance)};
         System.out.println(Arrays.toString(cplex_cmd));
         try {
             String solutionRaw = "";
@@ -63,7 +65,7 @@ public class CPLEXTAP implements TAPEngine{
             BufferedReader bre = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 
             while ((line = bri.readLine()) != null) {
-                //System.out.println(line);
+                System.out.println(line);
                 if (line.startsWith("SOLUTION:"))
                     solutionRaw = line;
             }
