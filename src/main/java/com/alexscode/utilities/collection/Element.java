@@ -1,11 +1,15 @@
 package com.alexscode.utilities.collection;
 
+import lombok.Getter;
+
 /**
  * Allows to sort double values in a collection while preserving their original indexes
  */
 public class Element implements Comparable<Element> {
 
+    @Getter
     public int index;
+    @Getter
     public double value;
 
     public Element(int index, double value){
