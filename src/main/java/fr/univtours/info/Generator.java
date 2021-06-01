@@ -41,7 +41,7 @@ public class Generator {
 
     public static PrintStream devOut;
 
-    static final String[] tabAgg= {"avg", "sum", "stddev"};//"min", "max",
+    static final String[] tabAgg = {"avg", "sum", "count"};//"min", "max",
 
     public static void main( String[] args ) throws Exception{
         //DEBUG

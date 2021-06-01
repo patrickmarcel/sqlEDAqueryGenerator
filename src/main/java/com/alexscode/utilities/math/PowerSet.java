@@ -8,8 +8,13 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
+ * @author Alexandre Chanson
  * A power set implementation allowing to draw random elements
- * uses bitset as representation for elements for easier use
+ * uses bitset as representation for elements for easier use.
+ *
+ * An element of the power set P(S) is represented as a binary number of size |S|
+ * this requires that the elements of S be stored in consistant order (but can be arbitrary)
+ * but allows to directly generate random members of P(S) without using nested loops
  */
 public class PowerSet {
 
@@ -61,6 +66,9 @@ public class PowerSet {
 
     }
 
+    // Shuffle labels (0 left ou / 1 in the set) and check if already drawn using
+    // the numeric representation of the set
+
     private int pks;
     List<Integer> indexes;
     public BitSet getNewRandomElementOFSize(int k){
@@ -82,7 +90,7 @@ public class PowerSet {
         return set;
     }
 
-    private BitSet convertTo (BigInteger bi) {
+    private static BitSet convertTo (BigInteger bi) {
         /*BitSet bs = new BitSet(elements);
         for (int i = 0; i < elements; i++) {
             if (bi.testBit(i))

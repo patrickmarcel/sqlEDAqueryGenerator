@@ -9,7 +9,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 public class Permutations {
-    public static double[] mean(double[] a, double[] b, int permutations){
+    public static double[] mean_smaller(double[] a, double[] b, int permutations){
 
         double[] meanDiff = new double[permutations];
 
@@ -22,7 +22,7 @@ public class Permutations {
             permutations = BigIntegerMath.binomial(ab.length, a.length).intValue();
         }
 
-        System.out.printf("Will do %s permutations%n", permutations);
+        //System.out.printf("Will do %s permutations%n", permutations);
 
         for (int i = 0; i < permutations; ++i) {
             double mua = 0, mub = 0;
@@ -37,7 +37,8 @@ public class Permutations {
                     mub += ab[j];
                 }
             }
-            meanDiff[i] = Math.abs((mua/sa) - (mub/sb));
+            //meanDiff[i] = Math.abs((mua/sa) - (mub/sb));
+            meanDiff[i] =  (mub/sb) - (mua/sa);
         }
         return meanDiff;
     }
@@ -46,7 +47,7 @@ public class Permutations {
         double[] b = {35, 36, 37};
         double[] a = {2, 3};
 
-        System.out.println(Arrays.toString(mean(a, b, 12)));
+        System.out.println(Arrays.toString(mean_smaller(a, b, 12)));
 
 
         Random rand = new Random();
@@ -64,7 +65,7 @@ public class Permutations {
         }
 
         long startTime = System.nanoTime();
-        mean(biga, bigb, biga.length*bigb.length);
+        mean_smaller(biga, bigb, biga.length*bigb.length);
         long endTime = System.nanoTime();
 
         long duration = (endTime - startTime)/1000000;
