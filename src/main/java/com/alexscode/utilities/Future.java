@@ -9,9 +9,21 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Reimplementation of useful methods from next versions of java
+ * @author Alexandre Chanson
+ * @version 1.2
+ * Reimplementation of useful static methods from next versions of java
  */
+
 public final class Future {
+
+    /**
+     * Uses a buffer to channel any InputStream into any OutputStream
+     *
+     * @param in  The source stream aka data comes from here
+     * @param out The destination stream aka data goes there
+     * @return The number of bytes transferred before end of stream was encountered
+     * @throws IOException in case of read or write errors on the streams
+     */
     public static int transferTo(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[4096];
         int read = 0, count = 0;

@@ -95,7 +95,7 @@ public class Generator {
         //TAP
         List<AbstractEDAsqlQuery> queries = new ArrayList<>(theQ);
 
-        if (theQ.size() < 1000){
+        if (theQ.size() < 10000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
             List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries, 25, 150);
             NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
