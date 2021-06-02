@@ -137,7 +137,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
 
 
 
-    public void execute() {
+    public ResultSet execute() {
         final Statement pstmt;
         try {
             pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -149,7 +149,7 @@ public abstract class AbstractEDAsqlQuery implements TimeableOp, Measurable {
             throwables.printStackTrace();
         }
 
-
+        return resultset;
 
     }
 

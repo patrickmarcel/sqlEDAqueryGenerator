@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class StatisticalVerifier {
 
-    public static double check(Insights i, Dataset ds){
+    public static double check(Insight i, Dataset ds){
         double[] a, b;
         //Load
         try {

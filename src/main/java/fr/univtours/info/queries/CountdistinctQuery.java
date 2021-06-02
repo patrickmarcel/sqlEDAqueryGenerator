@@ -38,7 +38,7 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
     }
 
     @Override
-    public void execute() {
+    public ResultSet execute() {
         super.execute();
         try {
             resultset.beforeFirst();
@@ -47,7 +47,7 @@ public class CountdistinctQuery extends AbstractEDAsqlQuery {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
-
+        return resultset;
     }
 
     @Override

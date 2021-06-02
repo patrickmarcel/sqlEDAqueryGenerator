@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 
-public class Insights {
+public class Insight {
     public static final int MEAN_SMALLER = 1;
 
-    public Insights(DatasetDimension dim, String selA, String selB, DatasetMeasure measure, int type) {
+    public Insight(DatasetDimension dim, String selA, String selB, DatasetMeasure measure, int type) {
         this.dim = dim;
         this.selA = selA;
         this.selB = selB;
