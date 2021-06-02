@@ -31,7 +31,7 @@ public class StatisticalVerifier {
                 rowA++;
             }
 
-            rs = pstmt.executeQuery(sqlA);
+            rs = pstmt.executeQuery(sqlB);
             rs.next();
 
             int rowB = 0;

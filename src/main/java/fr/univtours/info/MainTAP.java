@@ -87,6 +87,8 @@ public class MainTAP {
             System.err.println("Couldn't get supporting queries");
         }
 
+        System.out.println(insights.size());
+
         conn.close();
     }
 
