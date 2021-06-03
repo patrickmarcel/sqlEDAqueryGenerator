@@ -36,8 +36,6 @@ public class MainTAP {
     static final String[] aggF = {"avg", "sum", "count"};//"min", "max",
 
     public static void main( String[] args ) throws Exception{
-        //DEBUG
-        devOut = new PrintStream(new FileOutputStream("data/logs/log_100.txt"));
         //Load config and base dataset
         init();
         conn.setReadOnly(true);
@@ -46,7 +44,7 @@ public class MainTAP {
         System.out.println("Starting generation");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        Set<Insight> intuitions = getIntuitions();
+        List<Insight> intuitions = new ArrayList<>(getIntuitions());
 
         stopwatch.stop();
         System.out.println("Generation time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -56,38 +54,35 @@ public class MainTAP {
         System.out.println("Starting verification");
         stopwatch = Stopwatch.createStarted();
 
-        List<Insight> insights = new ArrayList<>();
-        for (Insight intuition : intuitions){
-            double p = StatisticalVerifier.check(intuition, ds);
-            if (p < 0.05){
-                insights.add(intuition);
-            }
-        }
+        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05);
 
         stopwatch.stop();
         System.out.println("Verification time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
         System.out.println("Nb of insights: " + insights.size());
 
-        System.out.println(insights);
 
+        //support
+        System.out.println("Started looking for supporting queries");
+        stopwatch = Stopwatch.createStarted();
         List<AbstractEDAsqlQuery> support = new ArrayList<>(insights.size());
         try (Statement statement = conn.createStatement()) {
-            boolean[] flag = new boolean[insights.size()];
-            int l = 0;
+            List<Insight> orphan = new ArrayList<>();
             for (Insight i : insights){
                 AbstractEDAsqlQuery sq = getSupportingQuery(i, statement);
-                support.add(sq);
-                flag[l++] = sq == null;
+                if (sq == null)
+                    orphan.add(i);
+                else
+                    support.add(sq);
             }
-            for (int i = 0; i < flag.length; i++) {
-
-            }
+            insights.removeAll(orphan);
 
         }catch (SQLException e){
             System.err.println("Couldn't get supporting queries");
         }
 
-        System.out.println(insights.size());
+        stopwatch.stop();
+        System.out.println("Support time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        System.out.println("Supported insights " + insights.size());
 
         conn.close();
     }
@@ -146,7 +141,7 @@ public class MainTAP {
             }
 
         }
-        System.err.println("Couldn't find supporting query for " + insight);
+        //System.err.println("Couldn't find supporting query for " + insight);
         return null;
 
     }

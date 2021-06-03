@@ -9,9 +9,16 @@ import java.util.Random;
 import java.util.Scanner;
 
 public class Permutations {
-    public static double[] mean_smaller(double[] a, double[] b, int permutations){
+    /**
+     *
+     * @param a initial first sample
+     * @param b initial second sample
+     * @param permutations number of permutations to perform
+     * @return r[0] stat for mean smaller / r[1] stat for mean equals / r[2] stat for mean larger
+     */
+    public static double[][] mean(double[] a, double[] b, int permutations){
 
-        double[] meanDiff = new double[permutations];
+        double[][] meanDiff = new double[3][permutations];
 
         double[] ab = new double[a.length + b.length];
         System.arraycopy(a, 0, ab, 0, a.length);
@@ -25,8 +32,8 @@ public class Permutations {
         //System.out.printf("Will do %s permutations%n", permutations);
 
         for (int i = 0; i < permutations; ++i) {
-            double mua = 0, mub = 0;
-            int sa = 0, sb = 0;
+            double mua = 0, mub = 0; //sums
+            int sa = 0, sb = 0; // counts
             BitSet pa = ps.getNewRandomElementOFSize(a.length);
             for (int j = 0; j < ab.length; j++) {
                 if (pa.get(j)){
@@ -37,12 +44,14 @@ public class Permutations {
                     mub += ab[j];
                 }
             }
-            //meanDiff[i] = Math.abs((mua/sa) - (mub/sb));
-            meanDiff[i] =  (mub/sb) - (mua/sa);
+            meanDiff[0][i] =  (mub/sb) - (mua/sa);
+            meanDiff[1][i] =  Math.abs((mub / sb) - (mua/sa));
+            meanDiff[2][i] =  (mua/sa) - (mub/sb);
         }
         return meanDiff;
     }
 
+    /*
     public static void main(String[] args) {
         double[] b = {35, 36, 37};
         double[] a = {2, 3};
@@ -73,4 +82,6 @@ public class Permutations {
         System.out.println("total " + duration + " ms");
 
     }
+    */
+
 }

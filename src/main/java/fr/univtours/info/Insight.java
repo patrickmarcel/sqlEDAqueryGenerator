@@ -14,7 +14,7 @@ import java.util.function.BiFunction;
 
 
 public class Insight {
-    public static final int MEAN_SMALLER = 1;
+    public static final int MEAN_SMALLER = 1, MEAN_EQUALS = 2, MEAN_GREATER = 3;
 
     public Insight(DatasetDimension dim, String selA, String selB, DatasetMeasure measure, int type) {
         this.dim = dim;
