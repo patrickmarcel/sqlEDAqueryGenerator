@@ -14,11 +14,11 @@ public class Permutations {
      * @param a initial first sample
      * @param b initial second sample
      * @param permutations number of permutations to perform
-     * @return r[0] stat for mean smaller / r[1] stat for mean equals / r[2] stat for mean larger
+     * @return r[0] stat for mean smaller / r[1] stat for mean equals
      */
-    public static double[][] mean(double[] a, double[] b, int permutations){
+    public static double[] mean(double[] a, double[] b, int permutations){
 
-        double[][] meanDiff = new double[3][permutations];
+        double[] meanDiff = new double[permutations];
 
         double[] ab = new double[a.length + b.length];
         System.arraycopy(a, 0, ab, 0, a.length);
@@ -34,7 +34,7 @@ public class Permutations {
         for (int i = 0; i < permutations; ++i) {
             double mua = 0, mub = 0; //sums
             int sa = 0, sb = 0; // counts
-            BitSet pa = ps.getNewRandomElementOFSize(a.length);
+            BitSet pa = ps.getNewRandomElementOFSize_new(a.length);
             for (int j = 0; j < ab.length; j++) {
                 if (pa.get(j)){
                     sa++;
@@ -44,9 +44,9 @@ public class Permutations {
                     mub += ab[j];
                 }
             }
-            meanDiff[0][i] =  (mub/sb) - (mua/sa);
-            meanDiff[1][i] =  Math.abs((mub / sb) - (mua/sa));
-            meanDiff[2][i] =  (mua/sa) - (mub/sb);
+            meanDiff[i] =  (mub/sb) - (mua/sa);
+            //meanDiff[1][i] =  Math.abs((mub / sb) - (mua/sa));
+            //meanDiff[2][i] =  (mua/sa) - (mub/sb);
         }
         return meanDiff;
     }

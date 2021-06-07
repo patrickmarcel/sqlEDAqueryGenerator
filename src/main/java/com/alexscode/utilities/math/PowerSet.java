@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -19,7 +20,7 @@ import java.util.stream.IntStream;
 public class PowerSet {
 
     private final TreeSet<BigInteger> alreadyDrawn = new TreeSet<>();
-    private Random rd = new Random();
+    private ThreadLocalRandom rd = ThreadLocalRandom.current();
     @Getter
     private int elements;
     @Getter
@@ -84,9 +85,25 @@ public class PowerSet {
             for (int i = 0; i < k; i++)
                 set.set(indexes.get(i));
 
-        } while (alreadyDrawn.contains(new BigInteger(set.toByteArray())));
+        } while (!alreadyDrawn.add(new BigInteger(set.toByteArray())));
 
-        alreadyDrawn.add(new BigInteger(set.toByteArray()));
+        return set;
+    }
+
+    public BitSet getNewRandomElementOFSize_new(int k){
+        BitSet set;
+
+        do {
+            set = new BitSet(elements);
+            for (int i = 0; i < k; i++){
+                int pos = rd.nextInt(elements);
+                while (set.get(pos)){
+                    pos = rd.nextInt(elements);
+                }
+                set.set(pos);
+            }
+        } while (!alreadyDrawn.add(new BigInteger(set.toByteArray())));
+
         return set;
     }
 
@@ -107,17 +124,20 @@ public class PowerSet {
 
     public static void main (String[] args)
     {
-        char []set = {'a', 'b', 'c', 'd'};
+        char []set = {'a', 'b', 'c', 'd', 'e'};
 
         PowerSet testSet = new PowerSet(set);
-        BitSet bs = testSet.getNewRandomElement();
-        for (int i = 0; i < testSet.elements; i++) {
-            if( bs.get(i))
-                System.out.print(1);
-            else
-                System.out.print(0);
+        for (int j = 0; j < 4; j++) {
+            BitSet bs = testSet.getNewRandomElementOFSize_new(3);
+            for (int i = 0; i < testSet.elements; i++) {
+                if( bs.get(i))
+                    System.out.print(1);
+                else
+                    System.out.print(0);
+            }
+            System.out.println();
         }
-        System.out.println();
+
 
     }
 

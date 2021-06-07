@@ -56,7 +56,15 @@ public class StatisticalVerifier {
             return 1.0;
         }
 
-        return compute_mean_smaller(i, a, b);
+        double base_stat = StatUtils.mean(b) - StatUtils.mean(a);
+        double[] perm_stats = Permutations.mean(a, b, 500);
+        int count = 0;
+        for (int j = 0; j < 500; j++) {
+            if (perm_stats[j] > base_stat)
+                count++;
+        }
+        i.setP((count)/((double) 500));
+        return i.getP();
     }
 
     /**
@@ -65,7 +73,7 @@ public class StatisticalVerifier {
      * @param insights The list of insights
      * @param ds The dataset to check insights on
      */
-    public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel) {
+    public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel, int permNb) {
         List<List<Insight>> perDim = new ArrayList<>();
         ds.getTheDimensions().forEach(d -> perDim.add(new ArrayList<>()));
         insights.forEach(i -> perDim.get(ds.getTheDimensions().indexOf(i.getDim())).add(i));
@@ -73,11 +81,11 @@ public class StatisticalVerifier {
         for (List<Insight> insightsForD : perDim){
             Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
             for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
-                check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure());
+                insights.addAll(check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
             }
         }
-
-        return insights.stream().filter(i -> i.getP() < sigLevel).collect(Collectors.toList());
+        //TODO Quick fix find out why duplicates ...
+        return new ArrayList<>(insights.stream().filter(i -> i.getP() < sigLevel).collect(Collectors.toSet()));
     }
 
     /**
@@ -87,7 +95,7 @@ public class StatisticalVerifier {
      * @param dd
      * @param dm
      */
-    private static void check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm){
+    private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
         HashMap<String, List<Double>> cache = new HashMap<>();
         try (Statement st = ds.getConn().createStatement()){
             ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + ";");
@@ -103,31 +111,62 @@ public class StatisticalVerifier {
             throwables.printStackTrace();
         }
 
+        List<Insight> toAdd = new ArrayList<>();
         for (int i = 0; i < insights.size(); i++) {
             Insight in = insights.get(i);
-            double p = compute_mean_smaller(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray());
-            in.setP(p);
+            toAdd.addAll(compute_mean(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb));
         }
-
+        insights.addAll(toAdd);
+        return insights;
     }
 
-    private static double compute_mean_smaller(Insight i, double[] a, double[] b) {
+    private static List<Insight> compute_mean(Insight i, double[] a, double[] b, int permNb) {
+        List<Insight> added = new ArrayList<>(2);
         int n_threshold = 5;
         if (a.length <= n_threshold || b.length <= n_threshold){
             i.setP(1.0);
-            return 1.0;
+            return List.of();
         }
-        int permNb = 500;
+
+        // Mean Smaller
         double base_stat = StatUtils.mean(b) - StatUtils.mean(a);
-        double[] perm_stats = Permutations.mean(a, b, permNb)[0];
+        double[] perm_stats = Permutations.mean(a, b, permNb);
         int count = 0;
         for (int j = 0; j < permNb; j++) {
             if (perm_stats[j] > base_stat)
                 count++;
         }
         i.setP((count)/((double) permNb));
-        return (count)/((double) permNb);
+
+        // Mean higher
+        base_stat = -base_stat;
+        count = 0;
+        for (int j = 0; j < permNb; j++) {
+            if (-perm_stats[j] > base_stat)
+                count++;
+        }
+        Insight tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_GREATER);
+        added.add(tmp);
+        tmp.setP((count)/((double) permNb));
+
+        // Mean equals
+        base_stat = Math.abs(base_stat);
+        count = permNb;
+        for (int j = 0; j < permNb; j++) {
+            if (Math.abs(perm_stats[j]) > base_stat)
+                count--;
+        }
+        tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_EQUALS);
+        added.add(tmp);
+        tmp.setP((count)/((double) permNb));
+
+        if ( ( boolToInt(added.get(1).getP()  < 0.05) + boolToInt(added.get(0).getP() < 0.05) + boolToInt(i.getP() < 0.05)) > 1)
+            System.out.println("calling debugger");
+        return added;
     }
 
+    private static int boolToInt(boolean b) {
+        return Boolean.compare(b, false);
+    }
 
 }

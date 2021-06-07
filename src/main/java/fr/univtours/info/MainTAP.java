@@ -7,6 +7,10 @@ import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import fr.univtours.info.optimize.CPLEXTAP;
+import fr.univtours.info.optimize.KnapsackStyle;
+import fr.univtours.info.optimize.NaiveTAP;
+import fr.univtours.info.optimize.TAPEngine;
 import fr.univtours.info.queries.AbstractEDAsqlQuery;
 import fr.univtours.info.queries.SiblingAssessQuery;
 import org.apache.commons.math3.stat.StatUtils;
@@ -14,6 +18,9 @@ import org.apache.commons.math3.stat.StatUtils;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -54,7 +61,7 @@ public class MainTAP {
         System.out.println("Starting verification");
         stopwatch = Stopwatch.createStarted();
 
-        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05);
+        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05, 1000);
 
         stopwatch.stop();
         System.out.println("Verification time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -83,6 +90,33 @@ public class MainTAP {
         stopwatch.stop();
         System.out.println("Support time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
         System.out.println("Supported insights " + insights.size());
+
+
+        for (int i = 0, supportSize = support.size(); i < supportSize; i++) {
+            AbstractEDAsqlQuery q = support.get(i);
+            q.explainAnalyze(); //TODO time estimates
+            ((SiblingAssessQuery) q).setTestComment(Insight.pprint[insights.get(i).getType()]);
+            q.setInterest(1-insights.get(i).getP());
+        }
+
+        //Naive heuristic
+        TAPEngine naive = new KnapsackStyle();
+        List<AbstractEDAsqlQuery> naiveSolution = naive.solve(support, 25, 150);
+        NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
+        naiveSolution.forEach(out::addQuery);
+        Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+
+
+        if (support.size() < 1000){
+            TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
+            List<AbstractEDAsqlQuery> exactSolution = exact.solve(support, 25, 150);
+            out = new NotebookJupyter(config.getBaseURL());
+            exactSolution.forEach(out::addQuery);
+            Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+        } else {
+            System.err.println("[WARNING] Couldn't run exact solver : too many queries");
+        }
+
 
         conn.close();
     }

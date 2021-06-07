@@ -27,4 +27,10 @@ public class DatasetMeasure extends DatasetAttribute {
     }
 
 
+    @Override
+    public String toString() {
+        return "M{" +
+                "name='" + name + '\'' +
+                '}';
+    }
 }
