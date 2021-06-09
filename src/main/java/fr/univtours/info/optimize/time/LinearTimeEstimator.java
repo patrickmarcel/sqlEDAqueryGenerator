@@ -2,7 +2,7 @@ package fr.univtours.info.optimize.time;
 
 
 import fr.univtours.info.dataset.metadata.DatasetStats;
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -14,7 +14,7 @@ public class LinearTimeEstimator implements CostModel {
 
     static DatasetStats stats = null;
 
-    public static long estimate(AbstractEDAsqlQuery q){
+    public static long estimate(AssessQuery q){
         if (stats == null) {
             try {
                 stats = new DatasetStats();
@@ -30,8 +30,8 @@ public class LinearTimeEstimator implements CostModel {
 
     @Override
     public long estimateCost(TimeableOp operation) {
-        if (operation instanceof AbstractEDAsqlQuery){
-            return estimate((AbstractEDAsqlQuery) operation);
+        if (operation instanceof AssessQuery){
+            return estimate((AssessQuery) operation);
         } else
             throw new UnsupportedOperationException();
     }

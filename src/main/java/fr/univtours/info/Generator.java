@@ -84,8 +84,8 @@ public class Generator {
 
         //computeCosts();
         //TODO useless for now as everything takes about 5ms
-        for (AbstractEDAsqlQuery abstractEDAsqlQuery : theQ) {
-            abstractEDAsqlQuery.explainAnalyze();
+        for (AssessQuery assessQuery : theQ) {
+            assessQuery.explainAnalyze();
         }
 
         stopwatch.stop();
@@ -93,11 +93,11 @@ public class Generator {
         System.out.println("Cost computation time in milliseconds: " + timeElapsed);
 
         //TAP
-        List<AbstractEDAsqlQuery> queries = new ArrayList<>(theQ);
+        List<AssessQuery> queries = new ArrayList<>(theQ);
 
         if (theQ.size() < 10000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
-            List<AbstractEDAsqlQuery> exactSolution = exact.solve(queries, 25, 150);
+            List<AssessQuery> exactSolution = exact.solve(queries, 25, 150);
             NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
             Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -107,7 +107,7 @@ public class Generator {
 
         //Naive heuristic from 2020 paper
         TAPEngine naive = new NaiveTAP();
-        List<AbstractEDAsqlQuery> naiveSolution = naive.solve(queries, 25, 150);
+        List<AssessQuery> naiveSolution = naive.solve(queries, 25, 150);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -125,17 +125,17 @@ public class Generator {
         theMeasures = config.getMeasures();
         ds=new Dataset(conn, table, theDimensions, theMeasures);
     }
-
+/*
     // todo: check if optimization is reasonable in practice...
     static void computeCosts() throws Exception {
-        float current=0;
+        long current=0;
         int nbExplain=0;
-        AbstractEDAsqlQuery previous=null;
+        AssessQuery previous=null;
         int correct = 0, wrong = 0, bad = 0;
         ArrayList<Float> errors = new ArrayList<>(10000);
         ArrayList<Float> times = new ArrayList<>(theQ.size());
 
-        for(AbstractEDAsqlQuery q : theQ){
+        for(AssessQuery q : theQ){
             //q.explainAnalyze();
 
             // THIS MUST BE CHECKED BECAUSE EVEN WHEN DISTANCE IS 0 THE COST MAY DIFFER
@@ -144,8 +144,8 @@ public class Generator {
                 q.setEstimatedCost(current);
                 //error check start
                 q.explain();
-                times.add(q.getEstimatedCost());
-                float error = Math.abs(q.getEstimatedCost() - current);
+                times.add(q.estimatedTime());
+                long error = Math.abs(q.estimatedTime() - current);
 
                 if (error < 0.1){
                     correct += 1; }
@@ -184,17 +184,17 @@ public class Generator {
                 .map(k -> k*k)
                 .mapToDouble(k -> k).average().getAsDouble();
         System.out.printf("MAE %s, std %s%n",mae , Math.sqrt(mae_variance));
-    }
+    }*/
 
     public static void computeInterests(Dataset sample) throws Exception {
-        List<AbstractEDAsqlQuery> toEvaluate = new ArrayList<>(theQ);
+        List<AssessQuery> toEvaluate = new ArrayList<>(theQ);
         double[] pPearson = new double[toEvaluate.size()];
         double[] pT = new double[toEvaluate.size()];
         double[] pF = new double[toEvaluate.size()];
         try (ProgressBar progress = new ProgressBar("Performing statistical tests", toEvaluate.size())) {
             for (int i = 0; i < toEvaluate.size(); i++){
                 //Run the query
-                SiblingAssessQuery assess = (SiblingAssessQuery) toEvaluate.get(i);
+                AssessQuery assess = (AssessQuery) toEvaluate.get(i);
                 assess.execute();
                 //Perform statistical tests on output
                 Pair<Double, Double> res = assess.pearsonTest(false);
@@ -229,7 +229,7 @@ public class Generator {
             if (pF[j] < 0.05)
                 tests += ", " + testNames[2];
 
-            ((SiblingAssessQuery) toEvaluate.get(j)).setTestComment(tests);
+            ((AssessQuery) toEvaluate.get(j)).setTestComment(tests);
             toEvaluate.get(j).setInterest(1d - mostSignificant);
         }
     }
@@ -269,7 +269,7 @@ public class Generator {
                                 tabstring[i++]=sc;
                             }
                             //System.out.println(tabdim[0] + tabstring[0] +  tabstring[1] +  tabdim[1] );
-                            SiblingAssessQuery saq = new SiblingAssessQuery(conn, table, dim_pair.getFirst(), tabstring[0], tabstring[1], dim_pair.getSecond(), meas, agg);
+                            AssessQuery saq = new AssessQuery(conn, table, dim_pair.getFirst(), tabstring[0], tabstring[1], dim_pair.getSecond(), meas, agg);
                             //System.out.println(saq);
                             theQ.addQuery(saq);
 
@@ -280,46 +280,8 @@ public class Generator {
         }
     }
 
-    static void generateAggregates() throws Exception {
-        ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(theDimensions);
-        Set<Set<DatasetDimension>> powerSet = Sets.powerSet(set);
-
-        for(Set<DatasetDimension> s : powerSet) {
-            for(DatasetMeasure meas : theMeasures) {
-                for (String agg : tabAgg) {
-                    AggregateQuery aq = new AggregateQuery(conn, table, s, meas, agg);
-                    theQ.addQuery(aq);
-
-                    //aq.execute();
-                    //aq.explainAnalyze();
-
-                    //System.out.println(aq.sql);
-                    //System.out.println(aq.cost);
-                }
-            }
-        }
-    }
-
-    static void generateHistograms(){
-        for(DatasetDimension d : theDimensions){
-            HistogramQuery hq = new HistogramQuery(conn, table, d);
-            theQ.addQuery(hq);
-        }
-    }
-
-    static void generateCounts() throws Exception {
-        for(DatasetDimension dim : theDimensions){
-            CountdistinctQuery cdq= new CountdistinctQuery(conn, table, dim) ;
-            theQ.addQuery(cdq);
-            //cdq.execute();
-            //cdq.explainAnalyze();
-
-        }
-
-    }
-
-    static String getId(SiblingAssessQuery q){
-        String id = "\"" + q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((SiblingAssessQuery) q).getVal1() + ":" + ((SiblingAssessQuery) q).getVal2() + "\"";
+    static String getId(AssessQuery q){
+        String id = "\"" + q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((AssessQuery) q).getVal1() + ":" + ((AssessQuery) q).getVal2() + "\"";
         return id;
     }
 

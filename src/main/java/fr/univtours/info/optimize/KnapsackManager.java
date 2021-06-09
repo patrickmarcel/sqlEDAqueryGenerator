@@ -1,10 +1,7 @@
 package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.math.IntRangeNormalizer;
-import com.google.common.base.Stopwatch;
-import fr.univtours.info.optimize.time.TimeCallibration;
-import fr.univtours.info.optimize.time.TimeableOp;
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -29,7 +26,7 @@ public class KnapsackManager implements BudgetManager {
     }
 
     @Override
-    public List<AbstractEDAsqlQuery> findBestPlan(Collection<AbstractEDAsqlQuery> candidates, int timeBudget) {
+    public List<AssessQuery> findBestPlan(Collection<AssessQuery> candidates, int timeBudget) {
         int n = candidates.size();
         if (n ==0)
             throw new IllegalArgumentException("Cannot find best Knapsack solution for ZERO possible items !");
@@ -39,7 +36,7 @@ public class KnapsackManager implements BudgetManager {
         int[] weight = new int[n];
         int[] valueApprox = new int[n];
 
-        List<AbstractEDAsqlQuery> candidates_ = new ArrayList<>(candidates);
+        List<AssessQuery> candidates_ = new ArrayList<>(candidates);
         for (int i = 0; i < candidates_.size(); i++) {
             rawValue[i] =metric.rate(candidates_.get(i));
             weight[i] = Math.toIntExact(candidates_.get(i).estimatedTime());
@@ -68,7 +65,7 @@ public class KnapsackManager implements BudgetManager {
         // Calculate Approximation Solution
         boolean[] isPickedApprox = getKnapsackSolution(weight, valueApprox, timeBudget, totalValue);
 
-        ArrayList<AbstractEDAsqlQuery> solution = new ArrayList<>();
+        ArrayList<AssessQuery> solution = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             if (isPickedApprox[i])
                 solution.add(candidates_.get(i));

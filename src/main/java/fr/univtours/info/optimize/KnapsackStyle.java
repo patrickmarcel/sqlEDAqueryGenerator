@@ -1,15 +1,11 @@
 package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.collection.Element;
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
-import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.Well19937c;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -81,7 +77,7 @@ public class KnapsackStyle implements TAPEngine{
 
 
     @Override
-    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ, int timeBudget, int maxDistance) {
+    public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
         int size = theQ.size();
 
         List<Integer> solution = new ArrayList<>();
@@ -100,13 +96,13 @@ public class KnapsackStyle implements TAPEngine{
         {
             int current = order.get(i).index;
 
-            if (timeBudget - (total_time + theQ.get(current).getEstimatedCost()) > 0){
+            if (timeBudget - (total_time + theQ.get(current).estimatedTime()) > 0){
                 if (solution.size() > 0 && maxDistance - (total_dist + theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current))) < 0)
                     continue;
                 if (solution.size() >0)
                     //total_dist += ist.distances[solution.get(solution.size() - 1)][current];
                     total_dist += theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current));
-                total_time += theQ.get(current).getEstimatedCost();
+                total_time += theQ.get(current).estimatedTime();
                 solution.add(current);
                 z += theQ.get(current).getInterest();
             }

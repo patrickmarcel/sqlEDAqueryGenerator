@@ -1,10 +1,8 @@
 package fr.univtours.info.optimize;
 
-import fr.univtours.info.optimize.time.TimeableOp;
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This is the interface for the interestingness vs runtime part of the TAP heuristics
@@ -17,6 +15,6 @@ public interface BudgetManager {
      * @param timeBudget the budget in milliseconds
      * @return an execution plan compliant with the budget
      */
-    public List<AbstractEDAsqlQuery> findBestPlan(Collection<AbstractEDAsqlQuery> candidates, int timeBudget);
+    public List<AssessQuery> findBestPlan(Collection<AssessQuery> candidates, int timeBudget);
 
 }

@@ -1,10 +1,9 @@
 package fr.univtours.info.optimize;
 
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
-import fr.univtours.info.queries.CandidateQuerySet;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.util.List;
 
 public interface TAPEngine {
-    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ, int timeBudget, int maxDistance);
+    public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance);
 }

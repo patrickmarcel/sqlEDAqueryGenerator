@@ -9,13 +9,10 @@ import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.optimize.CPLEXTAP;
 import fr.univtours.info.optimize.KnapsackStyle;
-import fr.univtours.info.optimize.NaiveTAP;
 import fr.univtours.info.optimize.TAPEngine;
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
-import fr.univtours.info.queries.SiblingAssessQuery;
-import org.apache.commons.math3.stat.StatUtils;
+import fr.univtours.info.queries.AssessQuery;
+import fr.univtours.info.queries.AssessQuery;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -71,15 +68,22 @@ public class MainTAP {
         //support
         System.out.println("Started looking for supporting queries");
         stopwatch = Stopwatch.createStarted();
-        List<AbstractEDAsqlQuery> support = new ArrayList<>(insights.size());
+        Map<AssessQuery, List<Insight>> supports = new HashMap<>();
+        Map<Insight, List<AssessQuery>> isSupportedBy = new HashMap<>();
         try (Statement statement = conn.createStatement()) {
             List<Insight> orphan = new ArrayList<>();
             for (Insight i : insights){
-                AbstractEDAsqlQuery sq = getSupportingQuery(i, statement);
-                if (sq == null)
+                List<AssessQuery> sqs = getSupportingQueries(i, statement);
+                if (sqs.size() == 0)
                     orphan.add(i);
-                else
-                    support.add(sq);
+                else{
+                    isSupportedBy.computeIfAbsent(i, k-> new ArrayList<>());
+                    isSupportedBy.get(i).addAll(sqs);
+                    for (AssessQuery q : sqs){
+                        supports.computeIfAbsent(q, k -> new ArrayList<>());
+                        supports.get(q).add(i);
+                    }
+                }
             }
             insights.removeAll(orphan);
 
@@ -91,25 +95,35 @@ public class MainTAP {
         System.out.println("Support time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
         System.out.println("Supported insights " + insights.size());
 
-
-        for (int i = 0, supportSize = support.size(); i < supportSize; i++) {
-            AbstractEDAsqlQuery q = support.get(i);
-            q.explainAnalyze(); //TODO time estimates
-            ((SiblingAssessQuery) q).setTestComment(Insight.pprint[insights.get(i).getType()]);
-            q.setInterest(1-insights.get(i).getP());
+        List<AssessQuery> tapQueries = new ArrayList<>();
+        for (AssessQuery q : supports.keySet()){
+            tapQueries.add(q);
+            q.explain();
+            StringBuilder sb = new StringBuilder("Insights:");
+            for (Insight insight : supports.get(q)) {
+                sb.append(insight).append(", ");
+            }
+            q.setTestComment(sb.toString());
+        }
+        for (Map.Entry<Insight, List<AssessQuery>> entry : isSupportedBy.entrySet()){
+            List<AssessQuery> supporting = entry.getValue();
+            double p = entry.getKey().getP();
+            for (AssessQuery q : supporting){
+                q.setInterest(q.getInterest() + p/supporting.size());
+            }
         }
 
-        //Naive heuristic
+        // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
-        List<AbstractEDAsqlQuery> naiveSolution = naive.solve(support, 25, 150);
+        List<AssessQuery> naiveSolution = naive.solve(tapQueries, 2500, 150);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
 
-        if (support.size() < 1000){
+        if (tapQueries.size() < 10000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
-            List<AbstractEDAsqlQuery> exactSolution = exact.solve(support, 25, 150);
+            List<AssessQuery> exactSolution = exact.solve(tapQueries, 2500, 150);
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
             Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -147,13 +161,14 @@ public class MainTAP {
         return intuitions;
     }
 
-    public static AbstractEDAsqlQuery getSupportingQuery(Insight insight, Statement st) throws SQLException{
+    public static List<AssessQuery> getSupportingQueries(Insight insight, Statement st) throws SQLException{
+        List<AssessQuery> supporting = new ArrayList<>();
         List<DatasetDimension> dims = new ArrayList<>(ds.getTheDimensions());
         dims.remove(insight.dim);
         dims.sort(Comparator.comparing(dim -> dim.getActiveDomain().size()));
 
         for (DatasetDimension dim : dims){
-            SiblingAssessQuery q = new SiblingAssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dim, insight.getMeasure(), "sum");
+            AssessQuery q = new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dim, insight.getMeasure(), "sum");
             ResultSet rs = q.execute();
 
             ArrayList<Double> a = new ArrayList<>();
@@ -171,12 +186,12 @@ public class MainTAP {
             mub = mub / b.size();
 
             if (mua < mub){
-                return q;
+                supporting.add(q);
             }
 
         }
         //System.err.println("Couldn't find supporting query for " + insight);
-        return null;
+        return supporting;
 
     }
 }

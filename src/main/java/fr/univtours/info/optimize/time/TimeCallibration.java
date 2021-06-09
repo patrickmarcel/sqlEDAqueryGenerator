@@ -6,9 +6,8 @@ import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.dataset.metadata.DatasetStats;
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.AssessQuery;
 import fr.univtours.info.queries.CandidateQuerySet;
-import fr.univtours.info.queries.SiblingAssessQuery;
 
 
 import java.io.*;
@@ -53,14 +52,14 @@ public class TimeCallibration {
         double sample_rate = 0.005;
         Random rd = new Random();
         int count = 0;
-        for (AbstractEDAsqlQuery q : theQ){
+        for (AssessQuery q : theQ){
             if (rd.nextFloat() < sample_rate){
                 count +=1;
 
                 double time = timeQuery(q.getSql(), conn);
-                String id = "\"" + q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + ((SiblingAssessQuery) q).getVal1() + ":" + ((SiblingAssessQuery) q).getVal2() + "\"";
-                double left_sel = frequency.get(q.getAssessed()).get(((SiblingAssessQuery) q).getVal1()) / (double) rows;
-                double right_sel =  frequency.get(q.getAssessed()).get(((SiblingAssessQuery) q).getVal2()) / (double) rows;
+                String id = "\"" + q.getFunction() + ":" + q.getMeasure().getName() + ":" + q.getReference().getName() + ":" + q.getAssessed().getName() + ":" + q.getVal1() + ":" + q.getVal2() + "\"";
+                double left_sel = frequency.get(q.getAssessed()).get(q.getVal1()) / (double) rows;
+                double right_sel =  frequency.get(q.getAssessed()).get(q.getVal2()) / (double) rows;
                 int gb_size = adSize.get(q.getReference());
 
                 out.printf("%s,%s,%s,%s,%s%n", id, left_sel, right_sel, gb_size, time);

@@ -1,7 +1,6 @@
 package fr.univtours.info.optimize;
 
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
-import fr.univtours.info.queries.CandidateQuerySet;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -19,29 +18,29 @@ public class CPLEXTAP implements TAPEngine{
     }
 
     @Override
-    public List<AbstractEDAsqlQuery> solve(List<AbstractEDAsqlQuery> theQ, int timeBudget, int maxDistance) {
+    public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
 
         try {
             FileOutputStream fos = new FileOutputStream(temp_file_path);
             PrintWriter io = new PrintWriter(fos);
             io.println(theQ.size());
             for (int i = 0; i < theQ.size(); i++) {
-                AbstractEDAsqlQuery q = theQ.get(i);
+                AssessQuery q = theQ.get(i);
                 io.print(q.getInterest());
                 if (i < theQ.size() - 1)
                     io.print(" ");
             }
             io.print('\n');
             for (int i = 0; i < theQ.size(); i++) {
-                AbstractEDAsqlQuery q = theQ.get(i);
-                io.print((int) q.getActualCost());
+                AssessQuery q = theQ.get(i);
+                io.print((int) q.estimatedTime());// Now using time estimate not real run time
                 if (i < theQ.size() - 1)
                     io.print(" ");
             }
             io.print('\n');
-            for (AbstractEDAsqlQuery q : theQ){
+            for (AssessQuery q : theQ){
                 for (int i = 0; i < theQ.size(); i++) {
-                    AbstractEDAsqlQuery qp = theQ.get(i);
+                    AssessQuery qp = theQ.get(i);
                     io.print((int) q.dist(qp));
                     if (i < theQ.size() - 1)
                         io.print(" ");
@@ -78,7 +77,7 @@ public class CPLEXTAP implements TAPEngine{
 
             System.out.println("CPLEX is Done");
             System.out.println(solutionRaw);
-            ArrayList<AbstractEDAsqlQuery> solution = new ArrayList<>();
+            ArrayList<AssessQuery> solution = new ArrayList<>();
             Arrays.stream(solutionRaw.replace("SOLUTION: ", "").stripTrailing().split(" "))
                     .mapToInt(Integer::parseInt)
                     .forEach(i -> solution.add(theQ.get(i-1)));

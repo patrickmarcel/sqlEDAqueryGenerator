@@ -1,13 +1,13 @@
 package fr.univtours.info.optimize.time;
 
 
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
+import fr.univtours.info.queries.AssessQuery;
 
 public class CostModelProvider {
     static CostModel defaultModel;
 
     public static CostModel getModelFor(TimeableOp op){
-        if (op instanceof AbstractEDAsqlQuery){
+        if (op instanceof AssessQuery){
             return new LinearTimeEstimator();
         }
         else {

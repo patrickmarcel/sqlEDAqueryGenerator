@@ -1,18 +1,16 @@
 package fr.univtours.info.queries;
 
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
-
 import java.util.*;
 
-public class CandidateQuerySet implements Collection<AbstractEDAsqlQuery> {
+public class CandidateQuerySet implements Collection<AssessQuery> {
 
-    List<AbstractEDAsqlQuery> theQueries;
+    List<AssessQuery> theQueries;
 
     public CandidateQuerySet(){
-        theQueries=new ArrayList<AbstractEDAsqlQuery>();
+        theQueries=new ArrayList<AssessQuery>();
     }
 
-    public void addQuery(AbstractEDAsqlQuery q){
+    public void addQuery(AssessQuery q){
         theQueries.add(q);
     }
 
@@ -33,7 +31,7 @@ public class CandidateQuerySet implements Collection<AbstractEDAsqlQuery> {
     }
 
     @Override
-    public Iterator<AbstractEDAsqlQuery> iterator() {
+    public Iterator<AssessQuery> iterator() {
         return theQueries.iterator();
     }
 
@@ -48,8 +46,8 @@ public class CandidateQuerySet implements Collection<AbstractEDAsqlQuery> {
     }
 
     @Override
-    public boolean add(AbstractEDAsqlQuery abstractEDAsqlQuery) {
-        return theQueries.add(abstractEDAsqlQuery);
+    public boolean add(AssessQuery assessQuery) {
+        return theQueries.add(assessQuery);
     }
 
     @Override
@@ -63,7 +61,7 @@ public class CandidateQuerySet implements Collection<AbstractEDAsqlQuery> {
     }
 
     @Override
-    public boolean addAll(Collection<? extends AbstractEDAsqlQuery> c) {
+    public boolean addAll(Collection<? extends AssessQuery> c) {
         return theQueries.addAll(c);
     }
 

@@ -1,8 +1,7 @@
 package fr.univtours.info;
 
 
-import fr.univtours.info.queries.AbstractEDAsqlQuery;
-import fr.univtours.info.queries.SiblingAssessQuery;
+import fr.univtours.info.queries.AssessQuery;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -10,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NotebookJupyter {
-    List<AbstractEDAsqlQuery> queries;
+    List<AssessQuery> queries;
     String dbUrl = "<db_url>";
     NumberFormat formatter = new DecimalFormat("#0.00");
 
@@ -23,11 +22,11 @@ public class NotebookJupyter {
         dbUrl = baseURL.replaceFirst("jdbc:", "");
     }
 
-    public boolean addQuery(AbstractEDAsqlQuery q){
+    public boolean addQuery(AssessQuery q){
         return queries.add(q);
     }
 
-    private static String queryToJSON(AbstractEDAsqlQuery q){
+    private static String queryToJSON(AssessQuery q){
         StringBuilder sb = new StringBuilder("{");
         sb.append(queryCellHeader);
         sb.append("   \"source\": [\n");
@@ -45,7 +44,7 @@ public class NotebookJupyter {
         return sb.toString();
     }
 
-    private String queryDescriptor(AbstractEDAsqlQuery q, int qnb, String diffs) {
+    private String queryDescriptor(AssessQuery q, int qnb, String diffs) {
         StringBuilder sb = new StringBuilder("  {\n" +
                 "   \"cell_type\": \"markdown\",\n" +
                 "   \"metadata\": {},\n" +
@@ -59,7 +58,7 @@ public class NotebookJupyter {
                 sb.append(",\n");
         }
         sb.append(",\n\"\\n\",\n");
-        sb.append(getLineRepr(((SiblingAssessQuery)q).getTestComment())).append(",\n\"\\n\",\n");
+        sb.append(getLineRepr(q.getTestComment())).append(",\n\"\\n\",\n");
         sb.append("\"Interestingness (1 - MIN(p-values)) = ").append(formatter.format(q.getInterest())).append("\\n\"\n");
 
         sb.append("]");
@@ -77,7 +76,7 @@ public class NotebookJupyter {
             if (i == 0)
                 sb.append(queryDescriptor(queries.get(i), i + 1, ""));
             else
-                sb.append(queryDescriptor(queries.get(i), i + 1, ((SiblingAssessQuery)queries.get(i)).getDiffs((SiblingAssessQuery) queries.get(i-1))));
+                sb.append(queryDescriptor(queries.get(i), i + 1, (queries.get(i)).getDiffs(queries.get(i-1))));
             sb.append(",\n");
             sb.append(queryToJSON(queries.get(i)));
             if (i < queries.size() - 1)
