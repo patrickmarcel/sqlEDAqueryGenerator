@@ -105,12 +105,17 @@ public class MainTAP {
             }
             q.setTestComment(sb.toString());
         }
+        // get interest from supported insights
         for (Map.Entry<Insight, List<AssessQuery>> entry : isSupportedBy.entrySet()){
             List<AssessQuery> supporting = entry.getValue();
             double p = entry.getKey().getP();
             for (AssessQuery q : supporting){
-                q.setInterest(q.getInterest() + p/supporting.size());
+                q.setInterest(1 - (q.getInterest() + p/supporting.size()));
             }
+        }
+        // conciseness ponderation
+        for (AssessQuery q : tapQueries){
+            q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support()));
         }
 
         // Naive heuristic
@@ -121,7 +126,7 @@ public class MainTAP {
         Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
 
-        if (tapQueries.size() < 10000){
+        if (tapQueries.size() < 1000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
             List<AssessQuery> exactSolution = exact.solve(tapQueries, 2500, 150);
             out = new NotebookJupyter(config.getBaseURL());
@@ -168,6 +173,9 @@ public class MainTAP {
         dims.sort(Comparator.comparing(dim -> dim.getActiveDomain().size()));
 
         for (DatasetDimension dim : dims){
+            // SKip irrelevant combinations
+            if (DBUtils.checkAimpliesB(insight.getDim(), dim, conn, table))
+                continue;
             AssessQuery q = new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dim, insight.getMeasure(), "sum");
             ResultSet rs = q.execute();
 
@@ -185,13 +193,36 @@ public class MainTAP {
             mua = mua / a.size();
             mub = mub / b.size();
 
-            if (mua < mub){
-                supporting.add(q);
+            switch (insight.type) {
+                case Insight.MEAN_SMALLER:
+                    if (mua < mub)
+                        supporting.add(q);
+                    break;
+
+                case Insight.MEAN_GREATER:
+                    if (mua > mub)
+                        supporting.add(q);
+                    break;
+
+                case Insight.MEAN_EQUALS:
+                    if (Math.abs(mua - mub) < 0.05 * Math.max(mua, mub))
+                        supporting.add(q);
+                    break;
+
+                default:
+                    break;
             }
 
         }
-        //System.err.println("Couldn't find supporting query for " + insight);
         return supporting;
 
+    }
+
+    public static final double sqrt2pi = Math.sqrt(2*Math.PI);
+    public static double conciseness(int nbGroups, int nbTuples){
+        double alpha = 0.4, beta = 1;
+        double sigma = Math.sqrt(nbTuples/2.);
+
+        return (1/(sigma*sqrt2pi))*Math.exp((-1 * Math.pow(nbGroups - (nbTuples*alpha) - beta ,2))/(sigma*sigma));
     }
 }

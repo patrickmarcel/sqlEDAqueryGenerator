@@ -10,6 +10,7 @@ import fr.univtours.info.optimize.time.TimeableOp;
 import fr.univtours.info.optimize.tsp.Measurable;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.commons.dbutils.ResultSetIterator;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.inference.TTest;
@@ -50,6 +51,9 @@ public class AssessQuery implements TimeableOp, Measurable {
     long explainCost = -1;
     @Getter @Setter
     double interest = 0;
+
+    @Accessors
+    double consiseness;
 
     @Getter
     DatasetMeasure measure;
@@ -202,6 +206,21 @@ public class AssessQuery implements TimeableOp, Measurable {
         System.out.println("--- Result Set END ---");
         resultset.close();
 
+    }
+
+    public int support() {
+        int size;
+        try (Statement st = conn.createStatement()) {
+            ResultSet rs = st.executeQuery("select count(*) from " + table + " where " + assessed.getName() + " = '" + val2 + "' or " + assessed.getName() + " = '" + val1 + "';");
+            rs.next();
+            size = rs.getInt(1);
+            rs.close();
+
+        } catch (SQLException e){
+            System.err.println("[ERROR] Couldn't fetch support for " + this);
+            return 0;
+        }
+        return size;
     }
 
     @Override

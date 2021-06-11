@@ -8,6 +8,7 @@ import org.apache.commons.math3.stat.StatUtils;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.SynchronousQueue;
 import java.util.stream.Collectors;
 
 public class StatisticalVerifier {
@@ -91,9 +92,6 @@ public class StatisticalVerifier {
     /**
      * Internal check in bulk (same dimension/measure)
      * @param insights insights on the same measure and dimension
-     * @param ds
-     * @param dd
-     * @param dm
      */
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
         HashMap<String, List<Double>> cache = new HashMap<>();
@@ -111,9 +109,13 @@ public class StatisticalVerifier {
             throwables.printStackTrace();
         }
 
+
         List<Insight> toAdd = new ArrayList<>();
         for (int i = 0; i < insights.size(); i++) {
             Insight in = insights.get(i);
+            if (cache.get(in.selA) == null){
+                System.err.println("Dimension " + in.getDim() + " could be wrong type (eg floating point) !");
+            }
             toAdd.addAll(compute_mean(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb));
         }
         insights.addAll(toAdd);
