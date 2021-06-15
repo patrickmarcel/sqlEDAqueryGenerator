@@ -27,7 +27,7 @@ public class TimeCallibration {
 
 
     public static void main(String[] args) throws IOException, SQLException {
-        DBConfig config = DBConfig.readProperties();
+        DBConfig config = DBConfig.newFromFile();
         table = config.getTable();
         theDimensions = config.getDimensions();
         theMeasures = config.getMeasures();

@@ -118,7 +118,7 @@ public class Generator {
     }
 
     public static void init() throws IOException, SQLException{
-        config = DBConfig.readProperties();
+        config = DBConfig.newFromFile();
         conn = config.getConnection();
         table = config.getTable();
         theDimensions = config.getDimensions();

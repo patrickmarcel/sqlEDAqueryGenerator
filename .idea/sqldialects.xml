@@ -2,7 +2,8 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/sql/covid data preparation.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/sql/covid_public_avocado.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/sql/covid_public_avocado.sql" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/sql/covid_public_covid_vac.sql" dialect="PostgreSQL" />
+    <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>

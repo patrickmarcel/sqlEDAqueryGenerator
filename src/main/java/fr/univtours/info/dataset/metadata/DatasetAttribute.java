@@ -2,6 +2,7 @@ package fr.univtours.info.dataset.metadata;
 
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -11,6 +12,8 @@ public abstract class DatasetAttribute {
 
     @Getter
     String name;
+    @Getter @Setter
+    String prettyName;
     Connection conn;
     String table;
 

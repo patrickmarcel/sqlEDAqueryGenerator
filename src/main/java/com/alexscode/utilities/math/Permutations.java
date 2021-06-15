@@ -1,5 +1,6 @@
 package com.alexscode.utilities.math;
 
+import com.alexscode.utilities.collection.Pair;
 import com.google.common.math.BigIntegerMath;
 
 import java.math.BigInteger;
@@ -17,8 +18,7 @@ public class Permutations {
      * @return r[0] stat for mean smaller / r[1] stat for mean equals
      */
     public static double[] mean(double[] a, double[] b, int permutations){
-
-        double[] meanDiff = new double[permutations];
+        double[] meanDiffs = new double[permutations];
 
         double[] ab = new double[a.length + b.length];
         System.arraycopy(a, 0, ab, 0, a.length);
@@ -29,26 +29,69 @@ public class Permutations {
             permutations = BigIntegerMath.binomial(ab.length, a.length).intValue();
         }
 
-        //System.out.printf("Will do %s permutations%n", permutations);
-
         for (int i = 0; i < permutations; ++i) {
-            double mua = 0, mub = 0; //sums
-            int sa = 0, sb = 0; // counts
+            double mua = 0, mub = 0; // mean
+            int countA = 0, countB = 0; // counts
             BitSet pa = ps.getNewRandomElementOFSize_new(a.length);
             for (int j = 0; j < ab.length; j++) {
                 if (pa.get(j)){
-                    sa++;
+                    countA++;
                     mua += ab[j];
                 } else {
-                    sb ++;
+                    countB ++;
                     mub += ab[j];
                 }
             }
-            meanDiff[i] =  (mub/sb) - (mua/sa);
-            //meanDiff[1][i] =  Math.abs((mub / sb) - (mua/sa));
-            //meanDiff[2][i] =  (mua/sa) - (mub/sb);
+            //Compute stat: E[b] - E[a]
+            meanDiffs[i] =  (mub/countB) - (mua/countA);
         }
-        return meanDiff;
+        return meanDiffs;
+    }
+
+
+    public static Pair<double[], double[]> meanAndvariance(double[] a, double[] b, int permutations){
+
+        double[] meanDiffs = new double[permutations];
+        double[] varDiffs = new double[permutations];
+
+        double[] ab = new double[a.length + b.length];
+        System.arraycopy(a, 0, ab, 0, a.length);
+        System.arraycopy(b, 0, ab, a.length, b.length);
+
+        PowerSet ps = new PowerSet(ab);
+        if (BigIntegerMath.binomial(ab.length, a.length).compareTo(BigInteger.valueOf(permutations)) < 0){
+            permutations = BigIntegerMath.binomial(ab.length, a.length).intValue();
+        }
+
+
+        for (int i = 0; i < permutations; ++i) {
+            double mua = 0, mub = 0; // mean
+            double muasq = 0, mubsq = 0; // mean of squares
+            int countA = 0, countB = 0; // count
+
+            BitSet pa = ps.getNewRandomElementOFSize_new(a.length);
+            for (int j = 0; j < ab.length; j++) {
+                if (pa.get(j)){
+                    countA++;
+                    mua += ab[j];
+                    muasq += ab[j]*ab[j];
+                } else {
+                    countB ++;
+                    mub += ab[j];
+                    mubsq += ab[j]*ab[j];
+                }
+            }
+            //Compute means
+            mub = mub/countB;
+            mua = mua/countA;
+            mubsq = mubsq/countB;
+            muasq = muasq/countA;
+            // Compute stat: var(b) - var(a)
+            varDiffs[i] =  (mubsq - (mub*mub)) - (muasq - (mua*mua));
+            //Compute stat: E[b] - E[a]
+            meanDiffs[i] =  (mub/countB) - (mua/countA);
+        }
+        return new Pair<>(meanDiffs, varDiffs);
     }
 
     /*

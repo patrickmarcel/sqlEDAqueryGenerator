@@ -11,7 +11,6 @@ import fr.univtours.info.optimize.CPLEXTAP;
 import fr.univtours.info.optimize.KnapsackStyle;
 import fr.univtours.info.optimize.TAPEngine;
 import fr.univtours.info.queries.AssessQuery;
-import fr.univtours.info.queries.AssessQuery;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -21,7 +20,6 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -70,26 +68,23 @@ public class MainTAP {
         stopwatch = Stopwatch.createStarted();
         Map<AssessQuery, List<Insight>> supports = new HashMap<>();
         Map<Insight, List<AssessQuery>> isSupportedBy = new HashMap<>();
-        try (Statement statement = conn.createStatement()) {
-            List<Insight> orphan = new ArrayList<>();
-            for (Insight i : insights){
-                List<AssessQuery> sqs = getSupportingQueries(i, statement);
-                if (sqs.size() == 0)
-                    orphan.add(i);
-                else{
-                    isSupportedBy.computeIfAbsent(i, k-> new ArrayList<>());
-                    isSupportedBy.get(i).addAll(sqs);
-                    for (AssessQuery q : sqs){
-                        supports.computeIfAbsent(q, k -> new ArrayList<>());
-                        supports.get(q).add(i);
-                    }
-                }
-            }
-            insights.removeAll(orphan);
 
-        }catch (SQLException e){
-            System.err.println("Couldn't get supporting queries");
-        }
+        Set<Insight> orphan = insights.stream().parallel().map(insight -> {
+            List<AssessQuery> sqs = getSupportingQueries(insight);
+            if (sqs.size() == 0)
+                return insight;
+            else{
+                isSupportedBy.computeIfAbsent(insight, k-> new ArrayList<>());
+                isSupportedBy.get(insight).addAll(sqs);
+                for (AssessQuery q : sqs){
+                    supports.computeIfAbsent(q, k -> new ArrayList<>());
+                    supports.get(q).add(insight);
+                }
+                return null;
+            }
+        }).collect(Collectors.toSet());
+        insights.removeAll(orphan);
+
 
         stopwatch.stop();
         System.out.println("Support time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -120,7 +115,7 @@ public class MainTAP {
 
         // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
-        List<AssessQuery> naiveSolution = naive.solve(tapQueries, 2500, 150);
+        List<AssessQuery> naiveSolution = naive.solve(tapQueries, 5000, 100);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -128,7 +123,7 @@ public class MainTAP {
 
         if (tapQueries.size() < 1000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
-            List<AssessQuery> exactSolution = exact.solve(tapQueries, 2500, 150);
+            List<AssessQuery> exactSolution = exact.solve(tapQueries, 5000, 100);
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
             Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -141,7 +136,7 @@ public class MainTAP {
     }
 
     public static void init() throws IOException, SQLException {
-        config = DBConfig.readProperties();
+        config = DBConfig.newFromFile();
         conn = config.getConnection();
         table = config.getTable();
         theDimensions = config.getDimensions();
@@ -157,72 +152,75 @@ public class MainTAP {
             Set<List<String>> combiVals = Sets.combinations(values, 2).stream().map(ArrayList::new).collect(Collectors.toSet());
 
             for (List<String> pair : combiVals) {
-                for (DatasetMeasure measure : ds.getTheMeasures()){
-                    //TODO generate all types of insights
-                    intuitions.add(new Insight(dim, pair.get(0), pair.get(1), measure, Insight.MEAN_SMALLER));
-                }
+                ds.getTheMeasures().stream().map(measure -> new Insight(dim, pair.get(0), pair.get(1), measure)).forEach(intuitions::add);
             }
         }
         return intuitions;
     }
 
-    public static List<AssessQuery> getSupportingQueries(Insight insight, Statement st) throws SQLException{
-        List<AssessQuery> supporting = new ArrayList<>();
-        List<DatasetDimension> dims = new ArrayList<>(ds.getTheDimensions());
-        dims.remove(insight.dim);
-        dims.sort(Comparator.comparing(dim -> dim.getActiveDomain().size()));
-
-        for (DatasetDimension dim : dims){
-            // SKip irrelevant combinations
-            if (DBUtils.checkAimpliesB(insight.getDim(), dim, conn, table))
-                continue;
+    public static List<AssessQuery> getSupportingQueries(Insight insight){
+        return ds.getTheDimensions().stream()
+                .filter(dim -> ! (DBUtils.checkAimpliesB(insight.getDim(), dim, conn, table) || dim.equals(insight.dim)))
+                .map(dim ->{
             AssessQuery q = new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dim, insight.getMeasure(), "sum");
             ResultSet rs = q.execute();
 
             ArrayList<Double> a = new ArrayList<>();
             ArrayList<Double> b = new ArrayList<>();
-            rs.beforeFirst();
-            while (rs.next()) {
-                double m1 = rs.getDouble(2);
-                a.add(m1);
-                double m2 = rs.getDouble(3);
-                b.add(m2);
+            try {
+                rs.beforeFirst();
+                while (rs.next()) {
+                    double m1 = rs.getDouble(2);
+                    a.add(m1);
+                    double m2 = rs.getDouble(3);
+                    b.add(m2);
+                }
+            } catch (SQLException e){
+                System.err.println("ERROR readinf result from " + q);
             }
-            double mua = a.stream().mapToDouble(n -> n).sum();
-            double mub = b.stream().mapToDouble(n -> n).sum();
-            mua = mua / a.size();
-            mub = mub / b.size();
+
+            double mua = a.stream().mapToDouble(n -> n).sum() / a.size();
+            double mub = b.stream().mapToDouble(n -> n).sum() / b.size();
+            double vara = a.stream().mapToDouble(x -> (x - mua)*(x - mua)).sum() / a.size();
+            double varb = b.stream().mapToDouble(x -> (x - mub)*(x - mub)).sum() / b.size();
 
             switch (insight.type) {
                 case Insight.MEAN_SMALLER:
                     if (mua < mub)
-                        supporting.add(q);
-                    break;
+                        return q;
 
                 case Insight.MEAN_GREATER:
                     if (mua > mub)
-                        supporting.add(q);
-                    break;
+                        return q;
 
                 case Insight.MEAN_EQUALS:
                     if (Math.abs(mua - mub) < 0.05 * Math.max(mua, mub))
-                        supporting.add(q);
-                    break;
+                        return q;
+
+                case Insight.VARIANCE_SMALLER:
+                    if (vara < varb)
+                        return q;
+
+                case Insight.VARIANCE_GREATER:
+                    if (vara > varb)
+                        return q;
+
+                case Insight.VARIANCE_EQUALS:
+                    if (Math.abs(vara - varb) < 0.05 * Math.max(vara, varb))
+                        return q;
 
                 default:
-                    break;
+                    return null;
             }
 
-        }
-        return supporting;
+        }).filter(Objects::nonNull).collect(Collectors.toList());
 
     }
 
     public static final double sqrt2pi = Math.sqrt(2*Math.PI);
     public static double conciseness(int nbGroups, int nbTuples){
-        double alpha = 0.4, beta = 1;
-        double sigma = Math.sqrt(nbTuples/2.);
+        double alpha = 0.02, beta = 5, delta = 0.5;
 
-        return (1/(sigma*sqrt2pi))*Math.exp((-1 * Math.pow(nbGroups - (nbTuples*alpha) - beta ,2))/(sigma*sigma));
+        return Math.exp((-1 * (1/Math.pow(nbTuples, delta)) * Math.pow(nbGroups - (alpha*nbTuples) - beta,2)));
     }
 }

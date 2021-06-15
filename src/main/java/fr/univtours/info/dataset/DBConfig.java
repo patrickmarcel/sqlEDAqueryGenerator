@@ -18,7 +18,9 @@ import java.util.Properties;
 @Data
 @AllArgsConstructor
 public class DBConfig {
-    public static String CONF_FILE_PATH = "src/main/resources/vaccines.properties";
+    public static String CONF_FILE_PATH = "src/main/resources/enedis.properties";
+    // 1 = Postgres
+    public static int DIALECT = 1;
 
     List<DatasetDimension> dimensions;
     List<DatasetMeasure> measures;
@@ -27,27 +29,45 @@ public class DBConfig {
     Connection connection;
     String baseURL, baseUser, basePassword;
 
-    public static DBConfig readProperties() throws IOException, SQLException {
-        final FileReader fr = new FileReader(new File(CONF_FILE_PATH));
+    public static DBConfig newFromFile() throws IOException, SQLException {
+        final FileReader fr = new FileReader(CONF_FILE_PATH);
         final Properties props = new Properties();
         props.load(fr);
+
         String table = props.getProperty("datasource.table");
         String dimensions=props.getProperty("datasource.dimensions");
         String measures=props.getProperty("datasource.measures");
         List<DatasetDimension> theDimensions = new ArrayList<>();
         List<DatasetMeasure> theMeasures = new ArrayList<>();
-        String[] dim=dimensions.split(",");
         final String passwd = props.getProperty("datasource.password");
         final String user = props.getProperty("datasource.user");
         String url = props.getProperty("datasource.url") + "?user=" + user + "&password=" + passwd;;
         Connection conn = DriverManager.getConnection(url);
-        for (int x=0; x<dim.length; x++) {
-            theDimensions.add(new DatasetDimension(dim[x], conn, table));
-            theDimensions.get(x).computeActiveDomain();
+
+        String[] dim = dimensions.split(",");
+        for (String dName : dim) {
+            String formatted = dName;
+            // encapsulate in quotes to avoid errors
+            if (DIALECT == 1)
+                formatted = "\"" + dName + "\"";
+            DatasetDimension dd = new DatasetDimension(formatted, conn, table);
+            theDimensions.add(dd);
+            dd.computeActiveDomain();
+            if (DIALECT == 1) {
+                dd.setPrettyName(dName);
+            }
         }
-        String[] meas=measures.split(",");
-        for (int x=0; x<meas.length; x++) {
-            theMeasures.add(new DatasetMeasure(meas[x], conn, table));
+
+        for (String mea : measures.split(",")) {
+            String formatted = mea;
+            // encapsulate in quotes to avoid errors
+            if (DIALECT == 1)
+                formatted = "\"" + mea + "\"";
+            DatasetMeasure dm = new DatasetMeasure(formatted, conn, table);
+            if (DIALECT == 1){
+                dm.setPrettyName(mea);
+            }
+            theMeasures.add(dm);
         }
 
 

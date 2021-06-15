@@ -23,7 +23,7 @@ public class DatasetStats {
     int rows;
 
     public DatasetStats() throws SQLException, IOException {
-        DBConfig config = DBConfig.readProperties();
+        DBConfig config = DBConfig.newFromFile();
         table = config.getTable();
         List<DatasetDimension> theDimensions;
         theDimensions = config.getDimensions();

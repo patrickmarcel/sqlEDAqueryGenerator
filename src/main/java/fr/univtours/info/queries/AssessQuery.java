@@ -164,11 +164,11 @@ public class AssessQuery implements TimeableOp, Measurable {
                 "from\n" +
                 "  (select "+assessed.getName()+", "+reference.getName()+", " + this.function + "(" + this.measure.getName() + ") as measure1\n" +
                 "   from "+ table +"\n" +
-                "   where  "+assessed.getName()+" = '"+val1+"'\n" +
+                "   where  "+assessed.getName()+" = '"+ val1.replaceAll("'", "''") +"'\n" +
                 "   group by "+assessed.getName()+", "+reference.getName()+") t1,\n" +
                 "  (select "+assessed.getName()+", "+reference.getName() + "," + this.function + "(" + this.measure.getName() +") as measure2\n" +
                 "   from "+ table +"\n" +
-                "   where "+assessed.getName()+" = '"+val2+"'\n" +
+                "   where "+assessed.getName()+" = '" + val2.replaceAll("'", "''") + "'\n" +
                 "   group by "+assessed.getName()+", "+reference.getName() + ") t2\n" +
                 "where t1."+reference.getName()+" = t2."+reference.getName()+";";
     }
@@ -270,11 +270,11 @@ public class AssessQuery implements TimeableOp, Measurable {
 
 
     public String m1PrettyName(){
-        return convivialNames.get(getFunction()) + "(" + measure.getName() + ") for " + assessed.getName() + " = " + val1;
+        return convivialNames.get(getFunction()) + "(" + measure.getPrettyName() + ") for " + assessed.getPrettyName() + " = " + val1;
     }
 
     public String m2PrettyName(){
-        return convivialNames.get(getFunction()) + "(" + measure.getName() + ") for " + assessed.getName() + " = " + val2;
+        return convivialNames.get(getFunction()) + "(" + measure.getPrettyName() + ") for " + assessed.getPrettyName() + " = " + val2;
     }
 
     public String getDescription(){
