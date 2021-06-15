@@ -22,6 +22,8 @@ public class Dataset {
     List<DatasetDimension> theDimensions;
     @Getter
     List<DatasetMeasure> theMeasures;
+    @Getter
+    int tableSize;
 
      public Dataset(Connection conn, String table, List<DatasetDimension> theDimensions, List<DatasetMeasure> theMeasures ){
          this.conn=conn;
@@ -30,6 +32,12 @@ public class Dataset {
          this.theMeasures=theMeasures;
          theSchema = new DatasetSchema(this);
          //theSchema.getIndividualHierarchies();
+         try (ResultSet rs = conn.createStatement().executeQuery("Select count(*) from " +table)){
+             rs.next();
+             tableSize = rs.getInt(1);
+         }catch (SQLException e){
+             System.err.println("Error impossible to fetch table size");
+         }
      }
 
     DatasetSchema getSchema(){

@@ -141,12 +141,11 @@ public class AssessQuery implements TimeableOp, Measurable {
     }
 
 
-
+    @Deprecated
     public ResultSet execute() {
         final Statement pstmt;
         try {
-            pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_UPDATABLE);
+            pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = pstmt.executeQuery(this.getSql()) ;
             this.resultset=rs;
             rs.next();
@@ -211,7 +210,7 @@ public class AssessQuery implements TimeableOp, Measurable {
     public int support() {
         int size;
         try (Statement st = conn.createStatement()) {
-            ResultSet rs = st.executeQuery("select count(*) from " + table + " where " + assessed.getName() + " = '" + val2 + "' or " + assessed.getName() + " = '" + val1 + "';");
+            ResultSet rs = st.executeQuery("select count(*) from " + table + " where " + assessed.getName() + " = '" + val2.replaceAll("'", "''") + "' or " + assessed.getName() + " = '" + val1.replaceAll("'", "''") + "';");
             rs.next();
             size = rs.getInt(1);
             rs.close();
