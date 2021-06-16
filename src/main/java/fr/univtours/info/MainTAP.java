@@ -40,9 +40,8 @@ public class MainTAP {
     static Connection conn;
     static DBConfig config;
 
-    public static PrintStream devOut;
-
-    static final String[] aggF = {"avg", "sum", "count"};//"min", "max",
+    //Default can be overridden by -c
+    public static String CPLEX_BIN = "C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe";
 
     public static void main( String[] args ) throws Exception{
 
@@ -52,6 +51,10 @@ public class MainTAP {
         input.setRequired(true);
         options.addOption(input);
 
+        Option cplex = new Option("c", "cplex-binary", true, "path of binary for processing standard TAP instance");
+        cplex.setRequired(false);
+        options.addOption(cplex);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -59,16 +62,18 @@ public class MainTAP {
         try {
             cmd = parser.parse(options, args);
             DBConfig.CONF_FILE_PATH = cmd.getOptionValue("database");
-            System.out.println(DBConfig.CONF_FILE_PATH);
+            System.out.println("Config File :" + DBConfig.CONF_FILE_PATH);
+            if (cmd.hasOption('c')){
+                CPLEX_BIN = cmd.getOptionValue('c');
+            }
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp("utility-name", options);
             System.exit(1);
         }
 
-        System.out.println("CPU Cores: " + Runtime.getRuntime().availableProcessors());
-        System.out.println("CommonPool Parallelism: " + ForkJoinPool.commonPool().getParallelism());
-        System.out.println("CommonPool Common Parallelism: " + ForkJoinPool.getCommonPoolParallelism());
+        System.out.println("CPU Threads/Cores: " + Runtime.getRuntime().availableProcessors());
+        System.out.println("Streams will use : " + ForkJoinPool.commonPool().getParallelism());
 
         //Load config and base dataset
         init();
@@ -195,7 +200,7 @@ public class MainTAP {
 
 
         if (tapQueries.size() < 1000){
-            TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
+            TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
             List<AssessQuery> exactSolution = exact.solve(tapQueries, 5000, 100);
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
