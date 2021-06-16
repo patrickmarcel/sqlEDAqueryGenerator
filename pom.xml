@@ -19,6 +19,14 @@
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>clojars.org</id>
+      <url>https://repo.clojars.org</url>
+    </repository>
+  </repositories>
+
+
   <dependencies>
     <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
     <dependency>
@@ -26,7 +34,15 @@
       <artifactId>postgresql</artifactId>
       <version>42.2.18</version>
     </dependency>
-      <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+
+    <!-- https://mvnrepository.com/artifact/monetdb/monetdb-jdbc -->
+    <dependency>
+      <groupId>monetdb</groupId>
+      <artifactId>monetdb-jdbc</artifactId>
+      <version>3.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
       <dependency>
           <groupId>com.google.guava</groupId>
           <artifactId>guava</artifactId>
