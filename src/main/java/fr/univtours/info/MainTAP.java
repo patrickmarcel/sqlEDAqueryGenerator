@@ -86,7 +86,7 @@ public class MainTAP {
         List<Insight> intuitions = new ArrayList<>(getIntuitions());
 
         stopwatch.stop();
-        System.out.println("Generation time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        System.out.println("Generation time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
         System.out.println(intuitions.size() + " intuitions generated");
 
         //verification
@@ -96,7 +96,7 @@ public class MainTAP {
         List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05, 1000);
 
         stopwatch.stop();
-        System.out.println("Verification time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        System.out.println("Verification time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
         System.out.println("Nb of insights: " + insights.size());
 
 
@@ -156,7 +156,7 @@ public class MainTAP {
 
 
         stopwatch.stop();
-        System.out.println("Support time in milliseconds: " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        System.out.println("Support time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
         System.out.println("Supported insights " + isSupportedBy.keySet().size());
 
         List<AssessQuery> tapQueries = new ArrayList<>();
@@ -191,6 +191,10 @@ public class MainTAP {
             q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support()));
         }
 
+        // --- SOLVING TAP ----
+        System.out.println("Started solving TAP instance of " + tapQueries.size() + " queries");
+        stopwatch = Stopwatch.createStarted();
+
         // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
         List<AssessQuery> naiveSolution = naive.solve(tapQueries, 50000, 100);
@@ -198,6 +202,8 @@ public class MainTAP {
         naiveSolution.forEach(out::addQuery);
         Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
+        stopwatch.stop();
+        System.out.println("Heuristic runtime: " + stopwatch.elapsed(TimeUnit.SECONDS));
 
         if (tapQueries.size() < 1000){
             TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
