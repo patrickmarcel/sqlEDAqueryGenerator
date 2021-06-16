@@ -14,6 +14,7 @@ import fr.univtours.info.optimize.CPLEXTAP;
 import fr.univtours.info.optimize.KnapsackStyle;
 import fr.univtours.info.optimize.TAPEngine;
 import fr.univtours.info.queries.AssessQuery;
+import org.apache.commons.cli.*;
 
 import java.awt.*;
 import java.io.IOException;
@@ -44,6 +45,27 @@ public class MainTAP {
     static final String[] aggF = {"avg", "sum", "count"};//"min", "max",
 
     public static void main( String[] args ) throws Exception{
+
+        Options options = new Options();
+
+        Option input = new Option("d", "database", true, "database config file path");
+        input.setRequired(true);
+        options.addOption(input);
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd = null;
+
+        try {
+            cmd = parser.parse(options, args);
+            DBConfig.CONF_FILE_PATH = cmd.getOptionValue("database");
+            System.out.println(DBConfig.CONF_FILE_PATH);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("utility-name", options);
+            System.exit(1);
+        }
+
         System.out.println("CPU Cores: " + Runtime.getRuntime().availableProcessors());
         System.out.println("CommonPool Parallelism: " + ForkJoinPool.commonPool().getParallelism());
         System.out.println("CommonPool Common Parallelism: " + ForkJoinPool.getCommonPoolParallelism());
