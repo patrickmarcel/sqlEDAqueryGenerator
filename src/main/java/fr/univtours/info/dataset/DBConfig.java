@@ -34,6 +34,12 @@ public class DBConfig {
         final Properties props = new Properties();
         props.load(fr);
 
+        try {
+            Class.forName(props.getProperty("datasource.driver-class-name"));
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         String table = props.getProperty("datasource.table");
         String dimensions=props.getProperty("datasource.dimensions");
         String measures=props.getProperty("datasource.measures");
