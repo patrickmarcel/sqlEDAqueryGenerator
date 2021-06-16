@@ -3,6 +3,7 @@ package fr.univtours.info.queries;
 import com.alexscode.utilities.collection.Pair;
 import com.alexscode.utilities.math.FTest;
 import fr.univtours.info.DBUtils;
+import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.optimize.time.CostModelProvider;
@@ -122,18 +123,31 @@ public class AssessQuery implements TimeableOp, Measurable {
 
 
     public void explain() {
-        try (Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE)) {
-            ResultSet rs = pstmt.executeQuery("explain  " + this.getSql()) ;
+        try (Statement pstmt = conn.createStatement()) {
+            // For classic dbms
+            if (DBConfig.DIALECT != 2) {
+                ResultSet rs = pstmt.executeQuery("explain  " + this.getSql());
 
-            rs.beforeFirst();
-            rs.next();
+                rs.beforeFirst();
+                rs.next();
 
-            String s1 = rs.getString("QUERY PLAN");
-            String[] s2 = s1.split("=");
-            String[] s3 = s2[1].split("\\.\\.");
-            this.explainCost = (long) Float.parseFloat(s3[0]);
-            rs.close();
+                String s1 = rs.getString("QUERY PLAN");
+                String[] s2 = s1.split("=");
+                String[] s3 = s2[1].split("\\.\\.");
+                this.explainCost = (long) Float.parseFloat(s3[0]);
+                rs.close();
+            }
+            // For MonetDB
+            else {
+                String line = "";
+                ResultSet rs = pstmt.executeQuery("explain  " + this.getSql());
+                while (rs.next()){
+                    line = rs.getString(1);
+                    if (line.contains("#total") && line.contains("time=")){
+                        this.explainCost = 1 + Long.parseLong(line.split("time=")[0].replace(" usec", ""))/1000;
+                    }
+                }
+            }
         } catch (SQLException e){
             System.err.println("[ERROR] Failed to fetch query plan for " + this);
         }

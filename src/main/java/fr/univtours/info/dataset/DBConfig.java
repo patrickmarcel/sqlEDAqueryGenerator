@@ -13,13 +13,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 @Data
 @AllArgsConstructor
 public class DBConfig {
     public static String CONF_FILE_PATH = "src/main/resources/enedis.properties";
-    // 1 = Postgres
+    // 1 = Postgres, 2 = monetdb
     public static int DIALECT = 1;
 
     List<DatasetDimension> dimensions;
@@ -33,12 +34,18 @@ public class DBConfig {
         final FileReader fr = new FileReader(CONF_FILE_PATH);
         final Properties props = new Properties();
         props.load(fr);
-
+        // Load Driver
         try {
             Class.forName(props.getProperty("datasource.driver-class-name"));
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+
+        //infer dialect
+        if (props.getProperty("datasource.driver-class-name").toLowerCase().contains("postgre"))
+            DIALECT = 1;
+        else if (props.getProperty("datasource.driver-class-name").toLowerCase().contains("monet"))
+            DIALECT = 2;
 
         String table = props.getProperty("datasource.table");
         String dimensions=props.getProperty("datasource.dimensions");
@@ -54,12 +61,12 @@ public class DBConfig {
         for (String dName : dim) {
             String formatted = dName;
             // encapsulate in quotes to avoid errors
-            if (DIALECT == 1)
+            if (DIALECT == 1 || DIALECT == 2)
                 formatted = "\"" + dName + "\"";
             DatasetDimension dd = new DatasetDimension(formatted, conn, table);
             theDimensions.add(dd);
             dd.computeActiveDomain();
-            if (DIALECT == 1) {
+            if (DIALECT == 1 || DIALECT == 2) {
                 dd.setPrettyName(dName);
             }
         }
@@ -67,10 +74,10 @@ public class DBConfig {
         for (String mea : measures.split(",")) {
             String formatted = mea;
             // encapsulate in quotes to avoid errors
-            if (DIALECT == 1)
+            if (DIALECT == 1 || DIALECT == 2)
                 formatted = "\"" + mea + "\"";
             DatasetMeasure dm = new DatasetMeasure(formatted, conn, table);
-            if (DIALECT == 1){
+            if (DIALECT == 1 || DIALECT == 2){
                 dm.setPrettyName(mea);
             }
             theMeasures.add(dm);
