@@ -144,7 +144,7 @@ public class AssessQuery implements TimeableOp, Measurable {
                 while (rs.next()){
                     line = rs.getString(1);
                     if (line.contains("#total") && line.contains("time=")){
-                        this.explainCost = 1 + Long.parseLong(line.split("time=")[1].replace(" usec", ""))/1000;
+                        this.explainCost = 1 + Long.parseLong(line.split("time=")[1].replace("usec", "").stripTrailing())/1000;
                     }
                 }
             }
