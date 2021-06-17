@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 
@@ -85,7 +86,12 @@ public class KnapsackStyle implements TAPEngine{
         for (int i = 0; i < size; i++) {
             order.add(new Element(i, theQ.get(i).getInterest()));
         }
-        order.sort(Comparator.comparing(Element::getValue).reversed());
+
+        Quicksort<Element> quickSort = new Quicksort<>(order);
+        ForkJoinPool pool = new ForkJoinPool(8);
+        pool.invoke(quickSort);
+
+        //order.sort(Comparator.comparing(Element::getValue).reversed());
 
         double total_dist = 0;
         double total_time = 0;
