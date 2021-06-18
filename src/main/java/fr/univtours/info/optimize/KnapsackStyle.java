@@ -6,6 +6,7 @@ import fr.univtours.info.queries.AssessQuery;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
@@ -82,16 +83,13 @@ public class KnapsackStyle implements TAPEngine{
         int size = theQ.size();
 
         List<Integer> solution = new ArrayList<>();
-        List<Element> order = new ArrayList<>();
+        Element[] order = new Element[size];
         for (int i = 0; i < size; i++) {
-            order.add(new Element(i, theQ.get(i).getInterest()));
+            order[i] = new Element(i, theQ.get(i).getInterest());
         }
 
-        Quicksort<Element> quickSort = new Quicksort<>(order);
-        ForkJoinPool pool = new ForkJoinPool(8);
-        pool.invoke(quickSort);
-
-        //order.sort(Comparator.comparing(Element::getValue).reversed());
+        // Merge sort see javadoc
+        Arrays.sort(order, Comparator.comparing(Element::getValue).reversed());
 
         double total_dist = 0;
         double total_time = 0;
@@ -100,7 +98,7 @@ public class KnapsackStyle implements TAPEngine{
 
         for (int i = 0; i < size; i++)
         {
-            int current = order.get(i).index;
+            int current = order[i].index;
 
             if (timeBudget - (total_time + theQ.get(current).estimatedTime()) > 0){
                 if (solution.size() > 0 && maxDistance - (total_dist + theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current))) < 0)
