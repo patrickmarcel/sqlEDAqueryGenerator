@@ -168,7 +168,7 @@ public class MainTAP {
                 supports.get(q).add(insight);
             });
         }));
-        System.out.println("Total queries " + supports.keySet());
+        System.out.println("Total queries " + supports.keySet().size());
         for (AssessQuery q : supports.keySet()){
             tapQueries.add(q);
             q.explain();
