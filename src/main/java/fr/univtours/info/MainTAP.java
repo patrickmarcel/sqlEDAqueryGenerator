@@ -168,7 +168,7 @@ public class MainTAP {
                 supports.get(q).add(insight);
             });
         }));
-
+        System.out.println("Total queries " + supports.keySet().size());
         for (AssessQuery q : supports.keySet()){
             tapQueries.add(q);
             q.explain();
@@ -178,6 +178,7 @@ public class MainTAP {
             }
             q.setTestComment(sb.toString());
         }
+
         // get interest from supported insights
         for (Map.Entry<Insight, Set<AssessQuery>> entry : isSupportedBy.entrySet()){
             Set<AssessQuery> supporting = entry.getValue();
@@ -192,7 +193,7 @@ public class MainTAP {
         }
 
         // --- SOLVING TAP ----
-        System.out.println("Started solving TAP instance of " + tapQueries.size() + " queries");
+        System.out.println("Started solving TAP instance");
         stopwatch = Stopwatch.createStarted();
 
         // Naive heuristic
