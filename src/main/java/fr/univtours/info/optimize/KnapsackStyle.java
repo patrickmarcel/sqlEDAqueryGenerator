@@ -121,6 +121,7 @@ public class KnapsackStyle implements TAPEngine{
 
     @Override
     public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
+        System.out.println("[INFO] KS Heuristic : Init");
         int size = theQ.size();
 
         List<Integer> solution = new ArrayList<>();
@@ -130,13 +131,16 @@ public class KnapsackStyle implements TAPEngine{
         }
 
         // Merge sort see javadoc
+        System.out.println("[INFO] KS Heuristic : Starting sort");
         Arrays.sort(order, Comparator.comparing(Element::getValue).reversed());
+        System.out.println("[INFO] KS Heuristic : Sort Complete");
 
         double total_dist = 0;
         double total_time = 0;
         double z = 0;
 
 
+        System.out.println("[INFO] KS Heuristic : Construction Solution");
         for (int i = 0; i < size; i++)
         {
             int current = order[i].index;
@@ -152,6 +156,7 @@ public class KnapsackStyle implements TAPEngine{
                 z += theQ.get(current).getInterest();
             }
         }
+        System.out.println("[INFO] KS Heuristic : solution is done z=" + z);
         return solution.stream().map(theQ::get).collect(Collectors.toList());
     }
 }
