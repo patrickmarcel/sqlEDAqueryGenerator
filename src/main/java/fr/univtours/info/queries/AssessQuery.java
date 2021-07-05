@@ -183,7 +183,7 @@ public class AssessQuery implements TimeableOp, Measurable {
                 "   from "+ table +"\n" +
                 "   where "+assessed.getName()+" = '" + val2.replaceAll("'", "''") + "'\n" +
                 "   group by "+assessed.getName()+", "+reference.getName() + ") t2\n" +
-                "where t1."+reference.getName()+" = t2."+reference.getName()+";";
+                "where t1."+reference.getName()+" = t2."+reference.getName()+" order by " + reference.getName() + ";";
     }
 
 
