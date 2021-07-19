@@ -4,6 +4,7 @@ import com.alexscode.utilities.collection.Element;
 import fr.univtours.info.queries.AssessQuery;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,15 +18,30 @@ public class KnapsackStyle implements TAPEngine{
 
 
     public static void main(String[] args) throws Exception {
-        final String file = "12_500.dat";
+        final String file = "22_500.dat";
         final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_" + file;
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;
-        double dist = 0.05, temps = 0.15;
+        double temps = 0.25, dist = 0.35;
 
+        var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
+        for (int i = 0; i < 30; i++) {
+            for (int size : new int[]{20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500}) {
+                var in = folder + "tap_" + i + "_" + size + ".dat";
+                var out = folder + "tap_" + i + "_" + size + ".warm";
+                compute(in, out, temps, dist);
+            }
+        }
+
+        compute(path, out_path, temps, dist);
+    }
+
+    private static void compute(String path, String out_path, double temps, double dist) throws IOException {
         InstanceFiles.RawInstance ist = InstanceFiles.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
-        double epdist = Math.round( dist * ist.size * 4.5);;
-        double eptime = Math.round(temps * ist.size * 27.5f);;
+        double epdist = Math.round( dist * ist.size * 4.5);
+        ;
+        double eptime = Math.round(temps * ist.size * 27.5f);
+        ;
 
 
         List<Integer> solution = new ArrayList<>();
@@ -39,7 +55,7 @@ public class KnapsackStyle implements TAPEngine{
         double total_time = 0;
         double z = 0;
 
-        System.out.println(epdist + " / " + eptime);
+        System.out.println(eptime + " / " + epdist);
         for (int i = 0; i < ist.size; i++)
         {
             int current = order.get(i).index;
@@ -59,13 +75,7 @@ public class KnapsackStyle implements TAPEngine{
                 z += ist.interest[current];
             }
         }
-        System.out.println(total_dist + " / " + total_time);
-        double s = 0;
-        for (int i = 0; i < solution.size() - 1; i++) {
-            s+= ist.distances[solution.get(i)][solution.get(i+1)];
-        }
-        System.out.println(s);
-
+        System.out.println(total_time + " / " + total_dist);
 
         // Write best solution to file for CPLEX
         System.out.println("Z=" + z + " | Sol=" + solution);
@@ -101,6 +111,7 @@ public class KnapsackStyle implements TAPEngine{
                 best_insert_pos = i;
             }
         }
+        //System.out.println(best_insert_pos);
         solution.add(best_insert_pos, candidate);
         return best_insert_cost;
     }
