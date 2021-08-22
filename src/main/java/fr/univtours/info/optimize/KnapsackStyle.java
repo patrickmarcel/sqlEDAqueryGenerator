@@ -86,7 +86,7 @@ public class KnapsackStyle implements TAPEngine{
         fos.close();
     }
 
-    private static double insert_opt(List<Integer> solution, int candidate, double[][] distances, double base_dist) {
+    static double insert_opt(List<Integer> solution, int candidate, double[][] distances, double base_dist) {
         if (solution.size() == 0){
             solution.add(candidate);
             return 0;
