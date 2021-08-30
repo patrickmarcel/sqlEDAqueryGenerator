@@ -21,8 +21,19 @@
 
   <repositories>
     <repository>
+      <id>algs4.repo</id>
+      <url>https://dl.bintray.com/algs4/maven/</url>
+    </repository>
+    <repository>
       <id>clojars.org</id>
       <url>https://repo.clojars.org</url>
+    </repository>
+    <repository>
+      <id>Maven Central</id>
+      <url>https://repo1.maven.org/maven2/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
   </repositories>
 
@@ -41,6 +52,17 @@
       <artifactId>commons-cli</artifactId>
       <version>1.4</version>
     </dependency>
+
+    <!-- Hungarian method for heuristics #3 -->
+    <!-- https://mvnrepository.com/artifact/edu.princeton.cs/algs4 -->
+    <dependency>
+      <groupId>edu.princeton.cs</groupId>
+      <artifactId>algs4</artifactId>
+      <version>1.0.4</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/jars/algs4-1.0.4.jar</systemPath>
+    </dependency>
+
 
 
     <!-- https://mvnrepository.com/artifact/monetdb/monetdb-jdbc -->

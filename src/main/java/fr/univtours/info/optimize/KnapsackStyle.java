@@ -23,6 +23,9 @@ public class KnapsackStyle implements TAPEngine{
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;
         double temps = 0.25, dist = 0.35;
 
+        compute(path, out_path, temps, dist);
+        System.exit(0);
+
         var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
         for (int i = 0; i < 30; i++) {
             for (int size : new int[]{20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500}) {
@@ -32,16 +35,14 @@ public class KnapsackStyle implements TAPEngine{
             }
         }
 
-        compute(path, out_path, temps, dist);
+        //compute(path, out_path, temps, dist);
     }
 
     private static void compute(String path, String out_path, double temps, double dist) throws IOException {
         InstanceFiles.RawInstance ist = InstanceFiles.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);
-        ;
         double eptime = Math.round(temps * ist.size * 27.5f);
-        ;
 
 
         List<Integer> solution = new ArrayList<>();
@@ -55,7 +56,6 @@ public class KnapsackStyle implements TAPEngine{
         double total_time = 0;
         double z = 0;
 
-        System.out.println(eptime + " / " + epdist);
         for (int i = 0; i < ist.size; i++)
         {
             int current = order.get(i).index;
@@ -75,8 +75,8 @@ public class KnapsackStyle implements TAPEngine{
                 z += ist.interest[current];
             }
         }
-        System.out.println(total_time + " / " + total_dist);
-
+        System.out.println("Distance: " + total_dist + "/" + epdist);
+        System.out.println("Time: " + total_time + "/" + eptime);
         // Write best solution to file for CPLEX
         System.out.println("Z=" + z + " | Sol=" + solution);
         FileOutputStream fos = new FileOutputStream(out_path);
