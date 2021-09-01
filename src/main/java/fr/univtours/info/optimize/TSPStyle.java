@@ -2,7 +2,6 @@ package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.collection.Element;
 import edu.princeton.cs.algs4.AssignmentProblem;
-import edu.princeton.cs.algs4.In;
 import lombok.Getter;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.interfaces.SpanningTreeAlgorithm;
@@ -11,46 +10,70 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class TSPStyle {
     public static void main(String[] args) {
         final String file = "22_500.dat";
         final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_" + file;
-        final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;
-        double temps = 0.25, dist = 0.35;
 
-        InstanceFiles.RawInstance ist = InstanceFiles.readFile(path);
-        System.out.println("Loaded " + path + " | " + ist.size + " queries");
-        double epdist = Math.round( dist * ist.size * 4.5);
-        double eptime = Math.round(temps * ist.size * 27.5f);
+        double temps = 0.5, dist = 0.1;
+        boolean modeFull = true;
+
+        Instance unfiltered = InstanceFiles.readFile(path);
+        System.out.println("Loaded " + path + " | " + unfiltered.size + " queries");
+        double epdist = Math.round( dist * unfiltered.size * 4.5);
+        double eptime = Math.round(temps * unfiltered.size * 27.5f);
+
+        List<Element> toKeep = new ArrayList<>();
+        for (int i = 0; i < unfiltered.size; i++) {
+            toKeep.add(new Element(i, unfiltered.interest[i]/unfiltered.costs[i]));
+        }
+        toKeep.sort(Comparator.comparing(Element::getValue).reversed());
+        boolean[] filter = new boolean[unfiltered.size];
+        double used = 0, allocated = eptime*1.1;
+        for (int i = 0; i < unfiltered.size && used < allocated; i++) {
+            used += unfiltered.costs[toKeep.get(i).index];
+            filter[toKeep.get(i).index] = true;
+        }
+        Instance ist = Instance.fromFilter(unfiltered, filter);
 
         // 1 solve affectation
         List<List<Integer>> subtours = solveAffectation(ist.distances);
+        System.out.println(subtours.size());
+        System.out.println(subtours.stream().map(List::size).collect(Collectors.toList()));
 
-        // 2.1.1 solve Md-KS to find a collection of subtours
-        boolean[] KSSolution = MDKnapsack.solve2DNaive(subtours.stream().mapToDouble(st -> subtourValue(st, ist)).toArray(),
-                subtours.stream().mapToDouble(st -> subtourTime(st, ist)).toArray(), eptime,
-                subtours.stream().mapToDouble(st -> subtourDistance(st, ist)).toArray(), epdist);
         List<List<Integer>> selected = new ArrayList<>();
-        for (int i = 0; i < KSSolution.length; i++) {
-            if (KSSolution[i])
-                selected.add(subtours.get(i));
+        if (modeFull) {
+            selected.addAll(subtours);
         }
-        System.out.println(selected);
+        else {
+            // 2.1.1 solve Md-KS to find a collection of subtours
+            boolean[] KSSolution = MDKnapsack.solve2DNaive(subtours.stream().mapToDouble(st -> subtourValue(st, ist)).toArray(),
+                    subtours.stream().mapToDouble(st -> subtourTime(st, ist)).toArray(), eptime,
+                    subtours.stream().mapToDouble(st -> subtourDistance(st, ist)).toArray(), epdist);
+            for (int i = 0; i < KSSolution.length; i++) {
+                if (KSSolution[i])
+                    selected.add(subtours.get(i));
+            }
+        }
 
         // 2.1.2 stitch subtours
         List<Integer> full = stitch(selected, ist);
         System.out.println("Checking subtour stiching ... " + full.size() + "/" + selected.stream().mapToInt(List::size).sum());
 
         // 2.1.3 check constraint (distance)
-        boolean cs_check = subtourDistance(full, ist) > epdist + maxEdge(full, ist) ;
+        System.out.println("Objective: "+ subtourValue(full, ist));
+        System.out.println("Time constraint: "+ subtourTime(full, ist)  + "/" + eptime);
+        System.out.println("Distance constraint: "+ (subtourDistance(full, ist) - maxEdge(full, ist)) + "/" + epdist);
+        boolean dis_check = subtourDistance(full, ist) > epdist + maxEdge(full, ist) || subtourTime(full, ist) > eptime;
 
         // 2.1.4
-        if (cs_check){
-            System.out.println("Distance constraint violated ("+ (subtourDistance(full, ist) - maxEdge(full, ist)) + "/" + epdist +") running iterative elimination");
-            while (cs_check){
-                List<Element> gains = new ArrayList<>();
+        if (dis_check){
+            System.out.println("  --> constraint violated running iterative elimination");
+            while (dis_check){
+                List<Element> gains = new ArrayList<>();/*
                 for (int i = 0; i < full.size(); i++) {
                     if (i == 0)
                         gains.add(new Element(i, ((ist.distances[full.get(full.size()-1)][full.get(0)] + ist.distances[full.get(0)][full.get(1)])-ist.distances[full.get(full.size()-1)][full.get(1)])/ist.interest[full.get(i)]));
@@ -58,17 +81,22 @@ public class TSPStyle {
                         gains.add(new Element(i, ((ist.distances[full.get(i-1)][full.get(i)] + ist.distances[full.get(i)][full.get(0)])-ist.distances[full.get(i-1)][full.get(0)])/ist.interest[full.get(i)]));
                     else
                         gains.add(new Element(i, ((ist.distances[full.get(i-1)][full.get(i)] + ist.distances[full.get(i)][full.get(i+1)])-ist.distances[full.get(i-1)][full.get(i+1)])/ist.interest[full.get(i)]));
+                }*/
+                for (int i = 0; i < full.size(); i++) {
+                    gains.add(new Element(i, ist.interest[full.get(i)]));
                 }
-                gains.sort(Comparator.comparing(Element::getValue).reversed());
+                gains.sort(Comparator.comparing(Element::getValue));//.reversed());
                 full.remove(gains.get(0).index);
-                cs_check = subtourDistance(full, ist) > epdist + maxEdge(full, ist) ;
+                dis_check = subtourDistance(full, ist) > epdist + maxEdge(full, ist) || subtourTime(full, ist) > eptime;
             }
+            System.out.println("  Objective: "+ subtourValue(full, ist));
+            System.out.println("  Distance constraint: "+ (subtourDistance(full, ist) - maxEdge(full, ist)) + "/" + epdist);
         }
 
 
     }
 
-    public static List<Integer> stitch(List<List<Integer>> tours, InstanceFiles.RawInstance ist){
+    public static List<Integer> stitch(List<List<Integer>> tours, Instance ist){
 
         Graph<Integer, StitchOP> g = new SimpleGraph<>(StitchOP.class);
         IntStream.rangeClosed(0, tours.size()).forEach(g::addVertex);
@@ -130,27 +158,31 @@ public class TSPStyle {
         return alignedA;
     }
 
-    public static StitchOP getApproximateStitch(List<Integer> a, List<Integer> b, InstanceFiles.RawInstance ist){
+    // alternating algorithm from https://vlsicad.ucsd.edu/Publications/Journals/j67.pdf#page=11&zoom=100,0,422
+    public static StitchOP getApproximateStitch(List<Integer> a, List<Integer> b, Instance ist){
         HashSet<StitchOP> history = new HashSet<>();
         StitchOP current = new StitchOP();
         current.vertex1a = a.get(0);
         current.vertex2a = a.get(1);
+        current.vertex1b = b.get(0);
+        current.vertex2b = b.get(1);
         current.aptr = a;
         current.bptr = b;
 
-        // TODO add stop criterion
         for (int iter = 0; !(history.contains(current)); iter++) {
             ArrayList<StitchOP> candidates;
             if (iter % 2 == 0){
                 candidates = new ArrayList<>(b.size() * 2);
                 for (int i = 0; i < b.size()-1; i++) {
                     StitchOP candidate = new StitchOP(current);
-                    candidate.cost = ist.distances[b.get(i)][b.get(i+1)] - ist.distances[b.get(i)][current.vertex1a] - ist.distances[b.get(i+1)][current.vertex2a];
+                    candidate.gains = current.cost - (- ist.distances[b.get(i)][b.get(i+1)] - ist.distances[current.vertex1a][current.vertex2a]
+                            + ist.distances[b.get(i+1)][current.vertex2a] + ist.distances[b.get(i)][current.vertex1a]);
                     candidate.vertex1b = b.get(i);
                     candidate.vertex2b = b.get(i+1);
                     candidates.add(candidate);
                     candidate = new StitchOP(current);
-                    candidate.cost = ist.distances[b.get(i)][b.get(i+1)] - ist.distances[b.get(i)][current.vertex2a] - ist.distances[b.get(i+1)][current.vertex1a];
+                    candidate.gains = current.cost - (- ist.distances[b.get(i)][b.get(i+1)] - ist.distances[current.vertex1a][current.vertex2a]
+                            + ist.distances[b.get(i)][current.vertex2a] + ist.distances[b.get(i+1)][current.vertex1a]);
                     candidate.vertex2b = b.get(i);
                     candidate.vertex1b = b.get(i+1);
                     candidates.add(candidate);
@@ -159,22 +191,35 @@ public class TSPStyle {
                 candidates = new ArrayList<>(a.size() * 2);
                 for (int i = 0; i < a.size()-1; i++) {
                     StitchOP candidate = new StitchOP(current);
-                    candidate.cost = ist.distances[a.get(i)][a.get(i+1)] - ist.distances[a.get(i)][current.vertex1b] - ist.distances[a.get(i+1)][current.vertex2b];
+                    candidate.gains = current.cost - (- ist.distances[current.vertex1b][current.vertex2b] - ist.distances[a.get(i)][a.get(i+1)]
+                            + ist.distances[current.vertex2b][a.get(i+1)] + ist.distances[current.vertex1b][a.get(i)]);
                     candidate.vertex1a = a.get(i);
                     candidate.vertex2a = a.get(i+1);
                     candidates.add(candidate);
                     candidate = new StitchOP(current);
-                    candidate.cost = ist.distances[a.get(i)][a.get(i+1)] - ist.distances[a.get(i)][current.vertex2b] - ist.distances[a.get(i+1)][current.vertex1b];
+                    candidate.gains = current.cost - (- ist.distances[current.vertex1b][current.vertex2b] - ist.distances[a.get(i)][a.get(i+1)]
+                            + ist.distances[current.vertex2b][a.get(i)] + ist.distances[current.vertex1b][a.get(i+1)]);
                     candidate.vertex2a = a.get(i);
                     candidate.vertex1a = a.get(i+1);
                     candidates.add(candidate);
 
                 }
             }
-            candidates.sort(Comparator.comparing(StitchOP::getCost));
-            current = candidates.get(0);
+            candidates.removeIf(stitchOP -> stitchOP.gains < 0);
 
-            if (iter > 2)
+            if (candidates.size() == 0) {
+                current.cost = - ist.distances[current.vertex1b][current.vertex2b] - ist.distances[current.vertex1a][current.vertex2a]
+                        + ist.distances[current.vertex2b][current.vertex2a] + ist.distances[current.vertex1b][current.vertex1a];
+                return current;
+            }
+
+            candidates.sort(Comparator.comparing(StitchOP::getGains).reversed());
+            current = candidates.get(0);
+            current.cost = - ist.distances[current.vertex1b][current.vertex2b] - ist.distances[current.vertex1a][current.vertex2a]
+                    + ist.distances[current.vertex2b][current.vertex2a] + ist.distances[current.vertex1b][current.vertex1a];
+
+
+            if (iter > 5)
                 history.add(current);
         }
 
@@ -182,15 +227,15 @@ public class TSPStyle {
     }
 
 
-    public static double subtourValue(List<Integer> tour, InstanceFiles.RawInstance ist){
+    public static double subtourValue(List<Integer> tour, Instance ist){
         return tour.stream().mapToDouble(i -> ist.interest[i]).sum();
     }
 
-    public static double subtourTime(List<Integer> tour, InstanceFiles.RawInstance ist){
+    public static double subtourTime(List<Integer> tour, Instance ist){
         return tour.stream().mapToDouble(i -> ist.costs[i]).sum();
     }
 
-    public static double subtourDistance(List<Integer> tour, InstanceFiles.RawInstance ist){
+    public static double subtourDistance(List<Integer> tour, Instance ist){
         double d = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
         for (int i = 0; i < tour.size() - 1; i++) {
             d += ist.distances[tour.get(i)][tour.get(i+1)];
@@ -198,7 +243,7 @@ public class TSPStyle {
         return d;
     }
 
-    public static double maxEdge(List<Integer> tour, InstanceFiles.RawInstance ist){
+    public static double maxEdge(List<Integer> tour, Instance ist){
         double max = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
         for (int i = 0; i < tour.size() - 1; i++) {
             double d = ist.distances[tour.get(i)][tour.get(i+1)];
@@ -240,13 +285,13 @@ public class TSPStyle {
             }
         }
 
-        System.out.println(subtours);
+        //System.out.println(subtours);
         return subtours;
     }
 
     static class StitchOP  extends DefaultEdge implements Comparable<StitchOP>{
         @Getter
-        double cost;
+        double cost, gains;
         int vertex1a, vertex1b;
         int vertex2a, vertex2b;
         List<Integer> aptr, bptr;
@@ -281,6 +326,11 @@ public class TSPStyle {
         @Override
         public int compareTo(StitchOP o) {
             return Double.compare(this.cost, o.cost);
+        }
+
+        @Override
+        public String toString() {
+            return "StitchOP{" +"cost=" + cost + ", (" + vertex1a + "," + vertex2a + "), (" + vertex1b +"," + vertex2b  + ")}";
         }
     }
 

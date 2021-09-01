@@ -1,29 +1,18 @@
 package fr.univtours.info.optimize;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 public class InstanceFiles {
-    @Data
-    @AllArgsConstructor
-    public static class RawInstance {
-        int size;
-        double[][] distances;
-        double[] costs;
-        double[] interest;
-    }
 
-    public static RawInstance readFile(String path){
+    public static Instance readFile(String path){
         Scanner scanner = null;
         try {
             scanner = new Scanner(new File(path));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            return new RawInstance(0, null, null, null);
+            return new Instance(0, null, null, null);
         }
 
         String line = scanner.nextLine();
@@ -59,6 +48,6 @@ public class InstanceFiles {
             i++;
         }
 
-        return new RawInstance(nbActions, distances, costsOrig, relevancesOrig);
+        return new Instance(nbActions, distances, costsOrig, relevancesOrig);
     }
 }

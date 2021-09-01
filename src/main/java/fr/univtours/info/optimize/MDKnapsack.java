@@ -20,14 +20,18 @@ public class MDKnapsack {
 
         double totalC1 = 0, totalC2 = 0;
         for (Element item : order){
-            if (totalC1 + w1[item.index] > c1 || totalC2 + w2[item.index] > c2)
+            System.out.println(w1[item.index] + " | " + + w2[item.index]);
+            if (totalC1 + w1[item.index] > c1 || totalC2 + w2[item.index] > c2) {
+                System.out.println("Rejected");
                 continue;
-            else {
+            } else {
                 solution[item.index] = true;
                 totalC1 += w1[item.index];
                 totalC2 += w2[item.index];
             }
         }
+        //System.out.println(totalC1 + "/" + c1);
+        //System.out.println(totalC2 + "/" + c2);
 
         return solution;
     }

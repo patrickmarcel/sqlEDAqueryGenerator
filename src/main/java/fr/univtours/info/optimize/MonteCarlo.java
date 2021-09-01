@@ -5,18 +5,10 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
 
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.io.File;
 import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class MonteCarlo {
@@ -26,7 +18,7 @@ public class MonteCarlo {
         final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_22_500.dat";
         double dist = 0.2, temps = 0.15;
 
-        InstanceFiles.RawInstance ist = InstanceFiles.readFile(path);
+        Instance ist = InstanceFiles.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);;
         double eptime = Math.round(temps * ist.size * 27.5f);;
@@ -126,7 +118,7 @@ public class MonteCarlo {
         fos.close();
     }
 
-    private static double[] computeCentralities(InstanceFiles.RawInstance ist) {
+    private static double[] computeCentralities(Instance ist) {
         double[] centrality = new double[ist.size];
         for (int i = 0; i < ist.size; i++) {
             double c = 0;

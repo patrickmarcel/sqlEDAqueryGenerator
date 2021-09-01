@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 
@@ -21,7 +20,7 @@ public class KnapsackStyle implements TAPEngine{
         final String file = "22_500.dat";
         final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_" + file;
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;
-        double temps = 0.25, dist = 0.35;
+        double temps = 0.5, dist = 0.1;
 
         compute(path, out_path, temps, dist);
         System.exit(0);
@@ -39,7 +38,7 @@ public class KnapsackStyle implements TAPEngine{
     }
 
     private static void compute(String path, String out_path, double temps, double dist) throws IOException {
-        InstanceFiles.RawInstance ist = InstanceFiles.readFile(path);
+        Instance ist = InstanceFiles.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);
         double eptime = Math.round(temps * ist.size * 27.5f);
