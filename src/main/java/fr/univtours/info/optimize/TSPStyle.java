@@ -1,6 +1,8 @@
 package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.collection.Element;
+import com.alexscode.utilities.collection.Pair;
+import com.google.common.collect.Lists;
 import edu.princeton.cs.algs4.AssignmentProblem;
 import lombok.Getter;
 import org.jgrapht.Graph;
@@ -21,23 +23,10 @@ public class TSPStyle {
         double temps = 0.5, dist = 0.1;
         boolean modeFull = true;
 
-        Instance unfiltered = InstanceFiles.readFile(path);
-        System.out.println("Loaded " + path + " | " + unfiltered.size + " queries");
-        double epdist = Math.round( dist * unfiltered.size * 4.5);
-        double eptime = Math.round(temps * unfiltered.size * 27.5f);
-
-        List<Element> toKeep = new ArrayList<>();
-        for (int i = 0; i < unfiltered.size; i++) {
-            toKeep.add(new Element(i, unfiltered.interest[i]/unfiltered.costs[i]));
-        }
-        toKeep.sort(Comparator.comparing(Element::getValue).reversed());
-        boolean[] filter = new boolean[unfiltered.size];
-        double used = 0, allocated = eptime*1.1;
-        for (int i = 0; i < unfiltered.size && used < allocated; i++) {
-            used += unfiltered.costs[toKeep.get(i).index];
-            filter[toKeep.get(i).index] = true;
-        }
-        Instance ist = Instance.fromFilter(unfiltered, filter);
+        Instance ist = InstanceFiles.readFile(path);
+        System.out.println("Loaded " + path + " | " + ist.size + " queries");
+        double epdist = Math.round( dist * ist.size * 4.5);
+        double eptime = Math.round(temps * ist.size * 27.5f);
 
         // 1 solve affectation
         List<List<Integer>> subtours = solveAffectation(ist.distances);
@@ -66,35 +55,44 @@ public class TSPStyle {
         // 2.1.3 check constraint (distance)
         System.out.println("Objective: "+ subtourValue(full, ist));
         System.out.println("Time constraint: "+ subtourTime(full, ist)  + "/" + eptime);
-        System.out.println("Distance constraint: "+ (subtourDistance(full, ist) - maxEdge(full, ist)) + "/" + epdist);
-        boolean dis_check = subtourDistance(full, ist) > epdist + maxEdge(full, ist) || subtourTime(full, ist) > eptime;
+        System.out.println("Distance constraint: "+ (subtourDistance(full, ist) - maxEdgeValue(full, ist)) + "/" + epdist);
+        boolean dis_check = subtourDistance(full, ist) > epdist + maxEdgeValue(full, ist) || subtourTime(full, ist) > eptime;
 
         // 2.1.4
         if (dis_check){
-            System.out.println("  --> constraint violated running iterative elimination");
+            System.out.println("  --> constraint violated running elimination");
+            /*
             while (dis_check){
-                List<Element> gains = new ArrayList<>();/*
-                for (int i = 0; i < full.size(); i++) {
-                    if (i == 0)
-                        gains.add(new Element(i, ((ist.distances[full.get(full.size()-1)][full.get(0)] + ist.distances[full.get(0)][full.get(1)])-ist.distances[full.get(full.size()-1)][full.get(1)])/ist.interest[full.get(i)]));
-                    else if (i == full.size() - 1)
-                        gains.add(new Element(i, ((ist.distances[full.get(i-1)][full.get(i)] + ist.distances[full.get(i)][full.get(0)])-ist.distances[full.get(i-1)][full.get(0)])/ist.interest[full.get(i)]));
-                    else
-                        gains.add(new Element(i, ((ist.distances[full.get(i-1)][full.get(i)] + ist.distances[full.get(i)][full.get(i+1)])-ist.distances[full.get(i-1)][full.get(i+1)])/ist.interest[full.get(i)]));
-                }*/
+                List<Element> gains = new ArrayList<>();
                 for (int i = 0; i < full.size(); i++) {
                     gains.add(new Element(i, ist.interest[full.get(i)]));
                 }
                 gains.sort(Comparator.comparing(Element::getValue));//.reversed());
                 full.remove(gains.get(0).index);
                 dis_check = subtourDistance(full, ist) > epdist + maxEdge(full, ist) || subtourTime(full, ist) > eptime;
-            }
+            }*/
+
+            //Switch to sequence for this
+            int posme = argMaxEdge(full, ist);
+            if (posme != 0)
+                full = getAligned(full, posme);
+
+            Reducer rd = new Reducer(ist, full);
+            List<Integer> toRemove = rd.toRemove(subtourTime(full, ist) - eptime, sequenceDistance(full, ist) - epdist);
+            System.out.println(toRemove);
+            full.removeAll(toRemove.stream().filter(i -> i >= 0).map(full::get).collect(Collectors.toList()));
+
             System.out.println("  Objective: "+ subtourValue(full, ist));
-            System.out.println("  Distance constraint: "+ (subtourDistance(full, ist) - maxEdge(full, ist)) + "/" + epdist);
+            System.out.println("  Time constraint: "+ subtourTime(full, ist)  + "/" + eptime);
+            System.out.println("  Distance constraint: "+ (subtourDistance(full, ist) - maxEdgeValue(full, ist)) + "/" + epdist);
+
+
         }
 
 
     }
+
+
 
     public static List<Integer> stitch(List<List<Integer>> tours, Instance ist){
 
@@ -236,14 +234,18 @@ public class TSPStyle {
     }
 
     public static double subtourDistance(List<Integer> tour, Instance ist){
-        double d = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
+        return ist.distances[tour.get(tour.size() - 1)][tour.get(0)] + sequenceDistance(tour, ist);
+    }
+
+    public static double sequenceDistance(List<Integer> tour, Instance ist){
+        double d = 0;
         for (int i = 0; i < tour.size() - 1; i++) {
             d += ist.distances[tour.get(i)][tour.get(i+1)];
         }
         return d;
     }
 
-    public static double maxEdge(List<Integer> tour, Instance ist){
+    public static double maxEdgeValue(List<Integer> tour, Instance ist){
         double max = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
         for (int i = 0; i < tour.size() - 1; i++) {
             double d = ist.distances[tour.get(i)][tour.get(i+1)];
@@ -251,6 +253,19 @@ public class TSPStyle {
                 max = d;
         }
         return max;
+    }
+
+    public static int argMaxEdge(List<Integer> tour, Instance ist){
+        double max = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
+        int right = 0;
+        for (int i = 0; i < tour.size() - 1; i++) {
+            double d = ist.distances[tour.get(i)][tour.get(i+1)];
+            if (d > max) {
+                max = d;
+                right = i+1;
+            }
+        }
+        return right;
     }
 
     public static List<List<Integer>> solveAffectation(double[][] distances){
