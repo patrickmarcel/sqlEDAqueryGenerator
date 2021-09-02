@@ -19,7 +19,7 @@ public class TSPStyle {
     public static void main(String[] args) {
         //final String file = "22_500.dat";
         //final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_" + file;
-        final String file = "12_500.dat";
+        final String file = "22_100.dat";
         final String path="data/tap_" + file;
 
         double temps = 0.5, dist = 0.1;
@@ -80,7 +80,7 @@ public class TSPStyle {
                 full = getAligned(full, posme);
 
             Reducer rd = new Reducer(ist, full);
-            rd.lower_bound = 154.0666133550757;
+            rd.lower_bound = 25;
             List<Integer> toRemove = rd.toRemove(subtourTime(full, ist) - eptime, sequenceDistance(full, ist) - epdist);
             System.out.println(toRemove);
             full.removeAll(toRemove.stream().filter(i -> i >= 0).map(full::get).collect(Collectors.toList()));

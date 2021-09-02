@@ -14,10 +14,11 @@ import java.util.stream.IntStream;
 public class Reducer {
     Instance ist;
     List <Integer> sol;
-    ArrayList<Table<Double, Double, Pair<List<Integer>, Double>>> cache;
+    ArrayList<Table<Double, Double, List<Integer>>> cache;
     @Accessors
     double lower_bound = 0;
     double upper_bound = 0;
+    int hit;
 
     public Reducer(Instance ist, List<Integer> sol) {
         this.ist = ist;
@@ -32,22 +33,27 @@ public class Reducer {
 
 
     public List<Integer> toRemove(double deltaT, double deltaD){
-        return remove2(1, deltaT, deltaD);
+        return remove2(1, deltaT - ist.costs[sol.get(1)], deltaD + ist.distances[sol.get(0)][sol.get(2)] - ist.distances[sol.get(0)][sol.get(1)] - ist.distances[sol.get(1)][sol.get(2)], Lists.newArrayList(1), ist.interest[sol.get(1)]);
     }
 
-    private List<Integer> remove2(int from, double deltaT, double deltaD){
+    private List<Integer> remove2(int from, double deltaT, double deltaD, List<Integer> done, double tally){
 
         if (deltaD <= 0 && deltaT <= 0)
-            return new ArrayList<>();
+            return done;
+
+        if (upper_bound - tally < lower_bound)
+            return null;
 
         double minCut = upper_bound;
-        List<Integer> cutList = new ArrayList<>();
+        List<Integer> cutList = null;
         for (int i = from + 2; i < sol.size(); i++) {
             List<Integer> tmp;
             if (i == sol.size()-1)
-                tmp = remove2(i, deltaT - ist.costs[sol.get(i)], deltaD - ist.distances[sol.get(i - 1)][sol.get(i)]);
+                tmp = remove2(i, deltaT - ist.costs[sol.get(i)], deltaD - ist.distances[sol.get(i - 1)][sol.get(i)], addAndCopy(done, from), tally + ist.interest[sol.get(i)]);
             else
-             tmp = remove2(i, deltaT - ist.costs[sol.get(i)], deltaD + ist.distances[sol.get(i - 1)][sol.get(i + 1)] - ist.distances[sol.get(i - 1)][sol.get(i)] - ist.distances[sol.get(i)][sol.get(i + 1)]);
+                tmp = remove2(i, deltaT - ist.costs[sol.get(i)], deltaD + ist.distances[sol.get(i - 1)][sol.get(i + 1)] - ist.distances[sol.get(i - 1)][sol.get(i)] - ist.distances[sol.get(i)][sol.get(i + 1)], addAndCopy(done, from), tally + ist.interest[sol.get(i)]);
+            if (tmp == null)
+                continue;
             double cutCost = 0;
             for (int j : tmp){
                 cutCost += ist.interest[sol.get(j)];
@@ -56,20 +62,18 @@ public class Reducer {
                 minCut = cutCost;
                 cutList = new ArrayList<>(tmp);
             }
-            if (cutCost == 0){
-                break;
-            }
         }
-
-        cutList.add(from);
-        /*double interest_cut = ist.interest[sol.get(from)] + minCut;
-        if (upper_bound-interest_cut<lower_bound){
-            System.out.println("lb");
-        }*/
         return cutList;
+
     }
 
-    private Pair<List<Integer>, Double> remove(int from, double deltaT, double deltaD){
+    private List<Integer> addAndCopy(List<Integer> original, Integer toAdd){
+        ArrayList<Integer> copy = new ArrayList<>(original);
+        copy.add(toAdd);
+        return copy;
+    }
+
+    /*private Pair<List<Integer>, Double> remove(int from, double deltaT, double deltaD){
         Pair<List<Integer>, Double> rec = cache.get(from).get(deltaT, deltaD);
 
         if (rec == null) {
@@ -102,7 +106,7 @@ public class Reducer {
             }
         }
         return pairs.get(arg);
-    }
+    }*/
 }
 
 /*

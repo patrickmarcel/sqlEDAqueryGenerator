@@ -20,7 +20,7 @@ public class KnapsackStyle implements TAPEngine{
         /*final String file = "22_500.dat";
         final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_" + file;
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;*/
-        final String file = "12_500.dat";
+        final String file = "22_100.dat";
         final String path="data/tap_" + file;
         final String out_path = "data/warm_start_" + file;
         double temps = 0.5, dist = 0.1;
