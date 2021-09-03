@@ -17,13 +17,13 @@ public class KnapsackStyle implements TAPEngine{
 
 
     public static void main(String[] args) throws Exception {
-        final String file = "22_40.dat";
+        final String file = "22_60.dat";
         final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;/*
         final String file = "22_100.dat";
         final String path="data/tap_" + file;
         final String out_path = "data/warm_start_" + file;*/
-        double temps = 0.8, dist = 0.4;
+        double temps = 0.8, dist = 0.5;
 
         compute(path, out_path, temps, dist);
         System.exit(0);

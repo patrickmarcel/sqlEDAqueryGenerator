@@ -17,12 +17,12 @@ import java.util.stream.IntStream;
 
 public class TSPStyle {
     public static void main(String[] args) {
-        final String file = "22_40.dat";
+        final String file = "22_60.dat";
         final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
         //final String file = "22_100.dat";
         //final String path="data/tap_" + file;
 
-        double temps = 0.8, dist = 0.4;
+        double temps = 0.8, dist = 0.5;
         boolean modeFull = true;
 
         Instance ist = InstanceFiles.readFile(path);
@@ -80,7 +80,7 @@ public class TSPStyle {
                 full = getAligned(full, posme);
 
             Reducer rd = new Reducer(ist, full);
-            rd.lower_bound = 8;
+            rd.setLb(28);
             List<Integer> toRemove = rd.toRemove(subtourTime(full, ist) - eptime, sequenceDistance(full, ist) - epdist);
             System.out.println(toRemove);
             full.removeAll(toRemove.stream().filter(i -> i >= 0).map(full::get).collect(Collectors.toList()));
