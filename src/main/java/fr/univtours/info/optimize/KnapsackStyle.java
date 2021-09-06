@@ -17,7 +17,7 @@ public class KnapsackStyle implements TAPEngine{
 
 
     public static void main(String[] args) throws Exception {
-        final String file = "22_60.dat";
+        final String file = "22_500.dat";
         final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;/*
         final String file = "22_100.dat";

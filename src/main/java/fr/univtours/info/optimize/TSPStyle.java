@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
 
 public class TSPStyle {
     public static void main(String[] args) {
-        final String file = "22_60.dat";
+        final String file = "22_500.dat";
         final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
         //final String file = "22_100.dat";
         //final String path="data/tap_" + file;
@@ -30,6 +30,7 @@ public class TSPStyle {
         double epdist = Math.round( dist * ist.size * 4.5);
         double eptime = Math.round(temps * ist.size * 27.5f);
 
+        long startTime = System.nanoTime();
         // 1 solve affectation
         List<List<Integer>> subtours = solveAffectation(ist.distances);
         System.out.println(subtours.size());
@@ -80,7 +81,7 @@ public class TSPStyle {
                 full = getAligned(full, posme);
 
             Reducer rd = new Reducer(ist, full);
-            rd.setLb(28);
+            rd.setLb(235);
             List<Integer> toRemove = rd.toRemove(subtourTime(full, ist) - eptime, sequenceDistance(full, ist) - epdist);
             System.out.println(toRemove);
             full.removeAll(toRemove.stream().filter(i -> i >= 0).map(full::get).collect(Collectors.toList()));
@@ -92,6 +93,9 @@ public class TSPStyle {
 
         }
 
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime)/1000000;
+        System.out.println("RUNTIME = " + duration / 1000.0 + " s");
 
     }
 
