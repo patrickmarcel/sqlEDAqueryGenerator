@@ -17,10 +17,10 @@ import java.util.stream.IntStream;
 
 public class TSPStyle {
     public static void main(String[] args) {
+        //final String file = "22_500.dat";
+        //final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
         final String file = "22_500.dat";
-        final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
-        //final String file = "22_100.dat";
-        //final String path="data/tap_" + file;
+        final String path ="/users/21500078t/instances/tap_" + file;
 
         double temps = 0.8, dist = 0.5;
         boolean modeFull = true;

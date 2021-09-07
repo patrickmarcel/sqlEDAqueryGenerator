@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -39,9 +40,10 @@ public class MainTAP {
     static List<DatasetMeasure> theMeasures;
     static Connection conn;
     static DBConfig config;
-
+    //Default can be overridden by -i
+    static String INTERESTINGNESS = "full";
     //Default can be overridden by -c
-    public static String CPLEX_BIN = "C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe";
+    public static String CPLEX_BIN = "/users/21500078t/tap_bin_latest";
 
     public static void main( String[] args ) throws Exception{
 
@@ -55,6 +57,10 @@ public class MainTAP {
         cplex.setRequired(false);
         options.addOption(cplex);
 
+        Option interest = new Option("i", "interestingness", true, "Interestingness measure tu use : full/con/sig/cred");
+        interest.setRequired(false);
+        options.addOption(interest);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -65,6 +71,13 @@ public class MainTAP {
             System.out.println("Config File :" + DBConfig.CONF_FILE_PATH);
             if (cmd.hasOption('c')){
                 CPLEX_BIN = cmd.getOptionValue('c');
+            }
+            if (cmd.hasOption('i')) {
+                INTERESTINGNESS = cmd.getOptionValue('i');
+                if (!INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
+                    System.err.println("[ERROR] Unknown interestingness measure: '" + INTERESTINGNESS + "'");
+                    System.exit(1);
+                }
             }
         } catch (ParseException e) {
             System.out.println(e.getMessage());
@@ -120,7 +133,7 @@ public class MainTAP {
                         //Go multithreaded and cache everything
                         List<Pair<Insight, AssessQuery>> validPairs = insightsOfDimBOverM.parallelStream()
                                 .filter(insight -> {
-                                    Pair<double[], double[]> res = cache.assess(insight.getSelA(), insight.getSelB(), MainTAP::sum);
+                                    Pair<double[], double[]> res = cache.assess(insight.getSelA(), insight.getSelB(), TableFragment::sum);
                                     return querySupports(insight, res.getA(), res.getB());
                                 })
                                 .map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
@@ -159,8 +172,6 @@ public class MainTAP {
         System.out.println("Support time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
         System.out.println("Supported insights " + isSupportedBy.keySet().size());
 
-        List<AssessQuery> tapQueries = new ArrayList<>();
-
         Map<AssessQuery, List<Insight>> supports = new HashMap<>();
         isSupportedBy.forEach(((insight, assessQueries) -> {
             assessQueries.forEach(q -> {
@@ -168,29 +179,50 @@ public class MainTAP {
                 supports.get(q).add(insight);
             });
         }));
-        System.out.println("Total queries " + supports.keySet().size());
-        for (AssessQuery q : supports.keySet()){
-            tapQueries.add(q);
+
+
+        List<AssessQuery> tapQueries = new ArrayList<>(supports.keySet());
+        System.out.println("Total queries (supporting) " + tapQueries.size());
+
+        tapQueries.stream().parallel().forEach(q -> {
             q.explain();
-            StringBuilder sb = new StringBuilder("Insights:");
-            for (Insight insight : supports.get(q)) {
-                sb.append(insight).append(", ");
+            q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", ")));
+        });
+
+        // credibility of insights
+        Map<Insight, Double> cred = isSupportedBy.entrySet().stream().parallel().map(e -> {
+            Insight key = e.getKey();
+            double trueS = e.getValue().size();
+            double possibleS = 0;
+            for (DatasetDimension d : ds.getTheDimensions()){
+                if (!d.equals(key.getDim()) && !DBUtils.checkAimpliesB(key.getDim(), d, conn, table))
+                    possibleS += 1;
             }
-            q.setTestComment(sb.toString());
+           return new Pair<>(key, trueS/possibleS);
+        }).collect(Collectors.toMap(Pair::getA, Pair::getB));
+
+        // significance
+        if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("cred") || INTERESTINGNESS.equals("sig")) {
+            supports.entrySet().stream().parallel().forEach((e) -> {
+                double i;
+                if (INTERESTINGNESS.equals("full"))
+                    i = e.getValue().stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - cred.get(insight))).sum();
+                else if (INTERESTINGNESS.equals("sig"))
+                    i = e.getValue().stream().mapToDouble(insight -> 1 - insight.getP()).sum();
+                else
+                    i = e.getValue().stream().mapToDouble(insight -> (1 - cred.get(insight))).sum();
+                e.getKey().setInterest(i);
+            });
         }
 
-        // get interest from supported insights
-        for (Map.Entry<Insight, Set<AssessQuery>> entry : isSupportedBy.entrySet()){
-            Set<AssessQuery> supporting = entry.getValue();
-            double p = entry.getKey().getP();
-            for (AssessQuery q : supporting){
-                q.setInterest(1 - (q.getInterest() + p/supporting.size()));
-            }
-        }
         // conciseness ponderation
-        for (AssessQuery q : tapQueries){
-            q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support()));
-        }
+        tapQueries.stream().parallel().forEach(q ->{
+            if (INTERESTINGNESS.equals("full"))
+                q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support()));
+            else if (INTERESTINGNESS.equals("con"))
+                q.setInterest(conciseness(q.getReference().getActiveDomain().size(), q.support()));
+        });
+
 
         // --- SOLVING TAP ----
         System.out.println("Started solving TAP instance");
@@ -206,8 +238,9 @@ public class MainTAP {
         stopwatch.stop();
         System.out.println("Heuristic runtime: " + stopwatch.elapsed(TimeUnit.SECONDS));
 
+        TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
         if (tapQueries.size() < 1000){
-            TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
+            //TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
             List<AssessQuery> exactSolution = exact.solve(tapQueries, 5000, 100);
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
@@ -218,15 +251,6 @@ public class MainTAP {
 
 
         conn.close();
-    }
-
-    public static double sum(Collection<Double> x){
-        //if (x == null)
-        //    return 0;
-        double s = 0;
-        for(Double item : x)
-            s += item;
-        return s;
     }
 
     public static void init() throws IOException, SQLException {

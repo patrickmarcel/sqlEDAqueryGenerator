@@ -40,6 +40,9 @@ public class Insight {
     @Getter @Setter
     double p = Double.NaN;
 
+    @Getter @Setter
+    double credibility;
+
     @Override
     public String toString() {
         return "Insight {" +

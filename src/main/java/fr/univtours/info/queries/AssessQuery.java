@@ -53,9 +53,6 @@ public class AssessQuery implements TimeableOp, Measurable {
     @Getter @Setter
     double interest = 0;
 
-    @Accessors
-    double consiseness;
-
     @Getter
     DatasetMeasure measure;
     @Getter
@@ -128,7 +125,6 @@ public class AssessQuery implements TimeableOp, Measurable {
             if (DBConfig.DIALECT != 2) {
                 ResultSet rs = pstmt.executeQuery("explain  " + this.getSql());
 
-                rs.beforeFirst();
                 rs.next();
 
                 String s1 = rs.getString("QUERY PLAN");

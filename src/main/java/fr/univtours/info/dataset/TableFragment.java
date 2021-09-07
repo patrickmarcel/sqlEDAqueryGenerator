@@ -58,4 +58,13 @@ public class TableFragment {
 
         return new Pair<>(l, r);
     }
+
+    public static double sum(Collection<Double> x){
+        //if (x == null)
+        //    return 0;
+        double s = 0;
+        for(Double item : x)
+            s += item;
+        return s;
+    }
 }
