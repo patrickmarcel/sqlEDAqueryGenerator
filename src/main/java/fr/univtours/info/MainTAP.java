@@ -14,6 +14,7 @@ import fr.univtours.info.optimize.CPLEXTAP;
 import fr.univtours.info.optimize.KnapsackStyle;
 import fr.univtours.info.optimize.TAPEngine;
 import fr.univtours.info.queries.AssessQuery;
+import fr.univtours.info.queries.ConnectionPool;
 import org.apache.commons.cli.*;
 
 import java.awt.*;
@@ -63,10 +64,9 @@ public class MainTAP {
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd = null;
 
         try {
-            cmd = parser.parse(options, args);
+            CommandLine cmd = parser.parse(options, args);
             DBConfig.CONF_FILE_PATH = cmd.getOptionValue("database");
             System.out.println("Config File :" + DBConfig.CONF_FILE_PATH);
             if (cmd.hasOption('c')){
@@ -150,23 +150,6 @@ public class MainTAP {
                 }
             });
         });
-        /*
-        for (Insight insight : insights){
-            List<AssessQuery> sqs = getSupportingQueries(insight);
-            if (sqs.size() == 0)
-                orphan.add(insight);
-            else{
-                isSupportedBy.computeIfAbsent(insight, k-> new ArrayList<>());
-                isSupportedBy.get(insight).addAll(sqs);
-                for (AssessQuery q : sqs){
-                    supports.computeIfAbsent(q, k -> new ArrayList<>());
-                    supports.get(q).add(insight);
-                }
-            }
-
-        }
-        insights.removeAll(orphan);*/
-
 
         stopwatch.stop();
         System.out.println("Support time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
@@ -184,13 +167,10 @@ public class MainTAP {
         List<AssessQuery> tapQueries = new ArrayList<>(supports.keySet());
         System.out.println("Total queries (supporting) " + tapQueries.size());
 
-        tapQueries.stream().parallel().forEach(q -> {
-            q.explain();
-            q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", ")));
-        });
+        tapQueries.stream().parallel().forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
 
         // credibility of insights
-        Map<Insight, Double> cred = isSupportedBy.entrySet().stream().parallel().map(e -> {
+       isSupportedBy.entrySet().stream().parallel().forEach(e -> {
             Insight key = e.getKey();
             double trueS = e.getValue().size();
             double possibleS = 0;
@@ -198,31 +178,42 @@ public class MainTAP {
                 if (!d.equals(key.getDim()) && !DBUtils.checkAimpliesB(key.getDim(), d, conn, table))
                     possibleS += 1;
             }
-           return new Pair<>(key, trueS/possibleS);
-        }).collect(Collectors.toMap(Pair::getA, Pair::getB));
+           key.setCredibility(trueS/possibleS);
+        });
 
         // significance
         if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("cred") || INTERESTINGNESS.equals("sig")) {
             supports.entrySet().stream().parallel().forEach((e) -> {
                 double i;
                 if (INTERESTINGNESS.equals("full"))
-                    i = e.getValue().stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - cred.get(insight))).sum();
+                    i = e.getValue().stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - insight.getCredibility())).sum();
                 else if (INTERESTINGNESS.equals("sig"))
                     i = e.getValue().stream().mapToDouble(insight -> 1 - insight.getP()).sum();
                 else
-                    i = e.getValue().stream().mapToDouble(insight -> (1 - cred.get(insight))).sum();
+                    i = e.getValue().stream().mapToDouble(insight -> (1 - insight.getCredibility())).sum();
                 e.getKey().setInterest(i);
             });
         }
 
+        ConnectionPool cp = new ConnectionPool(config);
         // conciseness ponderation
         tapQueries.stream().parallel().forEach(q ->{
+            Connection c = cp.getConnection();
             if (INTERESTINGNESS.equals("full"))
-                q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support()));
+                q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support(c)));
             else if (INTERESTINGNESS.equals("con"))
-                q.setInterest(conciseness(q.getReference().getActiveDomain().size(), q.support()));
+                q.setInterest(conciseness(q.getReference().getActiveDomain().size(), q.support(c)));
+            cp.returnConnection(c);
         });
 
+        // Fetching runtime
+        System.out.println("Estimating query runtime");
+        tapQueries.stream().parallel().forEach(q -> {
+            Connection c = cp.getConnection();
+            q.explain(c);
+            cp.returnConnection(c);
+        });
+        cp.close();
 
         // --- SOLVING TAP ----
         System.out.println("Started solving TAP instance");
@@ -233,7 +224,8 @@ public class MainTAP {
         List<AssessQuery> naiveSolution = naive.solve(tapQueries, 50000, 100);
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
-        Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+        //Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+        Files.writeString(Paths.get("data/test_new.ipynb"), out.toJson());
 
         stopwatch.stop();
         System.out.println("Heuristic runtime: " + stopwatch.elapsed(TimeUnit.SECONDS));
@@ -244,7 +236,8 @@ public class MainTAP {
             List<AssessQuery> exactSolution = exact.solve(tapQueries, 5000, 100);
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
-            Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+            //Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+            Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
         } else {
             System.err.println("[WARNING] Couldn't run exact solver : too many queries");
         }

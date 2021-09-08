@@ -52,6 +52,7 @@ public class AssessQuery implements TimeableOp, Measurable {
     long explainCost = -1;
     @Getter @Setter
     double interest = 0;
+    int support = -1;
 
     @Getter
     DatasetMeasure measure;
@@ -117,9 +118,11 @@ public class AssessQuery implements TimeableOp, Measurable {
         rs.close();
     }
 
+    public void explain(){
+        explain(this.conn);
+    }
 
-
-    public void explain() {
+    public void explain(Connection conn) {
         try (Statement pstmt = conn.createStatement()) {
             // For classic dbms
             if (DBConfig.DIALECT != 2) {
@@ -217,19 +220,24 @@ public class AssessQuery implements TimeableOp, Measurable {
 
     }
 
-    public int support() {
-        int size;
+    public int support(){
+        return support(this.conn);
+    }
+
+    public int support(Connection conn) {
+        if (support != -1)
+            return support;
         try (Statement st = conn.createStatement()) {
             ResultSet rs = st.executeQuery("select count(*) from " + table + " where " + assessed.getName() + " = '" + val2.replaceAll("'", "''") + "' or " + assessed.getName() + " = '" + val1.replaceAll("'", "''") + "';");
             rs.next();
-            size = rs.getInt(1);
+            support = rs.getInt(1);
             rs.close();
 
         } catch (SQLException e){
             System.err.println("[ERROR] Couldn't fetch support for " + this);
-            return 0;
+            return -1;
         }
-        return size;
+        return support;
     }
 
     @Override
