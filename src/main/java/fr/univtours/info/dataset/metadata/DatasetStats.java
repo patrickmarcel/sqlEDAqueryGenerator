@@ -22,13 +22,12 @@ public class DatasetStats {
     @Getter
     int rows;
 
-    public DatasetStats() throws SQLException, IOException {
-        DBConfig config = DBConfig.newFromFile();
+    public DatasetStats(DBConfig config) throws SQLException {
+
         table = config.getTable();
         List<DatasetDimension> theDimensions;
         theDimensions = config.getDimensions();
         Connection conn = config.getConnection();
-
 
         // Pre compute stats
         adSize = new HashMap<>();
@@ -63,6 +62,6 @@ public class DatasetStats {
         rows = rs.getInt(1);
         st.close();
 
-        conn.close();
+        //conn.close();
     }
 }

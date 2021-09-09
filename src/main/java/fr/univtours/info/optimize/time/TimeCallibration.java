@@ -34,7 +34,7 @@ public class TimeCallibration {
 
 
         // Pre compute stats
-        DatasetStats stats = new DatasetStats();
+        DatasetStats stats = new DatasetStats(config);
         HashMap<DatasetDimension, Integer> adSize = stats.getAdSize();
         HashMap<DatasetDimension, HashMap<String, Integer>> frequency = stats.getFrequency();
         int rows = stats.getRows();

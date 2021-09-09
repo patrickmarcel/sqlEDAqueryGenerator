@@ -6,6 +6,7 @@ import fr.univtours.info.DBUtils;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.optimize.time.CostModelProvider;
 import fr.univtours.info.optimize.time.TimeableOp;
 import fr.univtours.info.optimize.tsp.Measurable;
@@ -221,12 +222,14 @@ public class AssessQuery implements TimeableOp, Measurable {
     }
 
     public int support(){
-        return support(this.conn);
-    }
-
-    public int support(Connection conn) {
         if (support != -1)
             return support;
+        else return support(this.conn);
+    }
+
+    //This is way too slow use stats instead
+    @Deprecated
+    public int support(Connection conn) {
         try (Statement st = conn.createStatement()) {
             ResultSet rs = st.executeQuery("select count(*) from " + table + " where " + assessed.getName() + " = '" + val2.replaceAll("'", "''") + "' or " + assessed.getName() + " = '" + val1.replaceAll("'", "''") + "';");
             rs.next();
@@ -237,6 +240,11 @@ public class AssessQuery implements TimeableOp, Measurable {
             System.err.println("[ERROR] Couldn't fetch support for " + this);
             return -1;
         }
+        return support;
+    }
+
+    public int support(DatasetStats stats){
+        support = stats.getFrequency().get(this.assessed).get(val1) + stats.getFrequency().get(this.assessed).get(val2);
         return support;
     }
 

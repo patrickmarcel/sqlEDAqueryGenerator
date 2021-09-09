@@ -1,6 +1,7 @@
 package fr.univtours.info.optimize.time;
 
 
+import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.queries.AssessQuery;
 
@@ -17,7 +18,8 @@ public class LinearTimeEstimator implements CostModel {
     public static long estimate(AssessQuery q){
         if (stats == null) {
             try {
-                stats = new DatasetStats();
+                //FIXME
+                stats = new DatasetStats(DBConfig.newFromFile());
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
             } catch (IOException e) {

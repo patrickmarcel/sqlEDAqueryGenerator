@@ -10,6 +10,7 @@ import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.TableFragment;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.optimize.CPLEXTAP;
 import fr.univtours.info.optimize.KnapsackStyle;
 import fr.univtours.info.optimize.TAPEngine;
@@ -41,6 +42,7 @@ public class MainTAP {
     static List<DatasetMeasure> theMeasures;
     static Connection conn;
     static DBConfig config;
+    static DatasetStats stats;
     //Default can be overridden by -i
     static String INTERESTINGNESS = "full";
     //Default can be overridden by -c
@@ -169,6 +171,8 @@ public class MainTAP {
 
         tapQueries.stream().parallel().forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
 
+        System.out.println("Computing interestngness");
+        stopwatch = Stopwatch.createStarted();
         // credibility of insights
        isSupportedBy.entrySet().stream().parallel().forEach(e -> {
             Insight key = e.getKey();
@@ -195,22 +199,25 @@ public class MainTAP {
             });
         }
 
-        ConnectionPool cp = new ConnectionPool(config);
         // conciseness ponderation
         tapQueries.stream().parallel().forEach(q ->{
-            Connection c = cp.getConnection();
+
             if (INTERESTINGNESS.equals("full"))
-                q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support(c)));
+                q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support(stats)));
             else if (INTERESTINGNESS.equals("con"))
-                q.setInterest(conciseness(q.getReference().getActiveDomain().size(), q.support(c)));
-            cp.returnConnection(c);
+                q.setInterest(conciseness(q.getReference().getActiveDomain().size(), q.support(stats)));
+
         });
+        stopwatch.stop();
+        System.out.println("Interestingness done in " + stopwatch.elapsed(TimeUnit.SECONDS) + " s");
 
         // Fetching runtime
+        ConnectionPool cp = new ConnectionPool(config);
         System.out.println("Estimating query runtime");
         tapQueries.stream().parallel().forEach(q -> {
             Connection c = cp.getConnection();
-            q.explain(c);
+            //q.explain(c);
+            q.setExplainCost(1);
             cp.returnConnection(c);
         });
         cp.close();
@@ -253,6 +260,10 @@ public class MainTAP {
         theDimensions = config.getDimensions();
         theMeasures = config.getMeasures();
         ds = new Dataset(conn, table, theDimensions, theMeasures);
+        System.out.println("Connection to database successful");
+        System.out.print("Collecting statistics ... ");
+        stats = new DatasetStats(config);
+        System.out.println(" Done");
     }
 
 
