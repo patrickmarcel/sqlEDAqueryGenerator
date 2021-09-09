@@ -41,7 +41,7 @@ public class KnapsackStyle implements TAPEngine{
     }
 
     private static void compute(String path, String out_path, double temps, double dist) throws IOException {
-        Instance ist = InstanceFiles.readFile(path);
+        InstanceLegacy ist = InstanceLegacy.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);
         double eptime = Math.round(temps * ist.size * 27.5f);

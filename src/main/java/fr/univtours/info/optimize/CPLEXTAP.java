@@ -20,38 +20,7 @@ public class CPLEXTAP implements TAPEngine{
     @Override
     public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
 
-        try {
-            FileOutputStream fos = new FileOutputStream(temp_file_path);
-            PrintWriter io = new PrintWriter(fos);
-            io.println(theQ.size());
-            for (int i = 0; i < theQ.size(); i++) {
-                AssessQuery q = theQ.get(i);
-                io.print(q.getInterest());
-                if (i < theQ.size() - 1)
-                    io.print(" ");
-            }
-            io.print('\n');
-            for (int i = 0; i < theQ.size(); i++) {
-                AssessQuery q = theQ.get(i);
-                io.print((int) q.estimatedTime());// Now using time estimate not real run time
-                if (i < theQ.size() - 1)
-                    io.print(" ");
-            }
-            io.print('\n');
-            for (AssessQuery q : theQ){
-                for (int i = 0; i < theQ.size(); i++) {
-                    AssessQuery qp = theQ.get(i);
-                    io.print((int) q.dist(qp));
-                    if (i < theQ.size() - 1)
-                        io.print(" ");
-                }
-                io.print('\n');
-            }
-            io.flush();
-            fos.close();
-        } catch (IOException e){
-            System.err.println("Could not save temp file !");
-        }
+        InstanceLegacy.writeFile(temp_file_path, theQ);
 
         System.out.println("Running CPLEX");
         String[] cplex_cmd = new String[]{binary_path, Paths.get(temp_file_path).toAbsolutePath().toString(), String.valueOf(timeBudget), String.valueOf(maxDistance)};

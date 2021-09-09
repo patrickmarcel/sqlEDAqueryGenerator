@@ -1,8 +1,5 @@
 package fr.univtours.info.optimize;
 
-import com.alexscode.utilities.collection.Element;
-import com.alexscode.utilities.collection.Pair;
-import com.google.common.collect.Lists;
 import edu.princeton.cs.algs4.AssignmentProblem;
 import lombok.Getter;
 import org.jgrapht.Graph;
@@ -25,7 +22,7 @@ public class TSPStyle {
         double temps = 0.8, dist = 0.5;
         boolean modeFull = true;
 
-        Instance ist = InstanceFiles.readFile(path);
+        InstanceLegacy ist = InstanceLegacy.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);
         double eptime = Math.round(temps * ist.size * 27.5f);
@@ -101,7 +98,7 @@ public class TSPStyle {
 
 
 
-    public static List<Integer> stitch(List<List<Integer>> tours, Instance ist){
+    public static List<Integer> stitch(List<List<Integer>> tours, InstanceLegacy ist){
 
         Graph<Integer, StitchOP> g = new SimpleGraph<>(StitchOP.class);
         IntStream.rangeClosed(0, tours.size()).forEach(g::addVertex);
@@ -164,7 +161,7 @@ public class TSPStyle {
     }
 
     // alternating algorithm from https://vlsicad.ucsd.edu/Publications/Journals/j67.pdf#page=11&zoom=100,0,422
-    public static StitchOP getApproximateStitch(List<Integer> a, List<Integer> b, Instance ist){
+    public static StitchOP getApproximateStitch(List<Integer> a, List<Integer> b, InstanceLegacy ist){
         HashSet<StitchOP> history = new HashSet<>();
         StitchOP current = new StitchOP();
         current.vertex1a = a.get(0);
@@ -232,19 +229,19 @@ public class TSPStyle {
     }
 
 
-    public static double subtourValue(List<Integer> tour, Instance ist){
+    public static double subtourValue(List<Integer> tour, InstanceLegacy ist){
         return tour.stream().mapToDouble(i -> ist.interest[i]).sum();
     }
 
-    public static double subtourTime(List<Integer> tour, Instance ist){
+    public static double subtourTime(List<Integer> tour, InstanceLegacy ist){
         return tour.stream().mapToDouble(i -> ist.costs[i]).sum();
     }
 
-    public static double subtourDistance(List<Integer> tour, Instance ist){
+    public static double subtourDistance(List<Integer> tour, InstanceLegacy ist){
         return ist.distances[tour.get(tour.size() - 1)][tour.get(0)] + sequenceDistance(tour, ist);
     }
 
-    public static double sequenceDistance(List<Integer> tour, Instance ist){
+    public static double sequenceDistance(List<Integer> tour, InstanceLegacy ist){
         double d = 0;
         for (int i = 0; i < tour.size() - 1; i++) {
             d += ist.distances[tour.get(i)][tour.get(i+1)];
@@ -252,7 +249,7 @@ public class TSPStyle {
         return d;
     }
 
-    public static double maxEdgeValue(List<Integer> tour, Instance ist){
+    public static double maxEdgeValue(List<Integer> tour, InstanceLegacy ist){
         double max = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
         for (int i = 0; i < tour.size() - 1; i++) {
             double d = ist.distances[tour.get(i)][tour.get(i+1)];
@@ -262,7 +259,7 @@ public class TSPStyle {
         return max;
     }
 
-    public static int argMaxEdge(List<Integer> tour, Instance ist){
+    public static int argMaxEdge(List<Integer> tour, InstanceLegacy ist){
         double max = ist.distances[tour.get(tour.size() - 1)][tour.get(0)];
         int right = 0;
         for (int i = 0; i < tour.size() - 1; i++) {

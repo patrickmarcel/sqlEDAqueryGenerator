@@ -1,15 +1,14 @@
 package fr.univtours.info.optimize;
 
-import com.alexscode.utilities.collection.Pair;
 import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
 import lombok.Setter;
-import lombok.experimental.Accessors;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Reducer {
-    Instance ist;
+    InstanceLegacy ist;
     double[][] distances;
     double[] costs;
     double[] interest;
@@ -19,7 +18,7 @@ public class Reducer {
     double ub = 0;
     ArrayList<Table<Double, Double, double[]>> cache = new ArrayList<>();
 
-    public Reducer(Instance ist, List<Integer> sol) {
+    public Reducer(InstanceLegacy ist, List<Integer> sol) {
         this.ist = ist;
         distances = ist.distances;
         costs = ist.costs;

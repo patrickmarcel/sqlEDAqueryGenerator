@@ -1,7 +1,6 @@
 package fr.univtours.info;
 
 import com.alexscode.utilities.collection.Pair;
-import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -11,17 +10,13 @@ import fr.univtours.info.dataset.TableFragment;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.dataset.metadata.DatasetStats;
-import fr.univtours.info.optimize.CPLEXTAP;
-import fr.univtours.info.optimize.KnapsackStyle;
-import fr.univtours.info.optimize.TAPEngine;
+import fr.univtours.info.optimize.*;
 import fr.univtours.info.queries.AssessQuery;
 import fr.univtours.info.queries.ConnectionPool;
+import fr.univtours.info.tap.Instance;
 import org.apache.commons.cli.*;
 
-import java.awt.*;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -29,7 +24,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -237,9 +231,9 @@ public class MainTAP {
         stopwatch.stop();
         System.out.println("Heuristic runtime: " + stopwatch.elapsed(TimeUnit.SECONDS));
 
-        TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
+
         if (tapQueries.size() < 1000){
-            //TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
+            TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
             List<AssessQuery> exactSolution = exact.solve(tapQueries, 5000, 100);
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
@@ -247,6 +241,8 @@ public class MainTAP {
             Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
         } else {
             System.err.println("[WARNING] Couldn't run exact solver : too many queries");
+            Instance instance = new Instance(tapQueries, 50000, 100);
+            instance.toFileBinary("data/tap_instance.dat");
         }
 
 

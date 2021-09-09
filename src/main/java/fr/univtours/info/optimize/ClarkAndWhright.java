@@ -23,7 +23,7 @@ public class ClarkAndWhright {
                 var in = folder + "tap_" + i + "_" + size + ".dat";
                 var out = folder + "tap_" + i + "_" + size + ".warm";
 
-                Instance ist = InstanceFiles.readFile(in);
+                InstanceLegacy ist = InstanceLegacy.readFile(in);
                 System.out.println("Loaded " + in + " | " + ist.size + " queries");
                 double epdist = Math.round( dist * ist.size * 4.5) - 1;
                 double eptime = Math.round(temps * ist.size * 27.5f) - 1;
@@ -35,7 +35,7 @@ public class ClarkAndWhright {
 
     }
 
-    private static void compute(String out_path, Instance ist, double epdist, double eptime) throws IOException {
+    private static void compute(String out_path, InstanceLegacy ist, double epdist, double eptime) throws IOException {
         List<Double> zs = new ArrayList<>();
         List<List<Integer>> solutions = new ArrayList<>();
         for (int dpt = 0; dpt < ist.size; dpt++) {

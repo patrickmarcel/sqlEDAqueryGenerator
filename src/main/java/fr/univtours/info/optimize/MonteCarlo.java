@@ -18,7 +18,7 @@ public class MonteCarlo {
         final String path="C:\\Users\\chanson\\CLionProjects\\Cplex-TAP\\instances\\tap_22_500.dat";
         double dist = 0.2, temps = 0.15;
 
-        Instance ist = InstanceFiles.readFile(path);
+        InstanceLegacy ist = InstanceLegacy.readFile(path);
         System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);;
         double eptime = Math.round(temps * ist.size * 27.5f);;
@@ -118,7 +118,7 @@ public class MonteCarlo {
         fos.close();
     }
 
-    private static double[] computeCentralities(Instance ist) {
+    private static double[] computeCentralities(InstanceLegacy ist) {
         double[] centrality = new double[ist.size];
         for (int i = 0; i < ist.size; i++) {
             double c = 0;

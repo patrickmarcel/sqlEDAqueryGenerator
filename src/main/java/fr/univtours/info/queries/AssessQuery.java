@@ -49,7 +49,7 @@ public class AssessQuery implements TimeableOp, Measurable {
 
     @Getter
     long actualCost = 0;
-    @Setter
+    @Setter @Getter
     long explainCost = -1;
     @Getter @Setter
     double interest = 0;
