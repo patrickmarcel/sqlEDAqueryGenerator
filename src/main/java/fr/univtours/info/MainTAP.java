@@ -15,6 +15,8 @@ import fr.univtours.info.queries.AssessQuery;
 import fr.univtours.info.queries.ConnectionPool;
 import fr.univtours.info.tap.Instance;
 import org.apache.commons.cli.*;
+import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.sampling.ListSampler;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -241,7 +243,7 @@ public class MainTAP {
             Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
         } else {
             System.err.println("[WARNING] Couldn't run exact solver : too many queries");
-            Instance instance = new Instance(tapQueries, 50000, 100);
+            Instance instance = new Instance(ListSampler.sample(new Random(),tapQueries, Math.min(100000, tapQueries.size())), 50000, 100);
             instance.toFileBinary("data/tap_instance.dat");
         }
 
