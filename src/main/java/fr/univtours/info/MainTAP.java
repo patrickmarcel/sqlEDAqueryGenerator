@@ -244,8 +244,8 @@ public class MainTAP {
             Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
         } else {
             System.err.println("[WARNING] Couldn't run exact solver : too many queries");
-            Instance instance = new Instance(ListSampler.sample(RandomSource.create(RandomSource.MT), tapQueries, Math.min(100000, tapQueries.size())), 50000, 100);
-            instance.toFileBinary("data/tap_instance.dat");
+            Instance instance = new Instance(ListSampler.sample(RandomSource.create(RandomSource.MT), tapQueries, Math.min(100000, tapQueries.size())), 50000, 100, true);
+            instance.toFileBinaryNoDist("data/tap_instance.dat");
         }
         
         conn.close();

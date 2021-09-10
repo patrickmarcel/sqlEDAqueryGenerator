@@ -48,6 +48,21 @@ public class Instance {
         
     }
 
+
+    public Instance(List<AssessQuery> queries, double epTime, double epDist, boolean nodist) {
+        this.size = queries.size();
+        this.epTime = epTime;
+        this.epDist = epDist;
+        this.costs = new double[size];
+        this.interest = new double[size];
+        for (int i = 0; i < size; i++) {
+            AssessQuery qi = queries.get(i);
+            costs[i] = qi.getExplainCost();
+            interest[i] = qi.getInterest();
+        }
+
+    }
+
     public static Instance newFromFileBinary(String path){
         try {
             InstanceOuterClass.Instance in = InstanceOuterClass.Instance.parseFrom(Files.readAllBytes(Paths.get(path)));
@@ -98,6 +113,24 @@ public class Instance {
             System.err.println("[ERROR] Failed to write instance to " + path);
         }
         
+    }
+
+    public void toFileBinaryNoDist(String path){
+        InstanceOuterClass.Instance toWrite = InstanceOuterClass.Instance.newBuilder()
+                .setSize(size)
+                .setEpTime(epTime)
+                .setEpDist(epDist)
+                .addAllCosts(Arrays.stream(costs).boxed().collect(Collectors.toList()))
+                .addAllInterests(Arrays.stream(interest).boxed().collect(Collectors.toList()))
+                .build();
+        try {
+            FileOutputStream fos = new FileOutputStream(path);
+            toWrite.writeTo(fos);
+            fos.close();
+        } catch (IOException e){
+            System.err.println("[ERROR] Failed to write instance to " + path);
+        }
+
     }
 
     public void toFileLegacy(String path){
