@@ -252,6 +252,8 @@ public class MainTAP {
                     e.printStackTrace();
                 }
                 assessQuery.setExplainCost(assessQuery.getActualCost());
+                if (assessQuery.getActualCost() > 100)
+                    System.out.println(assessQuery.getSql());
             });
             Instance instance = new Instance(sample, 50000, 100, true);
             instance.toFileBinaryNoDist("data/tap_instance.dat");

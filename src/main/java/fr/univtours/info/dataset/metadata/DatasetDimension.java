@@ -38,8 +38,7 @@ public class DatasetDimension extends DatasetAttribute{
 
         while(rsit.hasNext()) { // move to last for getting execution time
             tab=rsit.next();
-            //System.out.println(tab[0].toString());
-            activeDomain.add(tab[0].toString());
+            activeDomain.add(String.valueOf(tab[0]));
         }
         pstmt.close();
         rs.close();

@@ -122,7 +122,7 @@ public class StatisticalVerifier {
 
         List<Insight> toAdd;
         // Switch to parallel processing if more large number of insights are available
-        if (insights.size() > 250){
+        if (insights.size() > 50){
             toAdd = insights.parallelStream()
                 .map(in -> computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb))
                 .flatMap(Collection::stream).collect(Collectors.toList());
