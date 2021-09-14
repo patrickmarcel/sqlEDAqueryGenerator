@@ -21,20 +21,21 @@
 
   <repositories>
     <repository>
-      <id>algs4.repo</id>
-      <url>https://dl.bintray.com/algs4/maven/</url>
-    </repository>
-    <repository>
-      <id>clojars.org</id>
-      <url>https://repo.clojars.org</url>
-    </repository>
-    <repository>
       <id>Maven Central</id>
       <url>https://repo1.maven.org/maven2/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
     </repository>
+    <!-- <repository>
+      <id>algs4.repo</id>
+      <url>https://dl.bintray.com/algs4/maven/</url>
+    </repository>-->
+    <repository>
+      <id>clojars.org</id>
+      <url>https://repo.clojars.org</url>
+    </repository>
+
   </repositories>
 
 
@@ -64,7 +65,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-rng-simple</artifactId>
-      <version>1.3</version>
+      <version>1.4</version>
     </dependency>
 
 
