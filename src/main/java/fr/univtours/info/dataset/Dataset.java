@@ -109,7 +109,7 @@ public class Dataset {
     }
 
     public Dataset computeStatisticalSample(DatasetDimension dim, int size, Connection destination) throws SQLException {
-        String sampleTableName= "sample_" + table + "_on_" + dim.getName() ;
+        String sampleTableName= "sample_" + table + "_on_" + dim.getName().replaceAll("\"", "").replace(' ', '_') ;
 
         // Only works with "default" structure
         String sql="create table " + sampleTableName +"(";
@@ -151,9 +151,9 @@ public class Dataset {
         while (origin.next()){
             rows++;
             int pos = 1;
-            insertSt.setString(pos++, origin.getString(dim.getName()));
+            insertSt.setString(pos++, origin.getString(dim.getPrettyName()));
             for (DatasetMeasure meas : theMeasures){
-                insertSt.setFloat(pos++, origin.getFloat(meas.getName()));
+                insertSt.setFloat(pos++, origin.getFloat(meas.getPrettyName()));
             }
             insertSt.addBatch();
             if (rows % 10000 == 0)
