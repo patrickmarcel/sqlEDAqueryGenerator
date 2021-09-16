@@ -1,6 +1,7 @@
 package fr.univtours.info;
 
 import com.alexscode.utilities.math.Permutations;
+import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
@@ -20,6 +21,7 @@ public class StatisticalVerifier {
      * @param ds the dataset object to test on
      * @return the p value ofr the insight
      */
+    @Deprecated
     public static double check(Insight i, Dataset ds){
         double[] a, b;
         //Load
@@ -81,7 +83,20 @@ public class StatisticalVerifier {
      * @param insights The list of insights
      * @param ds The dataset to check insights on
      */
-    public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel, int permNb) {
+    public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel, int permNb, double sampleRatio, DBConfig config) {
+        Map<DatasetDimension, Dataset> samples = new HashMap<>();
+        Connection sample_db = null;
+        if (sampleRatio < 1.0) {
+            try {
+                Class.forName(config.getSampleDriver());
+                sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
+                for (DatasetDimension d : ds.getTheDimensions()) {
+                    samples.put(d, ds.computeStatisticalSample(d, (int) (ds.getTableSize() * sampleRatio), sample_db));
+                }
+            } catch (ClassNotFoundException | SQLException e) {
+                e.printStackTrace();
+            }
+        }
         List<List<Insight>> perDim = new ArrayList<>();
         ds.getTheDimensions().forEach(d -> perDim.add(new ArrayList<>()));
         insights.forEach(i -> perDim.get(ds.getTheDimensions().indexOf(i.getDim())).add(i));
@@ -91,7 +106,10 @@ public class StatisticalVerifier {
             Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
             for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
                 System.out.println("Working on " + kv.getValue().get(0).getDim() + " | " + kv.getValue().get(0).getMeasure() + "  Size = " + kv.getValue().size());
-                insights.addAll(check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
+                if (sampleRatio < 1.0)
+                    insights.addAll(check(kv.getValue(), samples.get(kv.getValue().get(0).getDim()), kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
+                else
+                    insights.addAll(check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
             }
         });
 

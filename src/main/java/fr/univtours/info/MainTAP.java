@@ -105,7 +105,7 @@ public class MainTAP {
         System.out.println("Starting verification");
         stopwatch = Stopwatch.createStarted();
 
-        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05, 1000);
+        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05, 1000, 0.1, config);
 
         stopwatch.stop();
         System.out.println("Verification time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
