@@ -52,7 +52,7 @@ public class Generator {
         //compute sample
         Class.forName(config.getSampleDriver());
         sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
-        Dataset sample = ds.computeSample(10, sample_db);
+        Dataset sample = ds.computeUniformSample(10, sample_db);
 
         //generation
         System.out.println("Starting generation");

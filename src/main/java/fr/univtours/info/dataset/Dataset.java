@@ -44,7 +44,7 @@ public class Dataset {
         return null;
     }
 
-    public Dataset computeSample(double percentage, Connection destination) throws SQLException {
+    public Dataset computeUniformSample(double percentage, Connection destination) throws SQLException {
         String sampleTableName= "sample_" + table ;
         // Only works with "default" structure
         String sql="create table " + sampleTableName +"(";
@@ -106,6 +106,66 @@ public class Dataset {
         insertSt.close();
         originSt.close();
         return new Dataset(destination, sampleTableName, theDimensions, theMeasures);
+    }
+
+    public Dataset computeStatisticalSample(DatasetDimension dim, int size, Connection destination) throws SQLException {
+        String sampleTableName= "sample_" + table + "_on_" + dim.getName() ;
+
+        // Only works with "default" structure
+        String sql="create table " + sampleTableName +"(";
+            sql = sql + dim.getName() + " varchar, ";
+        for(DatasetMeasure m : theMeasures){
+            sql = sql + m.getName() + " float, ";
+        }
+        sql =sql.substring(0,sql.length()-2);
+        sql=sql+");";
+
+        // Create table in H2
+        Statement createSt = destination.createStatement();
+        createSt.executeUpdate(sql) ;
+        createSt.close();
+
+        //Compile an insert query
+        String insert = "INSERT INTO "+sampleTableName +"("
+                + dim.getName() + ", "
+                + theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", ")) + ") VALUES (";
+        int vals = 1 + theMeasures.size();
+        for (int i = 0; i < vals; i++) {
+            insert += "?";
+            insert += i < vals - 1 ? ", " : "";
+        }
+        insert += ");";
+        PreparedStatement insertSt = destination.prepareStatement(insert);
+
+        // Fetch sample from source database
+        Statement originSt = conn.createStatement();
+
+        sql = "WITH\n" +
+                "     grp_counts as (select "+ dim.getName() +" , count(*) c from  "+ table +" group by  "+ dim.getName() +")\n" +
+                "select "+ dim.getName() +", "+ theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", ")) +" from "+ table +" natural join grp_counts\n" +
+                "where random() < ("+size+".0/(select count(*) from grp_counts)::double precision)/c::double precision;";
+
+        ResultSet origin = originSt.executeQuery(sql);
+
+        int rows = 0;
+        while (origin.next()){
+            rows++;
+            int pos = 1;
+            insertSt.setString(pos++, origin.getString(dim.getName()));
+            for (DatasetMeasure meas : theMeasures){
+                insertSt.setFloat(pos++, origin.getFloat(meas.getName()));
+            }
+            insertSt.addBatch();
+            if (rows % 10000 == 0)
+                insertSt.executeBatch();
+        }
+        insertSt.executeBatch();
+
+
+
+        insertSt.close();
+        originSt.close();
+        return new Dataset(destination, sampleTableName, List.of(dim), theMeasures);
     }
 
 }
