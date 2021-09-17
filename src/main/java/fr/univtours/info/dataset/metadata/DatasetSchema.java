@@ -25,24 +25,26 @@ public class DatasetSchema {
 
 
         ImmutableSet<DatasetDimension> set = ImmutableSet.copyOf(ds.getTheDimensions());
-        Set<Set<DatasetDimension>> combinations = Sets.combinations(set, 2);
+        if (set.size() > 1) {
+            Set<Set<DatasetDimension>> combinations = Sets.combinations(set, 2);
 
-        //For each pair of dimension attributes
-        for(Set<DatasetDimension> s : combinations){
-            Iterator<DatasetDimension> it = s.iterator();
-            Pair<DatasetDimension, DatasetDimension> dims = new Pair<>(it.next(), it.next());
-            if (! dims.getA().equals(dims.getB()) ) {
-                if (DBUtils.checkAimpliesB(dims.getA(), dims.getB(), ds.getConn(), ds.getTable())) {
-                    hierarchy.addVertex(dims.getA());
-                    hierarchy.addVertex(dims.getB());
-                    hierarchy.addEdge(dims.getA(), dims.getB());
-                    //System.out.println(dims.getA() + " -> " + dims.getB());
-                }
-                if (DBUtils.checkAimpliesB(dims.getB(), dims.getA(), ds.getConn(), ds.getTable())) {
-                    hierarchy.addVertex(dims.getA());
-                    hierarchy.addVertex(dims.getB());
-                    hierarchy.addEdge(dims.getB(), dims.getA());
-                    //System.out.println(dims.getB() + " -> " + dims.getA());
+            //For each pair of dimension attributes
+            for (Set<DatasetDimension> s : combinations) {
+                Iterator<DatasetDimension> it = s.iterator();
+                Pair<DatasetDimension, DatasetDimension> dims = new Pair<>(it.next(), it.next());
+                if (!dims.getA().equals(dims.getB())) {
+                    if (DBUtils.checkAimpliesB(dims.getA(), dims.getB(), ds.getConn(), ds.getTable())) {
+                        hierarchy.addVertex(dims.getA());
+                        hierarchy.addVertex(dims.getB());
+                        hierarchy.addEdge(dims.getA(), dims.getB());
+                        //System.out.println(dims.getA() + " -> " + dims.getB());
+                    }
+                    if (DBUtils.checkAimpliesB(dims.getB(), dims.getA(), ds.getConn(), ds.getTable())) {
+                        hierarchy.addVertex(dims.getA());
+                        hierarchy.addVertex(dims.getB());
+                        hierarchy.addEdge(dims.getB(), dims.getA());
+                        //System.out.println(dims.getB() + " -> " + dims.getA());
+                    }
                 }
             }
         }

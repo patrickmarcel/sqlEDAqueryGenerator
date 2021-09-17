@@ -7,7 +7,12 @@ import fr.univtours.info.dataset.metadata.DatasetSchema;
 import lombok.Getter;
 
 
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetFactory;
+import javax.sql.rowset.RowSetProvider;
+import java.io.IOException;
 import java.sql.*;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -138,20 +143,23 @@ public class Dataset {
         PreparedStatement insertSt = destination.prepareStatement(insert);
 
         // Fetch sample from source database
-        Statement originSt = conn.createStatement();
 
-        sql = "WITH\n" +
-                "     grp_counts as (select "+ dim.getName() +" , count(*) c from  "+ table +" group by  "+ dim.getName() +")\n" +
-                "select "+ dim.getName() +", "+ theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", ")) +" from "+ table +" natural join grp_counts\n" +
-                "where random() < ("+size+".0/(select count(*) from grp_counts)::double precision)/c::double precision;";
+        sql = "select X."+dim.getName()+", "+theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", "))+" from " +
+                "              (select "+dim.getName()+", "+theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", "))+", random() r from "+ table +") X" +
+                "                  join (select "+dim.getName()+", count(*)::double precision c from "+ table +" group by  "+dim.getName()+") Y on X."+dim.getName()+" = Y."+dim.getName()+" where r < (250000.0/(select count(distinct "+dim.getName()+") from "+ table +")::double precision)/c;";
 
-        ResultSet origin = originSt.executeQuery(sql);
+        RowSetFactory factory = RowSetProvider.newFactory();
+        CachedRowSet origin = factory.createCachedRowSet();
+        origin.setCommand(sql);
+        origin.execute(conn);
 
+        //HashSet<String> ad = new HashSet<String>();
         int rows = 0;
         while (origin.next()){
             rows++;
             int pos = 1;
             insertSt.setString(pos++, origin.getString(dim.getPrettyName()));
+            //ad.add(origin.getString(dim.getPrettyName()));
             for (DatasetMeasure meas : theMeasures){
                 insertSt.setFloat(pos++, origin.getFloat(meas.getPrettyName()));
             }
@@ -160,11 +168,11 @@ public class Dataset {
                 insertSt.executeBatch();
         }
         insertSt.executeBatch();
-
+        //System.out.println(dim + " | " + ad.size() + " | " + ad);
 
 
         insertSt.close();
-        originSt.close();
+        origin.close();
         return new Dataset(destination, sampleTableName, List.of(dim), theMeasures);
     }
 
