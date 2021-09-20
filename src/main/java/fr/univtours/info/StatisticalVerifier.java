@@ -105,7 +105,7 @@ public class StatisticalVerifier {
             // This gets us insights grouped by measure and dimension
             Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
             for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
-                System.out.println("[INFO] Working on " + kv.getValue().get(0).getDim() + "/" + kv.getValue().get(0).getMeasure() + " | Size = " + kv.getValue().size());
+                System.out.println("[INFO] Working on " + kv.getValue().get(0).getDim() + "/" + kv.getValue().get(0).getMeasure() + " | Size = " + kv.getValue().size() * Insight.pprint.length);
                 if (sampleRatio < 1.0)
                     insights.addAll(check(kv.getValue(), samples.get(kv.getValue().get(0).getDim()), kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
                 else

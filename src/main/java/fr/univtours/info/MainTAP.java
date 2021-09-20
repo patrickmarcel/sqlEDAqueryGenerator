@@ -69,7 +69,7 @@ public class MainTAP {
         List<Insight> intuitions = new ArrayList<>(getIntuitions());
 
         stopwatch.stop();
-        System.out.println("[TIME][s] generation " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[TIME][ms] generation " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
         System.out.println("[INFO] " + intuitions.size()*Insight.pprint.length + " hypothesis generated");
 
         //verification
