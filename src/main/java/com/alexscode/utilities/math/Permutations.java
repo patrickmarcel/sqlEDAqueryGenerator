@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Permutations {
     /**
@@ -17,6 +18,7 @@ public class Permutations {
      * @param permutations number of permutations to perform
      * @return r[0] stat for mean smaller / r[1] stat for mean equals
      */
+    @Deprecated
     public static double[] mean(double[] a, double[] b, int permutations){
         double[] meanDiffs = new double[permutations];
 
@@ -58,19 +60,28 @@ public class Permutations {
         System.arraycopy(a, 0, ab, 0, a.length);
         System.arraycopy(b, 0, ab, a.length, b.length);
 
-        PowerSet ps = new PowerSet(ab);
-        if (BigIntegerMath.binomial(ab.length, a.length).compareTo(BigInteger.valueOf(permutations)) < 0){
-            permutations = BigIntegerMath.binomial(ab.length, a.length).intValue();
+        final int fullSize = ab.length;
+        if (BigIntegerMath.binomial(fullSize, a.length).compareTo(BigInteger.valueOf(permutations)) < 0){
+            permutations = BigIntegerMath.binomial(fullSize, a.length).intValue();
         }
 
+        // Very low probability of drawing the same permutation twice ....
+        ThreadLocalRandom rd = null;
+        PowerSet ps = null;
+        boolean safe = fullSize <= 20;
+        if (safe)
+            ps = new PowerSet(ab);
+        else {
+            rd = ThreadLocalRandom.current();
+        }
 
         for (int i = 0; i < permutations; ++i) {
             double mua = 0, mub = 0; // mean
             double muasq = 0, mubsq = 0; // mean of squares
             int countA = 0, countB = 0; // count
 
-            BitSet pa = ps.getNewRandomElementOFSize_new(a.length);
-            for (int j = 0; j < ab.length; j++) {
+            BitSet pa = safe ? ps.getNewRandomElementOFSize_new(a.length) : randomPermNoCheck(fullSize, a.length, rd);
+            for (int j = 0; j < fullSize; j++) {
                 if (pa.get(j)){
                     countA++;
                     mua += ab[j];
@@ -94,13 +105,20 @@ public class Permutations {
         return new Pair<>(meanDiffs, varDiffs);
     }
 
-    /*
+    public static BitSet randomPermNoCheck(int elements, int k, Random rd){
+        BitSet set = new BitSet(elements);
+        for (int i = 0; i < k; i++){
+            int pos = rd.nextInt(elements);
+            while (set.get(pos)){
+                pos = rd.nextInt(elements);
+            }
+            set.set(pos);
+        }
+        return set;
+    }
+
+
     public static void main(String[] args) {
-        double[] b = {35, 36, 37};
-        double[] a = {2, 3};
-
-        System.out.println(Arrays.toString(mean_smaller(a, b, 12)));
-
 
         Random rand = new Random();
         Scanner scanner = new Scanner(System.in);
@@ -117,7 +135,7 @@ public class Permutations {
         }
 
         long startTime = System.nanoTime();
-        mean_smaller(biga, bigb, biga.length*bigb.length);
+        meanAndvariance(biga, bigb, biga.length*bigb.length);
         long endTime = System.nanoTime();
 
         long duration = (endTime - startTime)/1000000;
@@ -125,6 +143,6 @@ public class Permutations {
         System.out.println("total " + duration + " ms");
 
     }
-    */
+
 
 }

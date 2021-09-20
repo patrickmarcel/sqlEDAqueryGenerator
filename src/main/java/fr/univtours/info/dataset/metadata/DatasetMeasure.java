@@ -15,6 +15,6 @@ public class DatasetMeasure extends DatasetAttribute {
 
     @Override
     public String toString() {
-        return "Measure{" + prettyName +'}';
+        return "M{" + prettyName +'}';
     }
 }

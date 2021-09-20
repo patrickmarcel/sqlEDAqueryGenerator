@@ -105,7 +105,7 @@ public class StatisticalVerifier {
             // This gets us insights grouped by measure and dimension
             Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
             for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
-                System.out.println("Working on " + kv.getValue().get(0).getDim() + " | " + kv.getValue().get(0).getMeasure() + "  Size = " + kv.getValue().size());
+                System.out.println("[INFO] Working on " + kv.getValue().get(0).getDim() + "/" + kv.getValue().get(0).getMeasure() + " | Size = " + kv.getValue().size());
                 if (sampleRatio < 1.0)
                     insights.addAll(check(kv.getValue(), samples.get(kv.getValue().get(0).getDim()), kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
                 else
@@ -113,8 +113,12 @@ public class StatisticalVerifier {
             }
         });
 
+        if (sampleRatio < 1.0){
+            samples.values().forEach(Dataset::drop);
+        }
+
         //TODO Quick fix find out why duplicates ...
-        return new ArrayList<>(insights.stream().filter(i -> i.getP() < sigLevel).collect(Collectors.toSet()));
+        return insights.stream().filter(i -> i.getP() < sigLevel).distinct().collect(Collectors.toList());
     }
 
     /**
@@ -142,7 +146,15 @@ public class StatisticalVerifier {
         // Switch to parallel processing if more large number of insights are available
         if (insights.size() > 50){
             toAdd = insights.parallelStream()
-                .map(in -> computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb))
+                .map(in -> {
+                    //Sample is too small
+                    if (cache.get(in.selA) == null || cache.get(in.selB) == null) {
+                        in.setP(1);
+                        System.err.println("[Warning] Sample too small for " + in.getDim() + " values '" + in.selA + "' and/or '" + in.selB + "'.");
+                        return List.of(in);
+                    }
+                    return computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb);
+                })
                 .flatMap(Collection::stream).collect(Collectors.toList());
         } else {
             toAdd = new ArrayList<>();

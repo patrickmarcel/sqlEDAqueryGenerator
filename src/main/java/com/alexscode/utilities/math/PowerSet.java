@@ -107,6 +107,18 @@ public class PowerSet {
         return set;
     }
 
+    public BitSet getNewRandomElementOFSize_unsafe(int k){
+        BitSet set = new BitSet(elements);
+            for (int i = 0; i < k; i++){
+                int pos = rd.nextInt(elements);
+                while (set.get(pos)){
+                    pos = rd.nextInt(elements);
+                }
+                set.set(pos);
+            }
+        return set;
+    }
+
     private static BitSet convertTo (BigInteger bi) {
         /*BitSet bs = new BitSet(elements);
         for (int i = 0; i < elements; i++) {

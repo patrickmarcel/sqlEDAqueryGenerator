@@ -30,6 +30,8 @@ public class Dataset {
     @Getter
     int tableSize;
 
+    private boolean inMemory = false;
+
      public Dataset(Connection conn, String table, List<DatasetDimension> theDimensions, List<DatasetMeasure> theMeasures ){
          this.conn=conn;
          this.table=table;
@@ -44,6 +46,11 @@ public class Dataset {
              System.err.println("Error impossible to fetch table size");
          }
      }
+
+    public Dataset(Connection conn, String table, List<DatasetDimension> theDimensions, List<DatasetMeasure> theMeasures, boolean inMemory){
+        this(conn, table, theDimensions, theMeasures);
+        this.inMemory = inMemory;
+    }
 
     DatasetSchema getSchema(){
         return null;
@@ -131,9 +138,10 @@ public class Dataset {
         createSt.close();
 
         //Compile an insert query
+        final String measuresString = theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", "));
         String insert = "INSERT INTO "+sampleTableName +"("
                 + dim.getName() + ", "
-                + theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", ")) + ") VALUES (";
+                + measuresString + ") VALUES (";
         int vals = 1 + theMeasures.size();
         for (int i = 0; i < vals; i++) {
             insert += "?";
@@ -144,9 +152,9 @@ public class Dataset {
 
         // Fetch sample from source database
 
-        sql = "select X."+dim.getName()+", "+theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", "))+" from " +
-                "              (select "+dim.getName()+", "+theMeasures.stream().map(DatasetAttribute::getName).collect(Collectors.joining(", "))+", random() r from "+ table +") X" +
-                "                  join (select "+dim.getName()+", count(*)::double precision c from "+ table +" group by  "+dim.getName()+") Y on X."+dim.getName()+" = Y."+dim.getName()+" where r < (250000.0/(select count(distinct "+dim.getName()+") from "+ table +")::double precision)/c;";
+        sql = "select X."+dim.getName()+", "+ measuresString +" from " +
+                "              (select "+dim.getName()+", "+ measuresString +", random() r from "+ table +") X" +
+                "                  join (select "+dim.getName()+", count(*)::double precision c from "+ table +" group by  "+dim.getName()+") Y on X."+dim.getName()+" = Y."+dim.getName()+" where r < ("+size+".0/(select count(distinct "+dim.getName()+") from "+ table +")::double precision)/c;";
 
         RowSetFactory factory = RowSetProvider.newFactory();
         CachedRowSet origin = factory.createCachedRowSet();
@@ -173,7 +181,25 @@ public class Dataset {
 
         insertSt.close();
         origin.close();
-        return new Dataset(destination, sampleTableName, List.of(dim), theMeasures);
+        return new Dataset(destination, sampleTableName, List.of(dim), theMeasures, true);
+    }
+
+    public void drop(){
+         if (inMemory){
+             String sql= "drop table "+table+";";
+             // drop table in H2
+             Statement createSt = null;
+             try {
+                 createSt = conn.createStatement();
+                 createSt.executeUpdate(sql) ;
+                 createSt.close();
+             } catch (SQLException throwables) {
+                 throwables.printStackTrace();
+             }
+
+         }else {
+             System.err.println("[WARNING] couldn't drop table only supported for in memory datasets !");
+         }
     }
 
 }

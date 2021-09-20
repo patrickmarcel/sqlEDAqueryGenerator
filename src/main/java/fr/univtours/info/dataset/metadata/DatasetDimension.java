@@ -64,6 +64,6 @@ public class DatasetDimension extends DatasetAttribute{
 
     @Override
     public String toString() {
-        return "Dimension{" + prettyName +'}';
+        return "D{" + prettyName +'}';
     }
 }

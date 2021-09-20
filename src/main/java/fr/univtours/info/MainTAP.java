@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
@@ -44,76 +45,46 @@ public class MainTAP {
     static String INTERESTINGNESS = "full";
     //Default can be overridden by -c
     public static String CPLEX_BIN = "/users/21500078t/tap_bin_latest";
+    //Default cab be overridden by -s
+    static double SAMPLERATIO = 100.0;
+    //Default cab be overridden by -q
+    static int QUERIESNB = 25;
+    static double SIGLEVEL = 0.05;
 
     public static void main( String[] args ) throws Exception{
 
         Options options = new Options();
+        parseCmdLineArgs(args, options);
 
-        Option input = new Option("d", "database", true, "database config file path");
-        input.setRequired(true);
-        options.addOption(input);
-
-        Option cplex = new Option("c", "cplex-binary", true, "path of binary for processing standard TAP instance");
-        cplex.setRequired(false);
-        options.addOption(cplex);
-
-        Option interest = new Option("i", "interestingness", true, "Interestingness measure tu use : full/con/sig/cred");
-        interest.setRequired(false);
-        options.addOption(interest);
-
-        CommandLineParser parser = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
-
-        try {
-            CommandLine cmd = parser.parse(options, args);
-            DBConfig.CONF_FILE_PATH = cmd.getOptionValue("database");
-            System.out.println("Config File :" + DBConfig.CONF_FILE_PATH);
-            if (cmd.hasOption('c')){
-                CPLEX_BIN = cmd.getOptionValue('c');
-            }
-            if (cmd.hasOption('i')) {
-                INTERESTINGNESS = cmd.getOptionValue('i');
-                if (!INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
-                    System.err.println("[ERROR] Unknown interestingness measure: '" + INTERESTINGNESS + "'");
-                    System.exit(1);
-                }
-            }
-        } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            formatter.printHelp("utility-name", options);
-            System.exit(1);
-        }
-
-        System.out.println("CPU Threads/Cores: " + Runtime.getRuntime().availableProcessors());
-        System.out.println("Streams will use : " + ForkJoinPool.commonPool().getParallelism());
+        System.out.println("[INFO] CPU Threads/Cores: " + Runtime.getRuntime().availableProcessors() + " | " + "Streams will use : " + ForkJoinPool.commonPool().getParallelism());
 
         //Load config and base dataset
         init();
         conn.setReadOnly(true);
 
         //generation
-        System.out.println("Starting generation");
+        System.out.println("[INFO] Starting hypothesis generation");
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         List<Insight> intuitions = new ArrayList<>(getIntuitions());
 
         stopwatch.stop();
-        System.out.println("Generation time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
-        System.out.println(intuitions.size() + " intuitions generated");
+        System.out.println("[TIME][s] generation " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[INFO] " + intuitions.size()*Insight.pprint.length + " hypothesis generated");
 
         //verification
-        System.out.println("Starting verification");
+        System.out.println("[INFO] Starting verification ...");
         stopwatch = Stopwatch.createStarted();
 
-        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, 0.05, 1000, 0.1, config);
+        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, SIGLEVEL, 1000, SAMPLERATIO/100.0, config);
 
         stopwatch.stop();
-        System.out.println("Verification time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
-        System.out.println("Nb of insights: " + insights.size());
+        System.out.println("[TIME][s] verification " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[INFO] Nb of insights (p<"+SIGLEVEL+") " + insights.size());
 
 
         //support
-        System.out.println("Started looking for supporting queries");
+        System.out.println("[INFO] Started looking for supporting queries ...");
         stopwatch = Stopwatch.createStarted();
 
         Map<Insight, Set<AssessQuery>> isSupportedBy = new HashMap<>();
@@ -151,8 +122,9 @@ public class MainTAP {
         });
 
         stopwatch.stop();
-        System.out.println("Support time in seconds: " + stopwatch.elapsed(TimeUnit.SECONDS));
-        System.out.println("Supported insights " + isSupportedBy.keySet().size());
+        System.out.println("[TIME][s] support " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[INFO] Supported insights " + isSupportedBy.keySet().size() + "/" + insights.size());
+        insights.clear();
 
         Map<AssessQuery, List<Insight>> supports = new HashMap<>();
         isSupportedBy.forEach(((insight, assessQueries) -> {
@@ -164,11 +136,10 @@ public class MainTAP {
 
 
         List<AssessQuery> tapQueries = new ArrayList<>(supports.keySet());
-        System.out.println("Total queries (supporting) " + tapQueries.size());
+        System.out.println("[INFO] Total queries (Instance size) " + tapQueries.size());
 
-        tapQueries.stream().parallel().forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
 
-        System.out.println("Computing interestngness");
+        System.out.println("[INFO] Computing interestngness ...");
         stopwatch = Stopwatch.createStarted();
         // credibility of insights
        isSupportedBy.entrySet().stream().parallel().forEach(e -> {
@@ -206,38 +177,38 @@ public class MainTAP {
 
         });
         stopwatch.stop();
-        System.out.println("Interestingness done in " + stopwatch.elapsed(TimeUnit.SECONDS) + " s");
+        System.out.println("[TIME][s] interestingness " + stopwatch.elapsed(TimeUnit.SECONDS));
 
         // Fetching runtime
-        ConnectionPool cp = new ConnectionPool(config);
-        System.out.println("Estimating query runtime");
+        //ConnectionPool cp = new ConnectionPool(config);
+        System.out.println("[INFO] Estimating query runtime ...");
         tapQueries.stream().parallel().forEach(q -> {
-            Connection c = cp.getConnection();
-            //q.explain(c);
+            //Connection c = cp.getConnection();
             q.setExplainCost(1);
-            cp.returnConnection(c);
+            //cp.returnConnection(c);
         });
-        cp.close();
+        //cp.close();
 
         // --- SOLVING TAP ----
-        System.out.println("Started solving TAP instance");
+        System.out.println("[INFO] Started solving TAP instance ...");
         stopwatch = Stopwatch.createStarted();
 
         // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
-        List<AssessQuery> naiveSolution = naive.solve(tapQueries, 50000, 100);
+        List<AssessQuery> naiveSolution = naive.solve(tapQueries, QUERIESNB, 100);
+        naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
-        //Files.write(Paths.get("data/test_new.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
-        Files.writeString(Paths.get("data/test_new.ipynb"), out.toJson());
+        Files.writeString(Paths.get(String.format("data/KS_%s_%s_%s_%s.ipynb"), INTERESTINGNESS, String.valueOf(QUERIESNB), String.valueOf((int)SAMPLERATIO), LocalTime.now().toString()), out.toJson());
 
         stopwatch.stop();
-        System.out.println("Heuristic runtime: " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[TIME][ms] Heuristic " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
 
         if (tapQueries.size() < 1000){
             TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
-            List<AssessQuery> exactSolution = exact.solve(tapQueries, 5000, 100);
+            List<AssessQuery> exactSolution = exact.solve(tapQueries, QUERIESNB, 100);
+            exactSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
             //Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
@@ -255,12 +226,13 @@ public class MainTAP {
                 if (assessQuery.getActualCost() > 100)
                     System.out.println(assessQuery.getSql());
             });
-            Instance instance = new Instance(sample, 50000, 100, true);
-            instance.toFileBinaryNoDist("data/tap_instance.dat");
+            Instance instance = new Instance(sample, QUERIESNB, 100, true);
+            instance.toFileBinaryNoDist("data/tap_instance_sample.dat");
         }
         
         conn.close();
     }
+
 
     public static void init() throws IOException, SQLException {
         config = DBConfig.newFromFile();
@@ -275,6 +247,11 @@ public class MainTAP {
         System.out.println(" Done");
     }
 
+    public static double conciseness(int nbGroups, int nbTuples){
+        double alpha = 0.02, beta = 5, delta = 0.5;
+
+        return Math.exp((-1 * (1/Math.pow(nbTuples, delta)) * Math.pow(nbGroups - (alpha*nbTuples) - beta,2)));
+    }
 
     public static Set<Insight> getIntuitions() {
         Set<Insight> intuitions = new HashSet<>();
@@ -322,6 +299,76 @@ public class MainTAP {
             default -> false;
         };
 
+    }
+
+    private static void parseCmdLineArgs(String[] args, Options options) {
+        Option input = new Option("d", "database", true, "database config file path");
+        input.setRequired(true);
+        options.addOption(input);
+
+        Option cplex = new Option("c", "cplex-binary", true, "path of binary for processing standard TAP instance");
+        cplex.setRequired(false);
+        options.addOption(cplex);
+
+        Option interest = new Option("i", "interestingness", true, "Interestingness measure tu use : full/con/sig/cred");
+        interest.setRequired(false);
+        options.addOption(interest);
+
+        Option samp = new Option("s", "sample", true, "Sample ratio between 0 and 100% (default 100% no sampling)");
+        samp.setRequired(false);
+        options.addOption(samp);
+
+        Option qSize = new Option("q", "notebook-size", true, "Number of queries to put in the notebook (defaults to 25)");
+        qSize.setRequired(false);
+        options.addOption(qSize);
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+
+        try {
+            CommandLine cmd = parser.parse(options, args);
+            DBConfig.CONF_FILE_PATH = cmd.getOptionValue("database");
+            System.out.println("Config File :" + DBConfig.CONF_FILE_PATH);
+            if (cmd.hasOption('c')){
+                CPLEX_BIN = cmd.getOptionValue('c');
+            }
+            if (cmd.hasOption('i')) {
+                INTERESTINGNESS = cmd.getOptionValue('i');
+                if (!INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
+                    System.err.println("[ERROR] Unknown interestingness measure: '" + INTERESTINGNESS + "'");
+                    System.exit(1);
+                }
+            }
+            if (cmd.hasOption("s")){
+                try {
+                    double s = Double.parseDouble(cmd.getOptionValue("s"));
+                    if (s > 0 && s <= 100)
+                        SAMPLERATIO = s;
+                    else {
+                        System.err.println("[ERROR] Sample ratio between 0 and 100% (default 100% no sampling) !");
+                    }
+                } catch (NumberFormatException e){
+                    System.err.println("[ERROR] couldn't parse argument sample ratio '" + cmd.getOptionValue("s") + "' as a double");
+                }
+            }
+            if (cmd.hasOption("q")){
+                try {
+                    int q = Integer.parseInt(cmd.getOptionValue("q"));
+                    if (q > 0)
+                        QUERIESNB = q;
+                    else {
+                        System.err.println("[ERROR] Query number must be positive");
+                    }
+                } catch (NumberFormatException e){
+                    System.err.println("[ERROR] couldn't parse argument notebook size '" + cmd.getOptionValue("q") + "' as an integer");
+                }
+            }
+
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("utility-name", options);
+            System.exit(1);
+        }
     }
 
     public static List<AssessQuery> getSupportingQueries(Insight insight){
@@ -384,12 +431,5 @@ public class MainTAP {
 
         }).filter(Objects::nonNull).collect(Collectors.toList());
 
-    }
-
-
-    public static double conciseness(int nbGroups, int nbTuples){
-        double alpha = 0.02, beta = 5, delta = 0.5;
-
-        return Math.exp((-1 * (1/Math.pow(nbTuples, delta)) * Math.pow(nbGroups - (alpha*nbTuples) - beta,2)));
     }
 }
