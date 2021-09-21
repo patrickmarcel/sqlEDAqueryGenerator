@@ -101,19 +101,21 @@ public class StatisticalVerifier {
                 e.printStackTrace();
             }
         }
-        List<List<Insight>> perDim = new ArrayList<>();
-        ds.getTheDimensions().forEach(d -> perDim.add(new ArrayList<>()));
-        insights.forEach(i -> perDim.get(ds.getTheDimensions().indexOf(i.getDim())).add(i));
+
+        //List<List<Insight>> perDim = new ArrayList<>();
+        //ds.getTheDimensions().forEach(d -> perDim.add(new ArrayList<>()));
+        //insights.forEach(i -> perDim.get(ds.getTheDimensions().indexOf(i.getDim())).add(i));
 
         List<Insight> output = new ArrayList<>();
 
-        perDim.forEach(insightsForD -> {
+        // Group insights per dimensions
+        for (var perDimMap : insights.parallelStream().collect(Collectors.groupingByConcurrent(Insight::getDim)).entrySet()) {
+            List<Insight> insightsForD = perDimMap.getValue();
+            DatasetDimension thisDimension = perDimMap.getKey();
             // This gets us insights grouped by measure and dimension
-            Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
-            for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
-                DatasetDimension thisDimension = kv.getValue().get(0).getDim();
-                DatasetMeasure thisMeasure = kv.getValue().get(0).getMeasure();
-                System.out.println("[INFO] Working on " + thisDimension + "/" + thisMeasure + " | Size = " + kv.getValue().size() * Insight.pprint.length);
+            for (var kv : insightsForD.parallelStream().collect(Collectors.groupingByConcurrent(Insight::getMeasure)).entrySet()) {
+                DatasetMeasure thisMeasure = kv.getKey();
+                System.out.println("[INFO] Working on " + thisDimension + "/" + thisMeasure + " | Size = " + kv.getValue().size() * pprint.length);
                 // Handle sampling if needed
                 List<Insight> thisDimAndMeasure = null;
                 if (sampleRatio < 1.0)
@@ -129,28 +131,30 @@ public class StatisticalVerifier {
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
 
                 //Identify Triangles for transitivity elimination
-                thisDimAndMeasure.stream().collect(Collectors.groupingBy(Insight::getType)).forEach((insightType, list) -> {
-                    if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER){
+                thisDimAndMeasure.parallelStream().collect(Collectors.groupingByConcurrent(Insight::getType)).entrySet().parallelStream().forEach(e -> {
+                    var insightType = e.getKey();
+                    var list = e.getValue();
+                    if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER) {
                         Set<Insight> insightSet = new HashSet<>(list);
-                        for (Insight ac : list){
-                            for (String b : thisDimension.getActiveDomain()){
+                        for (Insight ac : list) {
+                            for (String b : thisDimension.getActiveDomain()) {
                                 if (insightSet.contains(new Insight(thisDimension, ac.getSelA(), b, thisMeasure, insightType)) && insightSet.contains(new Insight(thisDimension, b, ac.getSelB(), thisMeasure, insightType)))
-                                    ac.setP(1); //delete
+                                    ac.setP(-1); //mark for delete
                             }
                         }
                     }
                 });
 
-                thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
+                thisDimAndMeasure.removeIf(insight -> insight.getP() == -1);// delete
                 output.addAll(thisDimAndMeasure);
             }
-        });
+        }
 
         if (sampleRatio < 1.0){
             samples.values().forEach(Dataset::drop);
         }
 
-        return insights.stream().filter(i -> i.getP() < sigLevel).collect(Collectors.toList());
+        return output;
     }
 
     /**
