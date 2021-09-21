@@ -23,7 +23,7 @@ public class CPLEXTAP implements TAPEngine{
         InstanceLegacy.writeFile(temp_file_path, theQ);
 
         System.out.println("Running CPLEX");
-        String[] cplex_cmd = new String[]{binary_path, Paths.get(temp_file_path).toAbsolutePath().toString(), String.valueOf(timeBudget), String.valueOf(maxDistance)};
+        String[] cplex_cmd = new String[]{binary_path, String.valueOf(timeBudget), String.valueOf(maxDistance), Paths.get(temp_file_path).toAbsolutePath().toString()};
         System.out.println(Arrays.toString(cplex_cmd));
         try {
             String solutionRaw = "";
@@ -47,7 +47,6 @@ public class CPLEXTAP implements TAPEngine{
             System.out.println("CPLEX is Done");
             System.out.println(solutionRaw);
             ArrayList<AssessQuery> solution = new ArrayList<>();
-            System.out.println(solutionRaw);
             Arrays.stream(solutionRaw.replace("SOLUTION: ", "").stripTrailing().split(" "))
                     .mapToInt(Integer::parseInt)
                     .forEach(i -> solution.add(theQ.get(i-1)));
