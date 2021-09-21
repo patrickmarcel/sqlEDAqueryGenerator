@@ -4,11 +4,12 @@ import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import lombok.Getter;
 import lombok.Setter;
+import org.jgrapht.graph.DefaultEdge;
 
 import java.util.Objects;
 
 
-public class Insight {
+public class Insight extends DefaultEdge {
     public static final int RAW = 0, MEAN_SMALLER = 1, MEAN_EQUALS = 2, MEAN_GREATER = 3, VARIANCE_SMALLER = 4, VARIANCE_EQUALS = 5, VARIANCE_GREATER = 6;
     public static final String[] pprint = new String[]{"Raw insight (to be expanded)", "Mean Smaller", "Mean Equals", "Mean Greater", "Variance Smaller", "Variance Equals", "Variance Greater"};
 
@@ -42,6 +43,16 @@ public class Insight {
 
     @Getter @Setter
     double credibility;
+
+    @Override
+    protected Object getSource() {
+        return selA;
+    }
+
+    @Override
+    protected Object getTarget() {
+        return selB;
+    }
 
     @Override
     public String toString() {

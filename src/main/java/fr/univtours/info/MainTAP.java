@@ -1,6 +1,7 @@
 package fr.univtours.info;
 
 import com.alexscode.utilities.collection.Pair;
+import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -18,6 +19,8 @@ import org.apache.commons.cli.*;
 import org.apache.commons.rng.UniformRandomProvider;
 import org.apache.commons.rng.sampling.ListSampler;
 import org.apache.commons.rng.simple.RandomSource;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.SimpleGraph;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,6 +34,8 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static fr.univtours.info.Insight.*;
 
 public class MainTAP {
 
@@ -73,14 +78,43 @@ public class MainTAP {
         System.out.println("[INFO] " + intuitions.size()*Insight.pprint.length + " hypothesis generated");
 
         //verification
-        System.out.println("[INFO] Starting verification ...");
+        System.out.println("[INFO] Starting verification (1) ...");
         stopwatch = Stopwatch.createStarted();
 
         List<Insight> insights = StatisticalVerifier.check(intuitions, ds, SIGLEVEL, 1000, SAMPLERATIO/100.0, config);
 
         stopwatch.stop();
-        System.out.println("[TIME][s] verification " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[TIME][s] verification (1) " + stopwatch.elapsed(TimeUnit.SECONDS));
         System.out.println("[INFO] Nb of insights (p<"+SIGLEVEL+") " + insights.size());
+
+        System.out.println("[INFO] Starting verification (2) ...");
+        stopwatch = Stopwatch.createStarted();
+        //P-value correction for MCP & Triangle elimination
+        insights.stream().parallel().collect(Collectors.groupingBy(Insight::getType)).forEach((insightType, list) -> {
+            double[] p = list.stream().mapToDouble(Insight::getP).toArray();
+            BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
+            p = corrector.getAdjustedPvalues();
+            for (int i = 0; i < p.length; i++) list.get(i).setP(p[i]);
+
+            if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER){
+                list.stream().parallel().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimension, insightsPerDim) -> {
+                    Graph<String, Insight> g = new SimpleGraph<>(Insight.class);
+                    dimension.getActiveDomain().forEach(g::addVertex);
+                    insightsPerDim.forEach(i -> g.addEdge(i.selA, i.selB, i));
+                    for (Insight ac : g.edgeSet()){
+                        for (String b : dimension.getActiveDomain()){
+                            if (g.containsEdge(ac.getSelA(), b) && g.containsEdge(b, ac.getSelB()))
+                                ac.setP(1); //delete
+                        }
+                    }
+                });
+            }
+        });
+        insights.removeIf(i -> i.getP() > SIGLEVEL);
+
+        stopwatch.stop();
+        System.out.println("[TIME][s] verification (2) " + stopwatch.elapsed(TimeUnit.SECONDS));
+        System.out.println("[INFO] Nb of insights " + insights.size());
 
 
         //support
@@ -215,7 +249,8 @@ public class MainTAP {
             //Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
             Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
         } else {
-            System.err.println("[WARNING] Couldn't run exact solver : too many queries");
+            if (tapQueries.size() < 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
+            if (! CPLEX_BIN.equals("")) System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
         }
 
         /*
@@ -294,11 +329,11 @@ public class MainTAP {
         double varb = mubsq - (mub*mub);
 
         return switch (insight.type) {
-            case Insight.MEAN_SMALLER -> (mua < mub);
+            case MEAN_SMALLER -> (mua < mub);
             case Insight.MEAN_GREATER -> (mua > mub);
             case Insight.MEAN_EQUALS -> (Math.abs(mua - mub) < 0.05 * Math.max(mua, mub));
-            case Insight.VARIANCE_SMALLER -> (vara < varb);
-            case Insight.VARIANCE_GREATER -> (vara > varb);
+            case VARIANCE_SMALLER -> (vara < varb);
+            case VARIANCE_GREATER -> (vara > varb);
             case Insight.VARIANCE_EQUALS -> (Math.abs(vara - varb) < 0.05 * Math.max(vara, varb));
             default -> false;
         };
@@ -421,7 +456,7 @@ public class MainTAP {
             double varb = mubsq - (mub*mub);
 
             switch (insight.type) {
-                case Insight.MEAN_SMALLER:
+                case MEAN_SMALLER:
                     if (mua < mub)
                         return q;
 
@@ -433,11 +468,11 @@ public class MainTAP {
                     if (Math.abs(mua - mub) < 0.05 * Math.max(mua, mub))
                         return q;
 
-                case Insight.VARIANCE_SMALLER:
+                case VARIANCE_SMALLER:
                     if (vara < varb)
                         return q;
 
-                case Insight.VARIANCE_GREATER:
+                case VARIANCE_GREATER:
                     if (vara > varb)
                         return q;
 

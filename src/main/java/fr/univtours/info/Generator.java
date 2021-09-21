@@ -27,7 +27,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-
+@Deprecated
 public class Generator {
     static Dataset ds;
     static String table;
@@ -207,15 +207,12 @@ public class Generator {
         }
         // Account for MCP
         BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(pPearson);
-        corrector.calculate();
         pPearson = corrector.getAdjustedPvalues();
 
         corrector = new BenjaminiHochbergFDR(pT);
-        corrector.calculate();
         pT = corrector.getAdjustedPvalues();
 
         corrector = new BenjaminiHochbergFDR(pF);
-        corrector.calculate();
         pF = corrector.getAdjustedPvalues();
 
         String[] testNames = new String[]{"Correlation", "Different Means", "Different Variances"};

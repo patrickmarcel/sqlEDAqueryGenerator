@@ -59,7 +59,7 @@ public class NotebookJupyter {
         }
         sb.append(",\n\"\\n\",\n");
         sb.append(getLineRepr(q.getTestComment())).append(",\n\"\\n\",\n");
-        sb.append("\"Interestingness (1 - MIN(p-values)) = ").append(formatter.format(q.getInterest())).append("\\n\"\n");
+        sb.append("\"Interestingness ").append(formatter.format(q.getInterest())).append("\\n\"\n");
 
         sb.append("]");
         sb.append("}");

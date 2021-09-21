@@ -39,10 +39,7 @@ import java.util.Arrays;
 
 /**
  * Bejamini Hochberg FDR Correction Code.
- * <p/>
  * For details, refer to:  http://www.tau.ac.il/cc/pages/docs/sas8/stat/chap43/sect14.htm
- *
- * @author Steven Maere, Karel Heymans, and Ethan Cerami
  */
 public final class BenjaminiHochbergFDR {
 
@@ -51,21 +48,15 @@ public final class BenjaminiHochbergFDR {
      */
     private Element[] pvalues;
 
-    /**
-     * the adjusted p-values ordened in ascending order.
-     */
     private double[] adjustedPvalues;
 
     /**
-     * the number of tests.
+     * number of tests.
      */
-    private int m;
+    final private int m;
+    //lazy impl.
+    private boolean computed = false;
 
-    /**
-     * Constructor.
-     *
-     * @param p P-Values.
-     */
     public BenjaminiHochbergFDR(double[] p) {
         this.m = p.length;
         this.pvalues = new Element[m];
@@ -75,12 +66,7 @@ public final class BenjaminiHochbergFDR {
         this.adjustedPvalues = new double[m];
     }
 
-    /**
-     * method that calculates the Benjamini and Hochberg correction of
-     * the false discovery rate.
-     */
-    public void calculate() {
-
+    private void compute() {
         // order the pvalues.
         Arrays.sort(pvalues);
 
@@ -96,14 +82,15 @@ public final class BenjaminiHochbergFDR {
                 adjustedPvalues[i] = Math.min(left, right);
             }
         }
+
+        computed = true;
     }
 
-    /**
-     * getter for the ordened p-values.
-     *
-     * @return String[] with the ordened p-values.
-     */
-    public double[] getOrdenedPvalues() {
+
+    public double[] getOrderedPvalues() {
+        if (!computed)
+            compute();
+
         double[] ret = new double[m];
         for (int i = 0; i < m; i++) {
             ret[i] = pvalues[i].value;
@@ -111,12 +98,10 @@ public final class BenjaminiHochbergFDR {
         return ret;
     }
 
-    /**
-     * getter for the adjusted p-values.
-     *
-     * @return String[] with the adjusted p-values.
-     */
     public double[] getAdjustedPvalues() {
+        if (!computed)
+            compute();
+
         double[] ret = new double[m];
         for (int i = 0; i < m; i++) {
             ret[pvalues[i].index] = adjustedPvalues[i];
