@@ -44,7 +44,7 @@ public class MainTAP {
     //Default can be overridden by -i
     static String INTERESTINGNESS = "full";
     //Default can be overridden by -c
-    public static String CPLEX_BIN = "/users/21500078t/tap_bin_latest";
+    public static String CPLEX_BIN = "";
     //Default cab be overridden by -s
     static double SAMPLERATIO = 100.0;
     //Default cab be overridden by -q
@@ -206,7 +206,7 @@ public class MainTAP {
         System.out.println("[TIME][ms] Heuristic " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
 
-        if (tapQueries.size() < 1000){
+        if (tapQueries.size() < 1000 && ! CPLEX_BIN.equals("")){
             TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
             List<AssessQuery> exactSolution = exact.solve(tapQueries, QUERIESNB, MAX_DISTANCE);
             exactSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
@@ -216,7 +216,10 @@ public class MainTAP {
             Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
         } else {
             System.err.println("[WARNING] Couldn't run exact solver : too many queries");
-            final List<AssessQuery> sample = ListSampler.sample(RandomSource.create(RandomSource.MT), tapQueries, Math.min(100000, tapQueries.size()));
+        }
+
+        /*
+        final List<AssessQuery> sample = ListSampler.sample(RandomSource.create(RandomSource.MT), tapQueries, Math.min(100000, tapQueries.size()));
             sample.forEach(assessQuery -> {
                 try {
                     assessQuery.explainAnalyze();
@@ -229,7 +232,7 @@ public class MainTAP {
             });
             Instance instance = new Instance(sample, QUERIESNB, 100, true);
             instance.toFileBinaryNoDist("data/tap_instance_sample.dat");
-        }
+         */
         
         conn.close();
     }
