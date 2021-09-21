@@ -56,13 +56,13 @@ public class Insight extends DefaultEdge {
 
     @Override
     public String toString() {
-        return "Insight {" +
-                "dim=" + dim.getName() +
-                ", selA='" + selA + '\'' +
-                ", selB='" + selB + '\'' +
-                ", measure=" + measure.getName() +
-                ", type=" + pprint[type] +
-                ", p=" + p +
+        return "I{" +
+                dim.getPrettyName() +
+                ";" + selA +
+                ";" + selB +
+                ";" + measure.getPrettyName()+
+                ";" + pprint[type] +
+                ";" + p +
                 '}';
     }
 

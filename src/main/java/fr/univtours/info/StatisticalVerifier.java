@@ -1,5 +1,6 @@
 package fr.univtours.info;
 
+import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.alexscode.utilities.math.Permutations;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
@@ -101,15 +102,26 @@ public class StatisticalVerifier {
         ds.getTheDimensions().forEach(d -> perDim.add(new ArrayList<>()));
         insights.forEach(i -> perDim.get(ds.getTheDimensions().indexOf(i.getDim())).add(i));
 
+        List<Insight> output = new ArrayList<>();
+
         perDim.forEach(insightsForD -> {
             // This gets us insights grouped by measure and dimension
             Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
             for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
                 System.out.println("[INFO] Working on " + kv.getValue().get(0).getDim() + "/" + kv.getValue().get(0).getMeasure() + " | Size = " + kv.getValue().size() * Insight.pprint.length);
+                List<Insight> thisDimAndMeasure = null;
                 if (sampleRatio < 1.0)
-                    insights.addAll(check(kv.getValue(), samples.get(kv.getValue().get(0).getDim()), kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
+                    thisDimAndMeasure = check(kv.getValue(), samples.get(kv.getValue().get(0).getDim()), kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb);
                 else
-                    insights.addAll(check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb));
+                    thisDimAndMeasure = check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb);
+
+                double[] p = thisDimAndMeasure.stream().mapToDouble(Insight::getP).toArray();
+                BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
+                p = corrector.getAdjustedPvalues();
+                for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
+
+                thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
+                output.addAll(thisDimAndMeasure);
             }
         });
 
@@ -117,8 +129,7 @@ public class StatisticalVerifier {
             samples.values().forEach(Dataset::drop);
         }
 
-        //TODO Quick fix find out why duplicates ...
-        return insights.stream().filter(i -> i.getP() < sigLevel).distinct().collect(Collectors.toList());
+        return insights.stream().filter(i -> i.getP() < sigLevel).collect(Collectors.toList());
     }
 
     /**

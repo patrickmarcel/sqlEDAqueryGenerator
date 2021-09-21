@@ -91,22 +91,18 @@ public class MainTAP {
         stopwatch = Stopwatch.createStarted();
         //P-value correction for MCP & Triangle elimination
         insights.stream().parallel().collect(Collectors.groupingBy(Insight::getType)).forEach((insightType, list) -> {
-            double[] p = list.stream().mapToDouble(Insight::getP).toArray();
-            BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
-            p = corrector.getAdjustedPvalues();
-            for (int i = 0; i < p.length; i++) list.get(i).setP(p[i]);
-
             if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER){
-                list.stream().parallel().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimension, insightsPerDim) -> {
-                    Graph<String, Insight> g = new SimpleGraph<>(Insight.class);
-                    dimension.getActiveDomain().forEach(g::addVertex);
-                    insightsPerDim.forEach(i -> g.addEdge(i.selA, i.selB, i));
-                    for (Insight ac : g.edgeSet()){
-                        for (String b : dimension.getActiveDomain()){
-                            if (g.containsEdge(ac.getSelA(), b) && g.containsEdge(b, ac.getSelB()))
-                                ac.setP(1); //delete
+                list.stream().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimension, insightsPerDim) -> {
+                    insightsPerDim.stream().collect(Collectors.groupingBy(Insight::getMeasure)).forEach((measure, insightsPerDimAndMeasure)->{
+                        Set<Insight> insightSet = new HashSet<>(insightsPerDimAndMeasure);
+                        for (Insight ac : insightsPerDim){
+                            for (String b : dimension.getActiveDomain()){
+                                if (insightSet.contains(new Insight(dimension, ac.getSelA(), b, measure, insightType)) && insightSet.contains(new Insight(dimension, b, ac.getSelB(), measure, insightType)))
+                                    ac.setP(1); //delete
+                            }
                         }
-                    }
+                    });
+
                 });
             }
         });
