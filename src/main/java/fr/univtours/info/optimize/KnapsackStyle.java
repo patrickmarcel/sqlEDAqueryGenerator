@@ -23,14 +23,14 @@ public class KnapsackStyle implements TAPEngine{
         final String file = "22_100.dat";
         final String path="data/tap_" + file;
         final String out_path = "data/warm_start_" + file;*/
-        double temps = 0.8, dist = 0.5;
+        double temps = 0.15, dist = 0.1;
 
-        compute(path, out_path, temps, dist);
-        System.exit(0);
+        //compute(path, out_path, temps, dist);
+        //System.exit(0);
 
         var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
         for (int i = 0; i < 30; i++) {
-            for (int size : new int[]{20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500}) {
+            for (int size : new int[]{100, 200, 300, 400, 500}) {
                 var in = folder + "tap_" + i + "_" + size + ".dat";
                 var out = folder + "tap_" + i + "_" + size + ".warm";
                 compute(in, out, temps, dist);
@@ -42,7 +42,7 @@ public class KnapsackStyle implements TAPEngine{
 
     private static void compute(String path, String out_path, double temps, double dist) throws IOException {
         InstanceLegacy ist = InstanceLegacy.readFile(path);
-        System.out.println("Loaded " + path + " | " + ist.size + " queries");
+        //System.out.println("Loaded " + path + " | " + ist.size + " queries");
         double epdist = Math.round( dist * ist.size * 4.5);
         double eptime = Math.round(temps * ist.size * 27.5f);
 
@@ -77,15 +77,16 @@ public class KnapsackStyle implements TAPEngine{
                 z += ist.interest[current];
             }
         }
-        System.out.println("Distance: " + total_dist + "/" + epdist);
-        System.out.println("Time: " + total_time + "/" + eptime);
+        //System.out.println("Distance: " + total_dist + "/" + epdist);
+        //System.out.println("Time: " + total_time + "/" + eptime);
         // Write best solution to file for CPLEX
-        System.out.println("Z=" + z + " | Sol=" + solution);
-        FileOutputStream fos = new FileOutputStream(out_path);
-        PrintWriter pw = new PrintWriter(fos);
-        pw.println(solution.toString().replace("[", "").replace("]", "").replace(", ", " "));
-        pw.close();
-        fos.close();
+        //System.out.println("Z=" + z + " | Sol=" + solution);
+        //FileOutputStream fos = new FileOutputStream(out_path);
+        //PrintWriter pw = new PrintWriter(fos);
+        //pw.println(solution.toString().replace("[", "").replace("]", "").replace(", ", " "));
+        //pw.close();
+        //fos.close();
+        System.out.printf("%s;%s;%s;%s%n",path.substring(39).replace("_"+ist.size+".dat", ""),ist.size,z,solution.stream().map(String::valueOf).collect(Collectors.joining(",")));
     }
 
     static double insert_opt(List<Integer> solution, int candidate, double[][] distances, double base_dist) {
