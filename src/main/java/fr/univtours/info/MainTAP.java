@@ -87,32 +87,6 @@ public class MainTAP {
         System.out.println("[TIME][s] verification (1) " + stopwatch.elapsed(TimeUnit.SECONDS));
         System.out.println("[INFO] Nb of insights (p<"+SIGLEVEL+") " + insights.size());
 
-        System.out.println("[INFO] Starting verification (2) ...");
-        stopwatch = Stopwatch.createStarted();
-        //P-value correction for MCP & Triangle elimination
-        insights.stream().parallel().collect(Collectors.groupingBy(Insight::getType)).forEach((insightType, list) -> {
-            if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER){
-                list.stream().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimension, insightsPerDim) -> {
-                    insightsPerDim.stream().collect(Collectors.groupingBy(Insight::getMeasure)).forEach((measure, insightsPerDimAndMeasure)->{
-                        Set<Insight> insightSet = new HashSet<>(insightsPerDimAndMeasure);
-                        for (Insight ac : insightsPerDim){
-                            for (String b : dimension.getActiveDomain()){
-                                if (insightSet.contains(new Insight(dimension, ac.getSelA(), b, measure, insightType)) && insightSet.contains(new Insight(dimension, b, ac.getSelB(), measure, insightType)))
-                                    ac.setP(1); //delete
-                            }
-                        }
-                    });
-
-                });
-            }
-        });
-        insights.removeIf(i -> i.getP() > SIGLEVEL);
-
-        stopwatch.stop();
-        System.out.println("[TIME][s] verification (2) " + stopwatch.elapsed(TimeUnit.SECONDS));
-        System.out.println("[INFO] Nb of insights " + insights.size());
-
-
         //support
         System.out.println("[INFO] Started looking for supporting queries ...");
         stopwatch = Stopwatch.createStarted();

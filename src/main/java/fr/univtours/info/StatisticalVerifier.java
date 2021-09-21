@@ -13,6 +13,9 @@ import java.util.*;
 import java.util.concurrent.SynchronousQueue;
 import java.util.stream.Collectors;
 
+import static fr.univtours.info.Insight.*;
+import static fr.univtours.info.Insight.VARIANCE_GREATER;
+
 public class StatisticalVerifier {
     public static int n_threshold = 5;
 
@@ -108,17 +111,35 @@ public class StatisticalVerifier {
             // This gets us insights grouped by measure and dimension
             Map<String, List<Insight>> perMeas = insightsForD.stream().collect(Collectors.groupingBy(insight -> insight.getMeasure().getName()));
             for (Map.Entry<String, List<Insight>> kv : perMeas.entrySet()){
-                System.out.println("[INFO] Working on " + kv.getValue().get(0).getDim() + "/" + kv.getValue().get(0).getMeasure() + " | Size = " + kv.getValue().size() * Insight.pprint.length);
+                DatasetDimension thisDimension = kv.getValue().get(0).getDim();
+                DatasetMeasure thisMeasure = kv.getValue().get(0).getMeasure();
+                System.out.println("[INFO] Working on " + thisDimension + "/" + thisMeasure + " | Size = " + kv.getValue().size() * Insight.pprint.length);
+                // Handle sampling if needed
                 List<Insight> thisDimAndMeasure = null;
                 if (sampleRatio < 1.0)
-                    thisDimAndMeasure = check(kv.getValue(), samples.get(kv.getValue().get(0).getDim()), kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb);
+                    thisDimAndMeasure = check(kv.getValue(), samples.get(thisDimension), thisDimension, thisMeasure, permNb);
                 else
-                    thisDimAndMeasure = check(kv.getValue(), ds, kv.getValue().get(0).getDim(), kv.getValue().get(0).getMeasure(), permNb);
+                    thisDimAndMeasure = check(kv.getValue(), ds, thisDimension, thisMeasure, permNb);
 
+                // FDR compensation for multiple testing problem
                 double[] p = thisDimAndMeasure.stream().mapToDouble(Insight::getP).toArray();
                 BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
                 p = corrector.getAdjustedPvalues();
                 for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
+                thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
+
+                //Identify Triangles for transitivity elimination
+                thisDimAndMeasure.stream().collect(Collectors.groupingBy(Insight::getType)).forEach((insightType, list) -> {
+                    if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER){
+                        Set<Insight> insightSet = new HashSet<>(list);
+                        for (Insight ac : list){
+                            for (String b : thisDimension.getActiveDomain()){
+                                if (insightSet.contains(new Insight(thisDimension, ac.getSelA(), b, thisMeasure, insightType)) && insightSet.contains(new Insight(thisDimension, b, ac.getSelB(), thisMeasure, insightType)))
+                                    ac.setP(1); //delete
+                            }
+                        }
+                    }
+                });
 
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
                 output.addAll(thisDimAndMeasure);
