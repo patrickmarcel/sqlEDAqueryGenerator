@@ -48,7 +48,7 @@ public class MainTAP {
     //Default cab be overridden by -s
     static double SAMPLERATIO = 100.0;
     //Default cab be overridden by -q
-    static int QUERIESNB = 25;
+    static int QUERIESNB = 25, MAX_DISTANCE = 500;
     static double SIGLEVEL = 0.05;
 
     public static void main( String[] args ) throws Exception{
@@ -185,6 +185,7 @@ public class MainTAP {
         tapQueries.stream().parallel().forEach(q -> {
             //Connection c = cp.getConnection();
             q.setExplainCost(1);
+            q.setActualCost(1);
             //cp.returnConnection(c);
         });
         //cp.close();
@@ -195,7 +196,7 @@ public class MainTAP {
 
         // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
-        List<AssessQuery> naiveSolution = naive.solve(tapQueries, QUERIESNB, 100);
+        List<AssessQuery> naiveSolution = naive.solve(tapQueries, QUERIESNB, MAX_DISTANCE);
         naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
@@ -207,7 +208,7 @@ public class MainTAP {
 
         if (tapQueries.size() < 1000){
             TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
-            List<AssessQuery> exactSolution = exact.solve(tapQueries, QUERIESNB, 100);
+            List<AssessQuery> exactSolution = exact.solve(tapQueries, QUERIESNB, MAX_DISTANCE);
             exactSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
@@ -322,6 +323,10 @@ public class MainTAP {
         qSize.setRequired(false);
         options.addOption(qSize);
 
+        Option md = new Option("m", "epsilon-distance", true, "Epsilon constraint for sequence distance defaults to 500");
+        md.setRequired(false);
+        options.addOption(md);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
 
@@ -349,6 +354,18 @@ public class MainTAP {
                     }
                 } catch (NumberFormatException e){
                     System.err.println("[ERROR] couldn't parse argument sample ratio '" + cmd.getOptionValue("s") + "' as a double");
+                }
+            }
+            if (cmd.hasOption("m")){
+                try {
+                    int q = Integer.parseInt(cmd.getOptionValue("m"));
+                    if (q > 0)
+                        MAX_DISTANCE = q;
+                    else {
+                        System.err.println("[ERROR] epsilon distance must be positive");
+                    }
+                } catch (NumberFormatException e){
+                    System.err.println("[ERROR] couldn't parse argument epsilon distance '" + cmd.getOptionValue("m") + "' as an integer");
                 }
             }
             if (cmd.hasOption("q")){

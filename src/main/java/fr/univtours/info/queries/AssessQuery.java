@@ -47,7 +47,7 @@ public class AssessQuery implements TimeableOp, Measurable {
 
     private String sql;
 
-    @Getter
+    @Getter @Setter
     long actualCost = 0;
     @Setter @Getter
     long explainCost = -1;
