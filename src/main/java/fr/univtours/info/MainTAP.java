@@ -199,7 +199,7 @@ public class MainTAP {
         naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
-        Files.writeString(Paths.get(String.format("data/KS_%s_%s_%s_%s.ipynb"), INTERESTINGNESS, String.valueOf(QUERIESNB), String.valueOf((int)SAMPLERATIO), LocalTime.now().toString()), out.toJson());
+        Files.writeString(Paths.get("data/KS_" + "_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString()+".ipynb"), out.toJson());
 
         stopwatch.stop();
         System.out.println("[TIME][ms] Heuristic " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
