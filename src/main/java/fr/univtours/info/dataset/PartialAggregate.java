@@ -61,8 +61,8 @@ public class PartialAggregate {
     public double[][] assessSum(DatasetMeasure m, DatasetDimension group, DatasetDimension selection, Object val1, Object val2){
         HashMap<Object, Double> resultA = new HashMap<>();
         HashMap<Object, Double> resultB = new HashMap<>();
-        int selDimIdx = groupBySet.indexOf(group);
-        int grpDimIdx = groupBySet.indexOf(selection);
+        int selDimIdx = groupBySet.indexOf(selection);
+        int grpDimIdx = groupBySet.indexOf(group);
         int mIdx = measures.indexOf(m);
         for (int i = 0; i < len; i++) {
             if (dims[selDimIdx][i].equals(val1)){

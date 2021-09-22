@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
+import fr.univtours.info.dataset.PartialAggregate;
 import fr.univtours.info.dataset.TableFragment;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
@@ -31,6 +32,8 @@ import java.sql.SQLException;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -91,38 +94,33 @@ public class MainTAP {
         System.out.println("[INFO] Started looking for supporting queries ...");
         stopwatch = Stopwatch.createStarted();
 
-        Map<Insight, Set<AssessQuery>> isSupportedBy = new HashMap<>();
+        //Map<Insight, Set<AssessQuery>> isSupportedBy = new HashMap<>();
+        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = new ConcurrentHashMap<>();
 
         // grouping insight by selection dimension
-        insights.stream().collect(Collectors.groupingBy(Insight::getDim))
-                .forEach((dimB, insightsOfDimB) ->{
-            // Grouping again by measure
-            insightsOfDimB.stream().collect(Collectors.groupingBy(Insight::getMeasure)).forEach( (measure, insightsOfDimBOverM) -> {
-                // For every other dimension
-                for (DatasetDimension dimA : ds.getTheDimensions().stream().filter(d -> !d.equals(dimB)).collect(Collectors.toList())){
-                    try {
-                        ResultSet rs = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
-                                .executeQuery("Select " + dimA.getName() + "," + dimB.getName() + "," + measure.getName() + " from " + ds.getTable() + ";");
-                        TableFragment cache = new TableFragment(rs, ds.getTableSize());
-                        //Go multithreaded and cache everything
-                        List<Pair<Insight, AssessQuery>> validPairs = insightsOfDimBOverM.parallelStream()
-                                .filter(insight -> {
-                                    Pair<double[], double[]> res = cache.assess(insight.getSelA(), insight.getSelB(), TableFragment::sum);
-                                    return querySupports(insight, res.getA(), res.getB());
-                                })
-                                .map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
-                                .collect(Collectors.toList());
-                        //update the map
-                        validPairs.forEach(insightQueryPair -> {
-                            isSupportedBy.computeIfAbsent(insightQueryPair.getA(), k -> new HashSet<>());
-                            isSupportedBy.get(insightQueryPair.getA()).add(insightQueryPair.getB());
-                        });
-
-                    } catch (SQLException e){
-                        System.err.println("[ERROR] caching impossible");
-                    }
-                }
-            });
+        insights.stream().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimB, insightsOfDimB) ->{
+            // For every other dimension
+            for (DatasetDimension dimA : ds.getTheDimensions().stream().filter(d -> !d.equals(dimB)).collect(Collectors.toList())){
+                PartialAggregate pa = new PartialAggregate(List.of(dimA, dimB), ds.getTheMeasures(), ds);
+                    //Go multithreaded and cache everything
+                    //List<Pair<Insight, AssessQuery>> validPairs =
+                   insightsOfDimB.parallelStream()
+                            .filter(insight -> {
+                                double[][] res = pa.assessSum(insight.getMeasure(), dimA, insight.getDim(), insight.getSelA(), insight.getSelB());
+                                return querySupports(insight, res[0], res[1]);
+                            })
+                            .map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
+                            .forEach( pair -> {
+                                isSupportedBy.computeIfAbsent(pair.getA(), k -> ConcurrentHashMap.newKeySet());
+                                isSupportedBy.get(pair.getA()).add(pair.getB());
+                            });
+            //.collect(Collectors.toList());
+                    //update the map
+                    /*validPairs.forEach(insightQueryPair -> {
+                        isSupportedBy.computeIfAbsent(insightQueryPair.getA(), k -> new HashSet<>());
+                        isSupportedBy.get(insightQueryPair.getA()).add(insightQueryPair.getB());
+                    });*/
+            }
         });
 
         stopwatch.stop();
@@ -204,7 +202,7 @@ public class MainTAP {
         naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
-        Files.writeString(Paths.get("data/KS_" + "_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString()+".ipynb"), out.toJson());
+        Files.writeString(Paths.get("data/KS_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
 
         stopwatch.stop();
         System.out.println("[TIME][ms] Heuristic " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -222,22 +220,6 @@ public class MainTAP {
             if (tapQueries.size() < 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
             if (! CPLEX_BIN.equals("")) System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
         }
-
-        /*
-        final List<AssessQuery> sample = ListSampler.sample(RandomSource.create(RandomSource.MT), tapQueries, Math.min(100000, tapQueries.size()));
-            sample.forEach(assessQuery -> {
-                try {
-                    assessQuery.explainAnalyze();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                assessQuery.setExplainCost(assessQuery.getActualCost());
-                if (assessQuery.getActualCost() > 100)
-                    System.out.println(assessQuery.getSql());
-            });
-            Instance instance = new Instance(sample, QUERIESNB, 100, true);
-            instance.toFileBinaryNoDist("data/tap_instance_sample.dat");
-         */
         
         conn.close();
     }
