@@ -1,9 +1,6 @@
 package fr.univtours.info.dataset;
 
-import fr.univtours.info.dataset.metadata.DatasetAttribute;
-import fr.univtours.info.dataset.metadata.DatasetDimension;
-import fr.univtours.info.dataset.metadata.DatasetMeasure;
-import fr.univtours.info.dataset.metadata.DatasetSchema;
+import fr.univtours.info.dataset.metadata.*;
 import lombok.Getter;
 
 
@@ -38,7 +35,6 @@ public class Dataset {
          this.theDimensions=theDimensions;
          this.theMeasures=theMeasures;
          theSchema = new DatasetSchema(this);
-         //theSchema.getIndividualHierarchies();
          try (ResultSet rs = conn.createStatement().executeQuery("Select count(*) from " +table)){
              rs.next();
              tableSize = rs.getInt(1);
@@ -182,6 +178,10 @@ public class Dataset {
         insertSt.close();
         origin.close();
         return new Dataset(destination, sampleTableName, List.of(dim), theMeasures, true);
+    }
+
+    public int measuresNb(){
+         return this.theMeasures.size();
     }
 
     public void drop(){

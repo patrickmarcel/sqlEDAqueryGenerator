@@ -26,6 +26,11 @@ public class PowerSet {
     @Getter
     private BigInteger size;
 
+    public PowerSet(int baseSetSize) {
+        elements = baseSetSize;
+        size = BigInteger.valueOf(2).pow(elements);
+    }
+
     public PowerSet(double[] baseSet) {
         elements = baseSet.length;
         size = BigInteger.valueOf(2).pow(elements);

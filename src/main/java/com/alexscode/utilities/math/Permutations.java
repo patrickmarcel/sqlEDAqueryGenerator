@@ -105,6 +105,69 @@ public class Permutations {
         return new Pair<>(meanDiffs, varDiffs);
     }
 
+    public static Pair<double[][], double[][]> meanAndvariance(double[][] a, double[][] b, int permutations){
+
+        double[][] meanDiffs = new double[a.length][permutations];
+        double[][] varDiffs = new double[a.length][permutations];
+        final int fullSize = a[0].length + b[0].length;
+
+        // Can't do more permutations than possible
+        if (BigIntegerMath.binomial(fullSize, a.length).compareTo(BigInteger.valueOf(permutations)) < 0){
+            permutations = BigIntegerMath.binomial(fullSize, a.length).intValue();
+        }
+
+        // Very low probability of drawing the same permutation twice ....
+        ThreadLocalRandom rd = null;
+        PowerSet ps = null;
+        BitSet[] perms = new BitSet[permutations];
+        if (fullSize <= 20){
+            ps = new PowerSet(fullSize);
+            for (int i = 0; i < permutations; i++)
+                perms[i] = ps.getNewRandomElementOFSize_new(a.length);
+            }
+        else {
+            rd = ThreadLocalRandom.current();
+            for (int i = 0; i < permutations; i++)
+                perms[i] = randomPermNoCheck(fullSize, a.length, rd);
+        }
+
+        //For each measure
+        for (int m = 0; m < a.length; m++) {
+            double[] ab = new double[a[m].length + b[m].length];
+            System.arraycopy(a[m], 0, ab, 0, a[m].length);
+            System.arraycopy(b[m], 0, ab, a[m].length, b[m].length);
+
+            for (int i = 0; i < permutations; ++i) {
+                double mua = 0, mub = 0; // mean
+                double muasq = 0, mubsq = 0; // mean of squares
+                int countA = 0, countB = 0; // count
+
+                for (int j = 0; j < fullSize; j++) {
+                    if (perms[i].get(j)){
+                        countA++;
+                        mua += ab[j];
+                        muasq += ab[j]*ab[j];
+                    } else {
+                        countB ++;
+                        mub += ab[j];
+                        mubsq += ab[j]*ab[j];
+                    }
+                }
+                //Compute means
+                mub = mub/countB;
+                mua = mua/countA;
+                mubsq = mubsq/countB;
+                muasq = muasq/countA;
+                // Compute stat: var(b) - var(a)
+                varDiffs[m][i] =  (mubsq - (mub*mub)) - (muasq - (mua*mua));
+                //Compute stat: E[b] - E[a]
+                meanDiffs[m][i] =  (mub/countB) - (mua/countA);
+            }
+        }
+
+        return new Pair<>(meanDiffs, varDiffs);
+    }
+
     public static BitSet randomPermNoCheck(int elements, int k, Random rd){
         BitSet set = new BitSet(elements);
         for (int i = 0; i < k; i++){

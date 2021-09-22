@@ -94,8 +94,7 @@ public class MainTAP {
         Map<Insight, Set<AssessQuery>> isSupportedBy = new HashMap<>();
 
         // grouping insight by selection dimension
-        insights.stream().collect(Collectors.groupingBy(Insight::getDim))
-                .forEach((dimB, insightsOfDimB) ->{
+        insights.parallelStream().collect(Collectors.groupingByConcurrent(Insight::getDim)).forEach((dimB, insightsOfDimB) ->{
             // Grouping again by measure
             insightsOfDimB.stream().collect(Collectors.groupingBy(Insight::getMeasure)).forEach( (measure, insightsOfDimBOverM) -> {
                 // For every other dimension
@@ -204,7 +203,7 @@ public class MainTAP {
         naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
-        Files.writeString(Paths.get("data/KS_" + "_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString()+".ipynb"), out.toJson());
+        Files.writeString(Paths.get("data/KS_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
 
         stopwatch.stop();
         System.out.println("[TIME][ms] Heuristic " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -269,7 +268,8 @@ public class MainTAP {
             Set<List<String>> combiVals = Sets.combinations(values, 2).stream().map(ArrayList::new).collect(Collectors.toSet());
 
             for (List<String> pair : combiVals) {
-                ds.getTheMeasures().stream().map(measure -> new Insight(dim, pair.get(0), pair.get(1), measure)).forEach(intuitions::add);
+                //ds.getTheMeasures().stream().map(measure -> new Insight(dim, pair.get(0), pair.get(1), measure)).forEach(intuitions::add);
+                intuitions.add(new Insight(dim, pair.get(0), pair.get(1), ds.getTheMeasures().get(0)));
             }
         }
         return intuitions;
