@@ -18,10 +18,7 @@ import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.inference.TTest;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class AssessQuery implements TimeableOp, Measurable {
 
@@ -78,6 +75,19 @@ public class AssessQuery implements TimeableOp, Measurable {
 
         this.val1 = val1;
         this.val2 = val2;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AssessQuery)) return false;
+        AssessQuery that = (AssessQuery) o;
+        return getAssessed().equals(that.getAssessed()) && getReference().equals(that.getReference()) && table.equals(that.table) && getMeasure().equals(that.getMeasure()) && getFunction().equals(that.getFunction()) && getVal1().equals(that.getVal1()) && getVal2().equals(that.getVal2());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getAssessed(), getReference(), table, getMeasure(), getFunction(), getVal1(), getVal2());
     }
 
     @Override

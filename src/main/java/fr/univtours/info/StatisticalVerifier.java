@@ -87,7 +87,7 @@ public class StatisticalVerifier {
      * @param insights The list of insights
      * @param ds The dataset to check insights on
      */
-    public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel, int permNb, double sampleRatio, DBConfig config) {
+    public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel, int permNb, double sampleRatio, DBConfig config, boolean keep_transitive) {
         Map<DatasetDimension, Dataset> samples = new HashMap<>();
         Connection sample_db = null;
         if (sampleRatio < 1.0) {
@@ -101,10 +101,6 @@ public class StatisticalVerifier {
                 e.printStackTrace();
             }
         }
-
-        //List<List<Insight>> perDim = new ArrayList<>();
-        //ds.getTheDimensions().forEach(d -> perDim.add(new ArrayList<>()));
-        //insights.forEach(i -> perDim.get(ds.getTheDimensions().indexOf(i.getDim())).add(i));
 
         List<Insight> output = new ArrayList<>();
 
@@ -131,21 +127,21 @@ public class StatisticalVerifier {
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
 
                 //Identify Triangles for transitivity elimination
-                thisDimAndMeasure.parallelStream().collect(Collectors.groupingByConcurrent(Insight::getType)).entrySet().parallelStream().forEach(e -> {
-                    var insightType = e.getKey();
-                    var list = e.getValue();
-                    if (insightType == MEAN_SMALLER || insightType == MEAN_GREATER || insightType == VARIANCE_SMALLER || insightType == VARIANCE_GREATER) {
+                if (!keep_transitive) {
+                    thisDimAndMeasure.parallelStream()
+                            .filter(insight -> insight.type == MEAN_SMALLER || insight.type == MEAN_GREATER || insight.type == VARIANCE_SMALLER || insight.type == VARIANCE_GREATER)
+                            .collect(Collectors.groupingByConcurrent(Insight::getType)).entrySet().parallelStream().forEach(e -> {
+                        var list = e.getValue();
                         Set<Insight> insightSet = new HashSet<>(list);
                         for (Insight ac : list) {
                             for (String b : thisDimension.getActiveDomain()) {
-                                if (insightSet.contains(new Insight(thisDimension, ac.getSelA(), b, thisMeasure, insightType)) && insightSet.contains(new Insight(thisDimension, b, ac.getSelB(), thisMeasure, insightType)))
+                                if (insightSet.contains(new Insight(thisDimension, ac.getSelA(), b, thisMeasure, e.getKey())) && insightSet.contains(new Insight(thisDimension, b, ac.getSelB(), thisMeasure, e.getKey())))
                                     ac.setP(-1); //mark for delete
                             }
                         }
-                    }
-                });
-
-                thisDimAndMeasure.removeIf(insight -> insight.getP() == -1);// delete
+                    });
+                    thisDimAndMeasure.removeIf(insight -> insight.getP() == -1);// delete
+                }
                 output.addAll(thisDimAndMeasure);
             }
         }

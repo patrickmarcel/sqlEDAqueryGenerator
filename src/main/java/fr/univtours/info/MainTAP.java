@@ -58,6 +58,7 @@ public class MainTAP {
     //Default cab be overridden by -q
     static int QUERIESNB = 25, MAX_DISTANCE = 500;
     static double SIGLEVEL = 0.05;
+    static boolean TRANSITIVE_KEEPS = false;
 
     public static void main( String[] args ) throws Exception{
 
@@ -84,7 +85,7 @@ public class MainTAP {
         System.out.println("[INFO] Starting verification (1) ...");
         stopwatch = Stopwatch.createStarted();
 
-        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, SIGLEVEL, 1000, SAMPLERATIO/100.0, config);
+        List<Insight> insights = StatisticalVerifier.check(intuitions, ds, SIGLEVEL, 1000, SAMPLERATIO/100.0, config, TRANSITIVE_KEEPS);
 
         stopwatch.stop();
         System.out.println("[TIME][s] verification (1) " + stopwatch.elapsed(TimeUnit.SECONDS));
@@ -102,24 +103,14 @@ public class MainTAP {
             // For every other dimension
             for (DatasetDimension dimA : ds.getTheDimensions().stream().filter(d -> !d.equals(dimB)).collect(Collectors.toList())){
                 PartialAggregate pa = new PartialAggregate(List.of(dimA, dimB), ds.getTheMeasures(), ds);
-                    //Go multithreaded and cache everything
-                    //List<Pair<Insight, AssessQuery>> validPairs =
-                   insightsOfDimB.parallelStream()
-                            .filter(insight -> {
-                                double[][] res = pa.assessSum(insight.getMeasure(), dimA, insight.getDim(), insight.getSelA(), insight.getSelB());
-                                return querySupports(insight, res[0], res[1]);
-                            })
-                            .map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
-                            .forEach( pair -> {
-                                isSupportedBy.computeIfAbsent(pair.getA(), k -> ConcurrentHashMap.newKeySet());
-                                isSupportedBy.get(pair.getA()).add(pair.getB());
-                            });
-            //.collect(Collectors.toList());
-                    //update the map
-                    /*validPairs.forEach(insightQueryPair -> {
-                        isSupportedBy.computeIfAbsent(insightQueryPair.getA(), k -> new HashSet<>());
-                        isSupportedBy.get(insightQueryPair.getA()).add(insightQueryPair.getB());
-                    });*/
+                //Go multithreaded and cache everything
+               insightsOfDimB.parallelStream()
+                        .filter(insight -> querySupports(insight, pa.assessSum(insight.getMeasure(), dimA, insight.getDim(), insight.getSelA(), insight.getSelB())))
+                        //.map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
+                        .forEach( insight -> {
+                            isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                            isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum"));
+                        });
             }
         });
 
@@ -159,12 +150,13 @@ public class MainTAP {
         if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("cred") || INTERESTINGNESS.equals("sig")) {
             supports.entrySet().stream().parallel().forEach((e) -> {
                 double i;
+                final List<Insight> supportedInsights = e.getValue();
                 if (INTERESTINGNESS.equals("full"))
-                    i = e.getValue().stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - insight.getCredibility())).sum();
+                    i = supportedInsights.stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - insight.getCredibility())).sum();
                 else if (INTERESTINGNESS.equals("sig"))
-                    i = e.getValue().stream().mapToDouble(insight -> 1 - insight.getP()).sum();
+                    i = supportedInsights.stream().mapToDouble(insight -> 1 - insight.getP()).sum();
                 else
-                    i = e.getValue().stream().mapToDouble(insight -> (1 - insight.getCredibility())).sum();
+                    i = supportedInsights.stream().mapToDouble(insight -> (1 - insight.getCredibility())).sum();
                 e.getKey().setInterest(i);
             });
         }
@@ -257,8 +249,8 @@ public class MainTAP {
         return intuitions;
     }
 
-    public static boolean querySupports(Insight insight, double[] a, double[] b){
-
+    public static boolean querySupports(Insight insight, double[][] data){
+        double[] a = data[0]; double[] b = data[1];
         double mua = 0, mub = 0; // mean
         double muasq = 0, mubsq = 0; // mean of squares
         int count = 0; // count
@@ -317,6 +309,10 @@ public class MainTAP {
         md.setRequired(false);
         options.addOption(md);
 
+        Option trans = new Option("t", "keep-transitive", true, "if enabled does not delete transitive insights such as A > C when A > B and B > C");
+        trans.setRequired(false);
+        options.addOption(trans);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
 
@@ -327,6 +323,7 @@ public class MainTAP {
             if (cmd.hasOption('c')){
                 CPLEX_BIN = cmd.getOptionValue('c');
             }
+            TRANSITIVE_KEEPS = cmd.hasOption("t");
             if (cmd.hasOption('i')) {
                 INTERESTINGNESS = cmd.getOptionValue('i');
                 if (!INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
