@@ -8,8 +8,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DatasetStats {
     String table;
@@ -80,7 +82,7 @@ public class DatasetStats {
         //conn.close();
     }
 
-    public long estimateAggregateSize(List<DatasetDimension> groupBy){
+    public long estimateAggregateSize(Collection<DatasetDimension> groupBy){
         int len = groupBy.stream().mapToInt(d -> adSize.get(d)).reduce(Math::multiplyExact).getAsInt();
         return 64L *measures.size()*len + dimensions.stream().mapToInt(d -> 64*len*avgWidth.get(d)).sum();
     }

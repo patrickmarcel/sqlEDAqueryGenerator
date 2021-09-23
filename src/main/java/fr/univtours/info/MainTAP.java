@@ -3,8 +3,10 @@ package fr.univtours.info;
 import com.alexscode.utilities.collection.Pair;
 import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.PartialAggregate;
@@ -95,22 +97,38 @@ public class MainTAP {
         System.out.println("[INFO] Started looking for supporting queries ...");
         stopwatch = Stopwatch.createStarted();
 
-        //Map<Insight, Set<AssessQuery>> isSupportedBy = new HashMap<>();
+        //ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = checkSupportNaive(insights);
         ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = new ConcurrentHashMap<>();
 
-        // grouping insight by selection dimension
-        insights.stream().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimB, insightsOfDimB) ->{
-            // For every other dimension
-            for (DatasetDimension dimA : ds.getTheDimensions().stream().filter(d -> !d.equals(dimB)).collect(Collectors.toList())){
-                PartialAggregate pa = new PartialAggregate(List.of(dimA, dimB), ds.getTheMeasures(), ds);
-                //Go multithreaded and cache everything
-               insightsOfDimB.parallelStream()
-                        .filter(insight -> querySupports(insight, pa.assessSum(insight.getMeasure(), dimA, insight.getDim(), insight.getSelA(), insight.getSelB())))
-                        //.map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
-                        .forEach( insight -> {
-                            isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
-                            isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum"));
-                        });
+        Set<DatasetDimension> allDimensions = new HashSet<>(ds.getTheDimensions());
+        List<Set<DatasetDimension>> candidates = new ArrayList<>();
+        for (int i = 1; i <= 4; i++)
+            candidates.addAll(Sets.combinations(allDimensions, i));
+        List<Double> weights = candidates.stream().map(agg -> (double) stats.estimateAggregateSize(agg)).collect(Collectors.toList());
+        List<PartialAggregate> aggregates = WeightedSetCover.solve(candidates, weights)
+                .stream().map(s -> new PartialAggregate(new ArrayList<>(s), ds.getTheMeasures(), ds)).collect(Collectors.toList());
+        Table<DatasetDimension, DatasetDimension, PartialAggregate> cache = HashBasedTable.create();
+        Sets.combinations(allDimensions, 2).forEach(p -> {
+            Iterator<DatasetDimension> it = p.iterator();
+            DatasetDimension a = it.next();
+            DatasetDimension b = it.next();
+            for (PartialAggregate ag : aggregates){
+                if (ag.getGroupBySet().contains(a) && ag.getGroupBySet().contains(b)){
+                    cache.put(a,b,ag);
+                    cache.put(b,a,ag);
+                    break;
+                }
+            }
+        });
+
+        insights.parallelStream().forEach(insight -> {
+            for (DatasetDimension otherDim : ds.getTheDimensions()){
+                if (!otherDim.equals(insight.getDim())){
+                    if (querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))){
+                        isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                        isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
+                    }
+                }
             }
         });
 
@@ -216,6 +234,26 @@ public class MainTAP {
         }
         
         conn.close();
+    }
+
+    private static ConcurrentMap<Insight, Set<AssessQuery>> checkSupportNaive(List<Insight> insights) {
+        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = new ConcurrentHashMap<>();
+        // grouping insight by selection dimension
+        insights.stream().collect(Collectors.groupingBy(Insight::getDim)).forEach((dimB, insightsOfDimB) ->{
+            // For every other dimension
+            for (DatasetDimension dimA : ds.getTheDimensions().stream().filter(d -> !d.equals(dimB)).collect(Collectors.toList())){
+                PartialAggregate pa = new PartialAggregate(List.of(dimA, dimB), ds.getTheMeasures(), ds);
+                //Go multithreaded and cache everything
+               insightsOfDimB.parallelStream()
+                        .filter(insight -> querySupports(insight, pa.assessSum(insight.getMeasure(), dimA, insight.getDim(), insight.getSelA(), insight.getSelB())))
+                        //.map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
+                        .forEach( insight -> {
+                            isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                            isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum"));
+                        });
+            }
+        });
+        return isSupportedBy;
     }
 
 

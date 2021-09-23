@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import fr.univtours.info.dataset.metadata.DatasetAttribute;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import lombok.Getter;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,8 +15,9 @@ import java.util.stream.Collectors;
 
 // Only for sums !!!
 public class PartialAggregate {
-    List<DatasetDimension> groupBySet;
-    List<DatasetMeasure> measures;
+    @Getter
+    final List<DatasetDimension> groupBySet;
+    final List<DatasetMeasure> measures;
     final Object[][] dims;
     final double[][] data;
     final int len;
