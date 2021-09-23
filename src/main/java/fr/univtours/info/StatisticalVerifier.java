@@ -201,7 +201,6 @@ public class StatisticalVerifier {
     }
 
 
-
     private static List<Insight> computeMeanAndVariance(Insight i, double[] a, double[] b, int permNb) {
         List<Insight> added = new ArrayList<>(10);
 

@@ -151,7 +151,7 @@ public class MainTAP {
             supports.entrySet().stream().parallel().forEach((e) -> {
                 double i;
                 final List<Insight> supportedInsights = e.getValue();
-                if (INTERESTINGNESS.equals("full"))
+                if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("sig&cred"))
                     i = supportedInsights.stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - insight.getCredibility())).sum();
                 else if (INTERESTINGNESS.equals("sig"))
                     i = supportedInsights.stream().mapToDouble(insight -> 1 - insight.getP()).sum();
@@ -311,7 +311,7 @@ public class MainTAP {
         md.setRequired(false);
         options.addOption(md);
 
-        Option trans = new Option("t", "keep-transitive", true, "if enabled does not delete transitive insights such as A > C when A > B and B > C");
+        Option trans = new Option("t", "keep-transitive", false, "if enabled does not delete transitive insights such as A > C when A > B and B > C");
         trans.setRequired(false);
         options.addOption(trans);
 
@@ -328,7 +328,7 @@ public class MainTAP {
             TRANSITIVE_KEEPS = cmd.hasOption("t");
             if (cmd.hasOption('i')) {
                 INTERESTINGNESS = cmd.getOptionValue('i');
-                if (!INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
+                if (!INTERESTINGNESS.equals("sig&cred") && !INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
                     System.err.println("[ERROR] Unknown interestingness measure: '" + INTERESTINGNESS + "'");
                     System.exit(1);
                 }

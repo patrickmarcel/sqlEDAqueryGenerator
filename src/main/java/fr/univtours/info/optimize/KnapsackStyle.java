@@ -159,10 +159,10 @@ public class KnapsackStyle implements TAPEngine{
         {
             int current = order[i].index;
 
-            if (timeBudget - (total_time + theQ.get(current).estimatedTime()) > 0){
+            if (timeBudget - (total_time + theQ.get(current).estimatedTime()) >= 0){
                 if (solution.size() > 0 && maxDistance - (total_dist + theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current))) < 0)
                     continue;
-                if (solution.size() >0)
+                if (solution.size() > 0)
                     //total_dist += ist.distances[solution.get(solution.size() - 1)][current];
                     total_dist += theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current));
                 total_time += theQ.get(current).estimatedTime();
