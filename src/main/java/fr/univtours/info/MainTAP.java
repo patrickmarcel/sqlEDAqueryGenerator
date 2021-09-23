@@ -194,6 +194,7 @@ public class MainTAP {
         naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
+        System.out.println("[INFO] KS solution is " + naiveSolution.size() + " queries long");
         Files.writeString(Paths.get("data/KS_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
 
         stopwatch.stop();
@@ -207,7 +208,8 @@ public class MainTAP {
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);
             //Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
-            Files.writeString(Paths.get("data/outpout_exact.ipynb"), out.toJson());
+            System.out.println("[INFO] EXACT solution is " + exactSolution.size() + " queries long");
+            Files.writeString(Paths.get("data/EXACT_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
         } else {
             if (tapQueries.size() < 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
             if (! CPLEX_BIN.equals("")) System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
