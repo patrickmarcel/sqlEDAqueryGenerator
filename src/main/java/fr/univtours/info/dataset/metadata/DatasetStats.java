@@ -1,6 +1,7 @@
 package fr.univtours.info.dataset.metadata;
 
 import fr.univtours.info.dataset.DBConfig;
+import fr.univtours.info.dataset.Dataset;
 import lombok.Getter;
 
 import java.io.IOException;
@@ -28,19 +29,20 @@ public class DatasetStats {
     private List<DatasetDimension> dimensions;
     private List<DatasetMeasure> measures;
 
-    public DatasetStats(DBConfig config) throws SQLException {
+    public DatasetStats(Dataset ds) throws SQLException {
 
-        table = config.getTable();
-        dimensions = config.getDimensions();
-        measures = config.getMeasures();
-        Connection conn = config.getConnection();
+        table = ds.getTable();
+        dimensions = ds.getTheDimensions();
+        measures = ds.getTheMeasures();
+        Connection conn = ds.getConn();
+        rows = ds.getTableSize();
 
         // Pre compute stats
         adSize = new HashMap<>();
         frequency = new HashMap<>();
         avgWidth = new HashMap<>();
 
-        // strings
+        // strings width
         for (DatasetDimension dim : dimensions) {
             String sql = "select avg_width from pg_stats where tablename = '" + table + "' and attname = '"+dim.getPrettyName()+"';";
             Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -50,16 +52,7 @@ public class DatasetStats {
             st.close();
         }
 
-        // Active domain size
-        for (DatasetDimension dim : dimensions) {
-            String sql = "select count(distinct " + dim.getName() + ") from " + table + ";";
-            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            ResultSet rs = st.executeQuery(sql) ;
-            rs.next();
-            adSize.put(dim, rs.getInt(1));
-            st.close();
-        }
-        // Absolute frequency
+        // Absolute frequency - Active domain size
         for (DatasetDimension dim : dimensions) {
             HashMap<String, Integer> tmp = new HashMap<>();
             String sql = "select " + dim.getName() + ", count(*) from " + table + " group by " + dim.getName() + ";";
@@ -70,16 +63,9 @@ public class DatasetStats {
             }
             st.close();
             frequency.put(dim, tmp);
+            adSize.put(dim, tmp.size());
+            dim.setActiveDomain(tmp.keySet());
         }
-        //Count rows
-        String sql = "select count(*) from " + table + ";";
-        Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = st.executeQuery(sql) ;
-        rs.next();
-        rows = rs.getInt(1);
-        st.close();
-
-        //conn.close();
     }
 
     public long estimateAggregateSize(Collection<DatasetDimension> groupBy){

@@ -3,6 +3,7 @@ package fr.univtours.info.optimize.time;
 import com.google.common.base.Stopwatch;
 import fr.univtours.info.*;
 import fr.univtours.info.dataset.DBConfig;
+import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.dataset.metadata.DatasetStats;
@@ -34,7 +35,7 @@ public class TimeCallibration {
 
 
         // Pre compute stats
-        DatasetStats stats = new DatasetStats(config);
+        DatasetStats stats = new DatasetStats(new Dataset(config.getConnection(), config.getTable(), theDimensions, theMeasures));
         HashMap<DatasetDimension, Integer> adSize = stats.getAdSize();
         HashMap<DatasetDimension, HashMap<String, Integer>> frequency = stats.getFrequency();
         int rows = stats.getRows();

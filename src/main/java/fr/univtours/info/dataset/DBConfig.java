@@ -65,7 +65,7 @@ public class DBConfig {
                 formatted = "\"" + dName + "\"";
             DatasetDimension dd = new DatasetDimension(formatted, conn, table);
             theDimensions.add(dd);
-            dd.computeActiveDomain();
+            //dd.computeActiveDomain();
             if (DIALECT == 1 || DIALECT == 2) {
                 dd.setPrettyName(dName);
             }

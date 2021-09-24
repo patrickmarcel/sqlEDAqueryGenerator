@@ -305,7 +305,7 @@ public class MainTAP {
         ds = new Dataset(conn, table, theDimensions, theMeasures);
         System.out.println("Connection to database successful");
         System.out.print("Collecting statistics ... ");
-        stats = new DatasetStats(config);
+        stats = new DatasetStats(ds);
         System.out.println(" Done");
     }
 

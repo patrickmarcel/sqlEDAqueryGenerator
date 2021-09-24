@@ -1,11 +1,14 @@
 package fr.univtours.info.dataset.metadata;
 
+import lombok.Setter;
+
 import java.sql.*;
 import java.util.HashSet;
 import java.util.Set;
 
 public class DatasetDimension extends DatasetAttribute{
 
+    @Setter
     Set<String> activeDomain;
     boolean time;
     boolean all;

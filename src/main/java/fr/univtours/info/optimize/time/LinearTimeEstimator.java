@@ -8,6 +8,7 @@ import fr.univtours.info.queries.AssessQuery;
 import java.io.IOException;
 import java.sql.SQLException;
 
+@Deprecated
 public class LinearTimeEstimator implements CostModel {
 
     static double alpha;
@@ -17,14 +18,10 @@ public class LinearTimeEstimator implements CostModel {
 
     public static long estimate(AssessQuery q){
         if (stats == null) {
-            try {
+
                 //FIXME
-                stats = new DatasetStats(DBConfig.newFromFile());
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                //stats = new DatasetStats(DBConfig.newFromFile());
+
         }
         
         return 0; //TODO
