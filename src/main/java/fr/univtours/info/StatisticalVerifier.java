@@ -2,6 +2,7 @@ package fr.univtours.info;
 
 import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.alexscode.utilities.math.Permutations;
+import com.google.common.base.Stopwatch;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Funnels;
@@ -10,19 +11,23 @@ import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import fr.univtours.info.dataset.metadata.DatasetStats;
+import org.apache.commons.collections4.Trie;
+import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.math3.stat.StatUtils;
 
 import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static fr.univtours.info.Insight.*;
 import static fr.univtours.info.Insight.VARIANCE_GREATER;
 
 public class StatisticalVerifier {
-    public static int n_threshold = 5;
+    public static int n_threshold = 10;
 
     /**
      * Prototype for checking one insight at a time (only mean)
@@ -94,7 +99,7 @@ public class StatisticalVerifier {
      */
     public static List<Insight> check(List<Insight> insights, Dataset ds, double sigLevel, int permNb, double sampleRatio, DBConfig config, boolean keep_transitive) {
         Map<DatasetDimension, Dataset> samples = new HashMap<>();
-        Connection sample_db = null;
+        Connection sample_db;
         if (sampleRatio < 1.0) {
             try {
                 Class.forName(config.getSampleDriver());
@@ -117,13 +122,14 @@ public class StatisticalVerifier {
             for (var kv : insightsForD.parallelStream().collect(Collectors.groupingByConcurrent(Insight::getMeasure)).entrySet()) {
                 DatasetMeasure thisMeasure = kv.getKey();
                 System.out.println("[INFO] Working on " + thisDimension + "/" + thisMeasure + " | Size = " + kv.getValue().size() * pprint.length);
+                Stopwatch stopwatch = Stopwatch.createStarted();
                 // Handle sampling if needed
                 List<Insight> thisDimAndMeasure = null;
                 if (sampleRatio < 1.0)
                     thisDimAndMeasure = check(kv.getValue(), samples.get(thisDimension), thisDimension, thisMeasure, permNb);
                 else
                     thisDimAndMeasure = check(kv.getValue(), ds, thisDimension, thisMeasure, permNb);
-
+                System.out.println("[VERIF][TIME][s] p-values " + stopwatch.elapsed(TimeUnit.SECONDS));
                 // FDR compensation for multiple testing problem
                 double[] p = thisDimAndMeasure.stream().mapToDouble(Insight::getP).toArray();
                 BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
@@ -131,25 +137,24 @@ public class StatisticalVerifier {
                 for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
 
-                System.out.println(" -> " + thisDimAndMeasure.size());
                 //Identify Triangles for transitivity elimination
                 if (!keep_transitive) {
+                    stopwatch = Stopwatch.createStarted();
                     thisDimAndMeasure.parallelStream()
                             .filter(insight -> insight.type == MEAN_SMALLER || insight.type == MEAN_GREATER || insight.type == VARIANCE_SMALLER || insight.type == VARIANCE_GREATER)
                             .collect(Collectors.groupingByConcurrent(Insight::getType)).entrySet().parallelStream().forEach(e -> {
                         var list = e.getValue();
-                        BloomFilter<String> things = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), list.size(), 0.01);
-                        list.forEach(i -> things.put(i.selA + "_" + i.selB));
+                        Set<String> things = list.stream().map(i -> i.selA + "_" + i.selB).collect(Collectors.toSet());
                         for (Insight ac : list) {
-                            for (String b : thisDimension.getActiveDomain()) {
-                                if (things.mightContain(ac.getSelA() + "_" + b) && things.mightContain(b + "_" + ac.getSelB()))
+                            thisDimension.getActiveDomain().parallelStream().forEach(b -> {
+                                if (things.contains(ac.getSelA() + "_" + b) && things.contains(b + "_" + ac.getSelB()))
                                     ac.setP(-1); //mark for delete
-                            }
+                            });
                         }
                     });
                     thisDimAndMeasure.removeIf(insight -> insight.getP() == -1);// delete
+                    System.out.println("[VERIF][TIME][s] triangles " + stopwatch.elapsed(TimeUnit.SECONDS));
                 }
-                System.out.println(" -> " + thisDimAndMeasure.size());
                 output.addAll(thisDimAndMeasure);
             }
         }
@@ -167,16 +172,15 @@ public class StatisticalVerifier {
      */
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
         HashMap<String, List<Double>> cache = new HashMap<>();
+
         try (Statement st = ds.getConn().createStatement()){
             ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + ";");
-            rs.next();
             while (rs.next()) {
                 String key = rs.getString(1);
                 double val = rs.getDouble(2);
                 cache.computeIfAbsent(key, i_ -> new ArrayList<>());
                 cache.get(key).add(val);
             }
-
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
