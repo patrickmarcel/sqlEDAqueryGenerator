@@ -11,9 +11,6 @@ import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
-import fr.univtours.info.dataset.metadata.DatasetStats;
-import org.apache.commons.collections4.Trie;
-import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.math3.stat.StatUtils;
 
 import java.nio.charset.Charset;

@@ -1,13 +1,8 @@
 package fr.univtours.info.dataset.metadata;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.commons.dbutils.ResultSetIterator;
-
 import java.sql.*;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 public class DatasetDimension extends DatasetAttribute{
 
@@ -32,12 +27,9 @@ public class DatasetDimension extends DatasetAttribute{
         final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
         ResultSet rs = pstmt.executeQuery(sql) ;
         rs.beforeFirst();
-        ResultSetIterator rsit = new ResultSetIterator(rs);
-        Object[] tab;
 
-        while(rsit.hasNext()) {
-            tab=rsit.next();
-            activeDomain.add(String.valueOf(tab[0]));
+        while(rs.next()) {
+            activeDomain.add(String.valueOf(rs.getObject(1)));
         }
         pstmt.close();
         rs.close();

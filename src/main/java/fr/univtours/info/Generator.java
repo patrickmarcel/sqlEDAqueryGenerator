@@ -14,7 +14,6 @@ import fr.univtours.info.optimize.CPLEXTAP;
 import fr.univtours.info.optimize.NaiveTAP;
 import fr.univtours.info.optimize.TAPEngine;
 import fr.univtours.info.queries.*;
-import me.tongfei.progressbar.ProgressBar;
 
 
 import java.io.FileOutputStream;
@@ -191,7 +190,7 @@ public class Generator {
         double[] pPearson = new double[toEvaluate.size()];
         double[] pT = new double[toEvaluate.size()];
         double[] pF = new double[toEvaluate.size()];
-        try (ProgressBar progress = new ProgressBar("Performing statistical tests", toEvaluate.size())) {
+
             for (int i = 0; i < toEvaluate.size(); i++){
                 //Run the query
                 AssessQuery assess = (AssessQuery) toEvaluate.get(i);
@@ -201,10 +200,9 @@ public class Generator {
                 pPearson[i] = res.getB();
                 pT[i] = assess.TTest(false);
                 pF[i] = assess.FTest(true);
-                //Progress
-                progress.step();
+
             }
-        }
+
         // Account for MCP
         BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(pPearson);
         pPearson = corrector.getAdjustedPvalues();
