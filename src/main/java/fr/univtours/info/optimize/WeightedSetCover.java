@@ -38,7 +38,6 @@ public class WeightedSetCover {
         }
 
         var pq = new UpdateablePriorityQueue<PQElement>();
-        var cost = 0;
         var coverednum = 0;
         for (int i = 0; i < scopy.size(); i++) {
             var item = scopy.get(i);
@@ -51,7 +50,6 @@ public class WeightedSetCover {
         while (coverednum < udict.size()){
             var a = pq.poll(); // get the most cost-effective set
             selected.add(a.index); // a: set id
-            cost += w.get(a.index);
             coverednum += scopy.get(a.index).size();
             // Update the sets that contains the new covered elements
             for (var m : scopy.get(a.index)) {
@@ -70,8 +68,6 @@ public class WeightedSetCover {
 
         }
 
-        //System.out.println(selected);
-        //System.out.println(cost);
         return selected.stream().map(S::get).collect(Collectors.toList());
     }
 

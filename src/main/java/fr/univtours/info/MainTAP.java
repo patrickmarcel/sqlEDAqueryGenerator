@@ -98,29 +98,59 @@ public class MainTAP {
         stopwatch = Stopwatch.createStarted();
 
         //ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = checkSupportNaive(insights);
-        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = new ConcurrentHashMap<>();
+        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = checkSupportMerge(insights);
 
-        Set<DatasetDimension> allDimensions = new HashSet<>(ds.getTheDimensions());
-        List<Set<DatasetDimension>> candidates = new ArrayList<>();
-        for (int i = 1; i <= 4; i++)
-            candidates.addAll(Sets.combinations(allDimensions, i));
-        List<Double> weights = candidates.stream().map(agg -> (double) stats.estimateAggregateSize(agg)).collect(Collectors.toList());
+        /*
+                Build the partial aggregates for quick query processing
+         */
+        System.out.print("[INFO] Building partial aggregate cache...");
+        //We need coverage for every pair of dimensions
+        List<Set<DatasetDimension>> allDimensionPairs = new ArrayList<>(Sets.combinations(new HashSet<>(ds.getTheDimensions()), 2));
+        //The candidates therefore need to be set of pairs
+        //I use a Set<Set> instead of the Set<Pair> as Pair order matters for .equals
+        List<Set<Set<DatasetDimension>>> candidates = new ArrayList<>();
+        //Generate all or par of the power set of dimensions
+        for (int i = 2; i <= 4; i++) {
+            if (i == 2)
+                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Set.of(s)).collect(Collectors.toSet()));
+            //if not dealing with pairs already we need to map them to a set of pairs
+            else
+                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Sets.combinations(s,2)).collect(Collectors.toSet()));
+        }
+        //Get the aggregates estimated sizes of course we need to collapse them to sets of dimensions with .flatMap(Set::stream).collect(Collectors.toSet()))
+        List<Double> weights = candidates.stream()
+                .map(agg -> (double) stats.estimateAggregateSize(agg.stream().flatMap(Set::stream).collect(Collectors.toSet())))
+                .collect(Collectors.toList());
         List<PartialAggregate> aggregates = WeightedSetCover.solve(candidates, weights)
-                .stream().map(s -> new PartialAggregate(new ArrayList<>(s), ds.getTheMeasures(), ds)).collect(Collectors.toList());
+                .stream().map(s -> new PartialAggregate(new ArrayList<>(s.stream().flatMap(Set::stream).collect(Collectors.toSet())), ds.getTheMeasures(), ds))
+                .collect(Collectors.toList());
+        //This is just an chained Map (from Guava) for simplicity sakes
         Table<DatasetDimension, DatasetDimension, PartialAggregate> cache = HashBasedTable.create();
-        Sets.combinations(allDimensions, 2).forEach(p -> {
+        //For each pair of dimensions
+        allDimensionPairs.forEach(p -> {
             Iterator<DatasetDimension> it = p.iterator();
             DatasetDimension a = it.next();
             DatasetDimension b = it.next();
-            for (PartialAggregate ag : aggregates){
-                if (ag.getGroupBySet().contains(a) && ag.getGroupBySet().contains(b)){
-                    cache.put(a,b,ag);
-                    cache.put(b,a,ag);
+            //find an aggregate that contains both
+            for (int i = 0, aggregatesSize = aggregates.size(); i < aggregatesSize; i++) {
+                PartialAggregate ag = aggregates.get(i);
+                if (ag.getGroupBySet().contains(a) && ag.getGroupBySet().contains(b)) {
+                    //Cache should work no matter the order
+                    cache.put(a, b, ag);
+                    cache.put(b, a, ag);
                     break;
+                } else {
+                    //Sanity check
+                    if (i == aggregatesSize - 1){
+                        System.err.println("[ERROR] No partial aggregate was found for " + a + " and " + b);
+                    }
                 }
             }
         });
-
+        System.out.println("Done");
+        /*
+                Actually check support for the insights
+         */
         insights.parallelStream().forEach(insight -> {
             for (DatasetDimension otherDim : ds.getTheDimensions()){
                 if (!otherDim.equals(insight.getDim())){
@@ -234,6 +264,73 @@ public class MainTAP {
         }
         
         conn.close();
+    }
+
+    private static ConcurrentMap<Insight, Set<AssessQuery>> checkSupportMerge(List<Insight> insights){
+        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = new ConcurrentHashMap<>();
+
+        /*
+                Build the partial aggregates for quick query processing
+         */
+        System.out.print("[INFO] Building partial aggregate cache...");
+        //We need coverage for every pair of dimensions
+        List<Set<DatasetDimension>> allDimensionPairs = new ArrayList<>(Sets.combinations(new HashSet<>(ds.getTheDimensions()), 2));
+        //The candidates therefore need to be set of pairs
+        //I use a Set<Set> instead of the Set<Pair> as Pair order matters for .equals
+        List<Set<Set<DatasetDimension>>> candidates = new ArrayList<>();
+        //Generate all or par of the power set of dimensions
+        for (int i = 2; i <= 4; i++) {
+            if (i == 2)
+                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Set.of(s)).collect(Collectors.toSet()));
+                //if not dealing with pairs already we need to map them to a set of pairs
+            else
+                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Sets.combinations(s,2)).collect(Collectors.toSet()));
+        }
+        //Get the aggregates estimated sizes of course we need to collapse them to sets of dimensions with .flatMap(Set::stream).collect(Collectors.toSet()))
+        List<Double> weights = candidates.stream()
+                .map(agg -> (double) stats.estimateAggregateSize(agg.stream().flatMap(Set::stream).collect(Collectors.toSet())))
+                .collect(Collectors.toList());
+        List<PartialAggregate> aggregates = WeightedSetCover.solve(candidates, weights)
+                .stream().map(s -> new PartialAggregate(new ArrayList<>(s.stream().flatMap(Set::stream).collect(Collectors.toSet())), ds.getTheMeasures(), ds))
+                .collect(Collectors.toList());
+        //This is just an chained Map (from Guava) for simplicity sakes
+        Table<DatasetDimension, DatasetDimension, PartialAggregate> cache = HashBasedTable.create();
+        //For each pair of dimensions
+        allDimensionPairs.forEach(p -> {
+            Iterator<DatasetDimension> it = p.iterator();
+            DatasetDimension a = it.next();
+            DatasetDimension b = it.next();
+            //find an aggregate that contains both
+            for (int i = 0, aggregatesSize = aggregates.size(); i < aggregatesSize; i++) {
+                PartialAggregate ag = aggregates.get(i);
+                if (ag.getGroupBySet().contains(a) && ag.getGroupBySet().contains(b)) {
+                    //Cache should work no matter the order
+                    cache.put(a, b, ag);
+                    cache.put(b, a, ag);
+                    break;
+                } else {
+                    //Sanity check
+                    if (i == aggregatesSize - 1){
+                        System.err.println("[ERROR] No partial aggregate was found for " + a + " and " + b);
+                    }
+                }
+            }
+        });
+        System.out.println("Done");
+        /*
+                Actually check support for the insights
+         */
+        insights.parallelStream().forEach(insight -> {
+            for (DatasetDimension otherDim : ds.getTheDimensions()){
+                if (!otherDim.equals(insight.getDim())){
+                    if (querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))){
+                        isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                        isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
+                    }
+                }
+            }
+        });
+        return isSupportedBy;
     }
 
     private static ConcurrentMap<Insight, Set<AssessQuery>> checkSupportNaive(List<Insight> insights) {
@@ -415,6 +512,7 @@ public class MainTAP {
         }
     }
 
+    @Deprecated
     public static List<AssessQuery> getSupportingQueries(Insight insight){
         return ds.getTheDimensions().stream()
                 .filter(dim -> ! (DBUtils.checkAimpliesB(insight.getDim(), dim, conn, table) || dim.equals(insight.dim)))
