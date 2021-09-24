@@ -26,17 +26,16 @@ public class DatasetDimension extends DatasetAttribute{
 
     @Override
     public void computeActiveDomain() throws SQLException {
-        activeDomain = new HashSet<>();//TODO check this might prove inefficient
+        activeDomain = new HashSet<>();
 
         String sql = "select distinct " + name + " from " + table + ";";
-        final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE);
+        final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
         ResultSet rs = pstmt.executeQuery(sql) ;
         rs.beforeFirst();
-        ResultSetIterator rsit=new ResultSetIterator(rs);
+        ResultSetIterator rsit = new ResultSetIterator(rs);
         Object[] tab;
 
-        while(rsit.hasNext()) { // move to last for getting execution time
+        while(rsit.hasNext()) {
             tab=rsit.next();
             activeDomain.add(String.valueOf(tab[0]));
         }

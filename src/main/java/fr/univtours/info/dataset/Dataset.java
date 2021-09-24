@@ -39,7 +39,7 @@ public class Dataset {
              rs.next();
              tableSize = rs.getInt(1);
          }catch (SQLException e){
-             System.err.println("Error impossible to fetch table size");
+             System.err.println("[ERROR] impossible to fetch table size");
          }
      }
 

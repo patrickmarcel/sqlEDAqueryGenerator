@@ -2,12 +2,17 @@ package fr.univtours.info;
 
 import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.alexscode.utilities.math.Permutations;
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnel;
+import com.google.common.hash.Funnels;
+import com.google.common.hash.PrimitiveSink;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import org.apache.commons.math3.stat.StatUtils;
 
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.SynchronousQueue;
@@ -126,22 +131,25 @@ public class StatisticalVerifier {
                 for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
 
+                System.out.println(" -> " + thisDimAndMeasure.size());
                 //Identify Triangles for transitivity elimination
                 if (!keep_transitive) {
                     thisDimAndMeasure.parallelStream()
                             .filter(insight -> insight.type == MEAN_SMALLER || insight.type == MEAN_GREATER || insight.type == VARIANCE_SMALLER || insight.type == VARIANCE_GREATER)
                             .collect(Collectors.groupingByConcurrent(Insight::getType)).entrySet().parallelStream().forEach(e -> {
                         var list = e.getValue();
-                        Set<Insight> insightSet = new HashSet<>(list);
+                        BloomFilter<String> things = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), list.size(), 0.01);
+                        list.forEach(i -> things.put(i.selA + "_" + i.selB));
                         for (Insight ac : list) {
                             for (String b : thisDimension.getActiveDomain()) {
-                                if (insightSet.contains(new Insight(thisDimension, ac.getSelA(), b, thisMeasure, e.getKey())) && insightSet.contains(new Insight(thisDimension, b, ac.getSelB(), thisMeasure, e.getKey())))
+                                if (things.mightContain(ac.getSelA() + "_" + b) && things.mightContain(b + "_" + ac.getSelB()))
                                     ac.setP(-1); //mark for delete
                             }
                         }
                     });
                     thisDimAndMeasure.removeIf(insight -> insight.getP() == -1);// delete
                 }
+                System.out.println(" -> " + thisDimAndMeasure.size());
                 output.addAll(thisDimAndMeasure);
             }
         }
