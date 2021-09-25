@@ -51,7 +51,8 @@ public class NotebookJupyter {
                 "   \"source\": [");
         sb.append("\"### Query ").append(qnb).append("\\n\",\n");
 
-        String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
+//        String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
+        String[] qlines = (diffs + q.getDescription()).split("\\r?\\n");
         for (int j = 0; j < qlines.length; j++) {
             sb.append(getLineRepr(qlines[j]));
             if (j != qlines.length - 1)
@@ -60,7 +61,7 @@ public class NotebookJupyter {
         sb.append(",\n\"\\n\",\n");
         sb.append(getLineRepr(q.getTestComment())).append(",\n\"\\n\",\n");
   //      sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest())).append("\\n\"\n");
-        sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest()*100)).append("\\n\"\n");
+      //  sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest()*100)).append("\\n\"\n");
 
         sb.append("]");
         sb.append("}");

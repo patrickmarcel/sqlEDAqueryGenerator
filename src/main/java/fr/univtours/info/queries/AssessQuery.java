@@ -323,12 +323,12 @@ public class AssessQuery implements TimeableOp, Measurable {
      */
 
     public String getDescription(){
-        return "\"\nFor measure " + convivialNames.get(function) + " of " + measure.getName() +
-                "\nComparing " + assessed.getName() + " " + val1 + " vs " + val2 +
-                "\ngrouped by " + reference.getName();// + "\n\\n" + testComment;
+        return "\nFor measure " + convivialNames.get(function) + " of " + measure.getName() +
+                "\\nComparing " + assessed.getName() + " " + val1 + " vs " + val2 +
+                "\\ngrouped by " + reference.getName();// + "\n\\n" + testComment;
     }
 
-    public String getDiffs(AssessQuery previous){
+ /*   public String getDiffs(AssessQuery previous){
         StringBuilder sb = new StringBuilder("\r\n\\n Differences from Previous Query: ");
         if (!measure.getName().equals(previous.measure.getName()))
             sb.append(previous.measure.getName()).append(" -> ").append(measure.getName()).append(" | ");
@@ -345,7 +345,24 @@ public class AssessQuery implements TimeableOp, Measurable {
         return sb.toString();
     }
 
+  */
 
+    public String getDiffs(AssessQuery previous){
+        StringBuilder sb = new StringBuilder("\r\n\\n Changing: ");
+        if (!measure.getName().equals(previous.measure.getName()))
+            sb.append(previous.measure.getName()).append(" by ").append(measure.getName()).append(" and ");
+        if (!function.equals(previous.function))
+            sb.append(previous.function).append("by ").append(function).append(" and ");
+        if (!previous.getAssessed().getName().equals(getAssessed().getName()))
+            sb.append(previous.getAssessed().getName()).append(" by ").append(assessed.getName()).append(" and ");
+        if (!val1.equals(previous.val1))
+            sb.append(previous.val1).append(" by ").append(val1).append(" and ");
+        if (!val2.equals(previous.val2))
+            sb.append(previous.val2).append(" by ").append(val2).append(" and ");
+        if(!reference.getName().equals(previous.reference.getName()))
+            sb.append(previous.reference.getName()).append(" by ").append(reference.getName()).append(" and ");
+        return sb.toString();
+    }
     public Pair<Double, Double> pearsonTest(boolean close) throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();
