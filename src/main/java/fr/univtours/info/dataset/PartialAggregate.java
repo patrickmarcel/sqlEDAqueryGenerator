@@ -86,4 +86,25 @@ public class PartialAggregate {
         }
         return result;
     }
+
+    public static double explain(List<DatasetDimension> groupBySet, List<DatasetMeasure> measures, Dataset origin){
+        double explainCost = 0;
+        try {
+            ResultSet rs = origin.getConn().createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
+                    .executeQuery("EXPLAIN Select " + groupBySet.stream().map(DatasetAttribute::getName).collect(Collectors.joining(","))
+                            + "," + measures.stream().map(da -> "sum(" + da.getName() + ")").collect(Collectors.joining(",")) +
+                            " from " + origin.getTable() + " group by " +  groupBySet.stream().map(DatasetAttribute::getName).collect(Collectors.joining(",")) + ";");
+            rs.next();
+
+            String s1 = rs.getString("QUERY PLAN");
+            String[] s2 = s1.split("=");
+            String[] s3 = s2[1].split("\\.\\.");
+            explainCost = Double.parseDouble(s3[0]);
+            rs.close();
+        } catch (SQLException e){
+            System.err.println("[ERROR] " + e.getMessage());
+        }
+
+        return explainCost;
+    }
 }

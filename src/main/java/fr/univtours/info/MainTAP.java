@@ -63,6 +63,7 @@ public class MainTAP {
     static boolean TRANSITIVE_KEEPS = false;
     static boolean DISABLE_AGG_MERGING = false;
     public static boolean USE_UNIFORM_SAMPLING = false;
+    static long AGG_RAM = 8589934592L; // 1 GB
 
     public static void main( String[] args ) throws Exception{
 
@@ -225,15 +226,21 @@ public class MainTAP {
         List<Set<Set<DatasetDimension>>> candidates = new ArrayList<>();
         //Generate all or par of the power set of dimensions
         for (int i = 2; i <= 4; i++) {
-            if (i == 2)
-                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Set.of(s)).collect(Collectors.toSet()));
+            if (i == 2) {
+                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Set.of(s))
+                        .filter(s -> stats.estimateAggregateSize(s.stream().flatMap(Set::stream).collect(Collectors.toSet())) < AGG_RAM)
+                        .collect(Collectors.toSet()));
+            }
                 //if not dealing with pairs already we need to map them to a set of pairs
-            else
-                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Sets.combinations(s,2)).collect(Collectors.toSet()));
+            else {
+                candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Sets.combinations(s,2))
+                        .filter(s -> stats.estimateAggregateSize(s.stream().flatMap(Set::stream).collect(Collectors.toSet())) < AGG_RAM)
+                        .collect(Collectors.toSet()));
+            }
         }
         //Get the aggregates estimated sizes of course we need to collapse them to sets of dimensions with .flatMap(Set::stream).collect(Collectors.toSet()))
         List<Double> weights = candidates.stream()
-                .map(agg -> (double) stats.estimateAggregateSize(agg.stream().flatMap(Set::stream).collect(Collectors.toSet())))
+                .map(agg -> PartialAggregate.explain(agg.stream().flatMap(Set::stream).collect(Collectors.toList()), theMeasures, ds))
                 .collect(Collectors.toList());
         List<PartialAggregate> aggregates = WeightedSetCover.solve(candidates, weights)
                 .stream().map(s -> new PartialAggregate(new ArrayList<>(s.stream().flatMap(Set::stream).collect(Collectors.toSet())), ds.getTheMeasures(), ds))
@@ -387,6 +394,10 @@ public class MainTAP {
         qSize.setRequired(false);
         options.addOption(qSize);
 
+        Option ram = new Option("r", "agg-ram", true, "RAM Limit (in MB) for aggregates");
+        ram.setRequired(false);
+        options.addOption(ram);
+
         Option md = new Option("m", "epsilon-distance", true, "Epsilon constraint for sequence distance defaults to 500");
         md.setRequired(false);
         options.addOption(md);
@@ -407,7 +418,7 @@ public class MainTAP {
         HelpFormatter formatter = new HelpFormatter();
 
         try {
-            CommandLine cmd = parser.parse(options, args);
+            CommandLine cmd = parser.parse(options, args, false);
             DBConfig.CONF_FILE_PATH = cmd.getOptionValue("database");
             System.out.println("Config File :" + DBConfig.CONF_FILE_PATH);
             if (cmd.hasOption('c')){
@@ -457,6 +468,18 @@ public class MainTAP {
                     }
                 } catch (NumberFormatException e){
                     System.err.println("[ERROR] couldn't parse argument notebook size '" + cmd.getOptionValue("q") + "' as an integer");
+                }
+            }
+            if (cmd.hasOption("r")){
+                try {
+                    int q = Integer.parseInt(cmd.getOptionValue("r"));
+                    if (q > 0)
+                        AGG_RAM = q * 1024L * 1024L * 8L; // convert to bits
+                    else {
+                        System.err.println("[ERROR] RAM space must be positive");
+                    }
+                } catch (NumberFormatException e){
+                    System.err.println("[ERROR]  parsing RAM size");
                 }
             }
 
