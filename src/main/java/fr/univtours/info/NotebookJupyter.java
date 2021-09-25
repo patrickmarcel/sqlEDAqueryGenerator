@@ -64,7 +64,7 @@ public class NotebookJupyter {
         sb.append(getLineRepr(q.getTestComment())).append(",\n\"\\n\",\n");
   //      sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest())).append("\\n\"\n");
         //      sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest()*100)).append("\\n\"\n");
-             sb.append("").append(formatter.format(q.getInterest()*100)).append("\\n\"\n");
+             sb.append("\"").append("").append("\\n\"\n");
 
         sb.append("]");
         sb.append("}");
