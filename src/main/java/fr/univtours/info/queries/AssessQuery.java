@@ -324,8 +324,8 @@ public class AssessQuery implements TimeableOp, Measurable {
 
     public String getDescription(){
         return "\nFor measure " + convivialNames.get(function) + " of " + measure.getName() +
-                "\\nComparing " + assessed.getName() + " " + val1 + " vs " + val2 +
-                "\\ngrouped by " + reference.getName();// + "\n\\n" + testComment;
+                "\nComparing " + assessed.getName() + " " + val1 + " vs " + val2 +
+                "\ngrouped by " + reference.getName();// + "\n\\n" + testComment;
     }
 
  /*   public String getDiffs(AssessQuery previous){
