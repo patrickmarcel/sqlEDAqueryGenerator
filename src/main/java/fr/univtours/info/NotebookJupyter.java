@@ -11,7 +11,7 @@ import java.util.List;
 public class NotebookJupyter {
     List<AssessQuery> queries;
     String dbUrl = "<db_url>";
-    NumberFormat formatter = new DecimalFormat("#0.00000000");
+    NumberFormat formatter = new DecimalFormat("#0.000");
 
     public NotebookJupyter(){
         queries = new ArrayList<>();
@@ -59,7 +59,8 @@ public class NotebookJupyter {
         }
         sb.append(",\n\"\\n\",\n");
         sb.append(getLineRepr(q.getTestComment())).append(",\n\"\\n\",\n");
-        sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest())).append("\\n\"\n");
+  //      sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest())).append("\\n\"\n");
+        sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest()*100)).append("\\n\"\n");
 
         sb.append("]");
         sb.append("}");
