@@ -138,7 +138,7 @@ public class MainTAP {
         });
 
         // significance
-        if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("cred") || INTERESTINGNESS.equals("sig")) {
+        if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("cred") || INTERESTINGNESS.equals("sig") || INTERESTINGNESS.equals("sig_cred")) {
             supports.entrySet().stream().parallel().forEach((e) -> {
                 double i;
                 final List<Insight> supportedInsights = e.getValue();
