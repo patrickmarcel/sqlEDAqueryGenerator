@@ -102,7 +102,10 @@ public class StatisticalVerifier {
                 Class.forName(config.getSampleDriver());
                 sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
                 for (DatasetDimension d : ds.getTheDimensions()) {
-                    samples.put(d, ds.computeStatisticalSample(d, (int) (ds.getTableSize() * sampleRatio), sample_db));
+                    if (MainTAP.USE_UNIFORM_SAMPLING)
+                        samples.put(d, ds.computeUniformSample(sampleRatio, sample_db));
+                    else
+                        samples.put(d, ds.computeStatisticalSample(d, (int) (ds.getTableSize() * sampleRatio), sample_db));
                 }
             } catch (ClassNotFoundException | SQLException e) {
                 e.printStackTrace();

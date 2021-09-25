@@ -69,7 +69,7 @@ public class DatasetStats {
     }
 
     public long estimateAggregateSize(Collection<DatasetDimension> groupBy){
-        int len = groupBy.stream().mapToInt(d -> adSize.get(d)).reduce(Math::multiplyExact).getAsInt();
-        return 64L *measures.size()*len + dimensions.stream().mapToInt(d -> 64*len*avgWidth.get(d)).sum();
+        long len = groupBy.stream().mapToLong(d -> adSize.get(d)).reduce(Math::multiplyExact).getAsLong();
+        return 64L *measures.size()*len + dimensions.stream().mapToLong(d -> 64L * len * avgWidth.get(d)).sum();
     }
 }

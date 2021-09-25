@@ -62,6 +62,7 @@ public class MainTAP {
     static double SIGLEVEL = 0.05;
     static boolean TRANSITIVE_KEEPS = false;
     static boolean DISABLE_AGG_MERGING = false;
+    public static boolean USE_UNIFORM_SAMPLING = false;
 
     public static void main( String[] args ) throws Exception{
 
@@ -141,7 +142,7 @@ public class MainTAP {
             supports.entrySet().stream().parallel().forEach((e) -> {
                 double i;
                 final List<Insight> supportedInsights = e.getValue();
-                if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("sig&cred"))
+                if (INTERESTINGNESS.equals("full") || INTERESTINGNESS.equals("sig_cred"))
                     i = supportedInsights.stream().mapToDouble(insight -> (1 - insight.getP()) * (1 - insight.getCredibility())).sum();
                 else if (INTERESTINGNESS.equals("sig"))
                     i = supportedInsights.stream().mapToDouble(insight -> 1 - insight.getP()).sum();
@@ -178,6 +179,8 @@ public class MainTAP {
         System.out.println("[INFO] Started solving TAP instance ...");
         stopwatch = Stopwatch.createStarted();
 
+        String printSample = SAMPLERATIO == 100.0 ? "" : "_sampled-" + (int) SAMPLERATIO + "_";
+
         // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
         List<AssessQuery> naiveSolution = naive.solve(tapQueries, QUERIESNB, MAX_DISTANCE);
@@ -185,7 +188,7 @@ public class MainTAP {
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
         System.out.println("[INFO] KS solution is " + naiveSolution.size() + " queries long");
-        Files.writeString(Paths.get("data/KS_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
+        Files.writeString(Paths.get("data/KS_" + INTERESTINGNESS + "_" + QUERIESNB + printSample +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
 
         stopwatch.stop();
         System.out.println("[TIME][ms] Heuristic " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -199,7 +202,7 @@ public class MainTAP {
             exactSolution.forEach(out::addQuery);
             //Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
             System.out.println("[INFO] EXACT solution is " + exactSolution.size() + " queries long");
-            Files.writeString(Paths.get("data/EXACT_" + INTERESTINGNESS + "_" + QUERIESNB + "_" + (int) SAMPLERATIO + "_" +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
+            Files.writeString(Paths.get("data/EXACT_" + INTERESTINGNESS + "_" + QUERIESNB + printSample +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
         } else {
             if (tapQueries.size() < 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
             if (! CPLEX_BIN.equals("")) System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
@@ -372,7 +375,7 @@ public class MainTAP {
         cplex.setRequired(false);
         options.addOption(cplex);
 
-        Option interest = new Option("i", "interestingness", true, "Interestingness measure tu use : full/con/sig/cred");
+        Option interest = new Option("i", "interestingness", true, "Interestingness measure tu use : full/con/sig/cred/sig_cred");
         interest.setRequired(false);
         options.addOption(interest);
 
@@ -396,6 +399,10 @@ public class MainTAP {
         agg.setRequired(false);
         options.addOption(agg);
 
+        Option uni = new Option("u", "sample-uniform", false, "if present along with a sampling rate (-s xx) uses an uniform sampling algorithm instead of the rebalanced one.");
+        uni.setRequired(false);
+        options.addOption(uni);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
 
@@ -408,9 +415,10 @@ public class MainTAP {
             }
             TRANSITIVE_KEEPS = cmd.hasOption("t");
             DISABLE_AGG_MERGING = cmd.hasOption("a");
+            USE_UNIFORM_SAMPLING = cmd.hasOption("u");
             if (cmd.hasOption('i')) {
                 INTERESTINGNESS = cmd.getOptionValue('i');
-                if (!INTERESTINGNESS.equals("sig&cred") && !INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
+                if (!INTERESTINGNESS.equals("sig_cred") && !INTERESTINGNESS.equals("full") && !INTERESTINGNESS.equals("con")  && !INTERESTINGNESS.equals("sig") && !INTERESTINGNESS.equals("cred")){
                     System.err.println("[ERROR] Unknown interestingness measure: '" + INTERESTINGNESS + "'");
                     System.exit(1);
                 }
