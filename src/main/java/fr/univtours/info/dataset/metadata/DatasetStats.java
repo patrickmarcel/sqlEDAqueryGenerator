@@ -59,7 +59,7 @@ public class DatasetStats {
             Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
             ResultSet rs = st.executeQuery(sql) ;
             while (rs.next()) {
-                tmp.put(rs.getString(1), rs.getInt(2));
+                tmp.put(String.valueOf(rs.getObject(1)), rs.getInt(2));
             }
             st.close();
             frequency.put(dim, tmp);
