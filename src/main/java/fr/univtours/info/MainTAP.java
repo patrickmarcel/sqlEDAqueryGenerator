@@ -205,8 +205,8 @@ public class MainTAP {
             System.out.println("[INFO] EXACT solution is " + exactSolution.size() + " queries long");
             Files.writeString(Paths.get("data/EXACT_" + INTERESTINGNESS + "_" + QUERIESNB + printSample +LocalTime.now().toString().replace(':', '-')+".ipynb"), out.toJson());
         } else {
-            if (tapQueries.size() < 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
-            if (! CPLEX_BIN.equals("")) System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
+            if (tapQueries.size() > 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
+            else System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
         }
         
         conn.close();

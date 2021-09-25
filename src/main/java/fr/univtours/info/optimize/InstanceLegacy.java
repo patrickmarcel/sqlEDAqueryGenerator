@@ -94,7 +94,7 @@ public class InstanceLegacy {
             io.println(theQ.size());
             for (int i = 0; i < theQ.size(); i++) {
                 AssessQuery q = theQ.get(i);
-                io.print(q.getInterest());
+                io.print(Double.toString(q.getInterest()));
                 if (i < theQ.size() - 1)
                     io.print(" ");
             }
