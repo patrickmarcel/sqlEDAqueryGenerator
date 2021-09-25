@@ -218,7 +218,7 @@ public class MainTAP {
         /*
                 Build the partial aggregates for quick query processing
          */
-        System.out.print("[INFO] Building partial aggregate cache...");
+        //System.out.print("[INFO] Building partial aggregate cache...");
         //We need coverage for every pair of dimensions
         List<Set<DatasetDimension>> allDimensionPairs = new ArrayList<>(Sets.combinations(new HashSet<>(ds.getTheDimensions()), 2));
         //The candidates therefore need to be set of pairs
@@ -242,46 +242,22 @@ public class MainTAP {
         List<Double> weights = candidates.stream()
                 .map(agg -> PartialAggregate.explain(agg.stream().flatMap(Set::stream).collect(Collectors.toList()), theMeasures, ds))
                 .collect(Collectors.toList());
-        List<PartialAggregate> aggregates = WeightedSetCover.solve(candidates, weights)
+        WeightedSetCover.solve(candidates, weights)
                 .stream().map(s -> new PartialAggregate(new ArrayList<>(s.stream().flatMap(Set::stream).collect(Collectors.toSet())), ds.getTheMeasures(), ds))
-                .collect(Collectors.toList());
-        //This is just an chained Map (from Guava) for simplicity sakes
-        Table<DatasetDimension, DatasetDimension, PartialAggregate> cache = HashBasedTable.create();
-        //For each pair of dimensions
-        allDimensionPairs.forEach(p -> {
-            Iterator<DatasetDimension> it = p.iterator();
-            DatasetDimension a = it.next();
-            DatasetDimension b = it.next();
-            //find an aggregate that contains both
-            for (int i = 0, aggregatesSize = aggregates.size(); i < aggregatesSize; i++) {
-                PartialAggregate ag = aggregates.get(i);
-                if (ag.getGroupBySet().contains(a) && ag.getGroupBySet().contains(b)) {
-                    //Cache should work no matter the order
-                    cache.put(a, b, ag);
-                    cache.put(b, a, ag);
-                    break;
-                } else {
-                    //Sanity check
-                    if (i == aggregatesSize - 1){
-                        System.err.println("[ERROR] No partial aggregate was found for " + a + " and " + b);
-                    }
-                }
-            }
-        });
-        System.out.println("Done");
-        /*
-                Actually check support for the insights
-         */
-        insights.parallelStream().forEach(insight -> {
-            for (DatasetDimension otherDim : ds.getTheDimensions()){
-                if (!otherDim.equals(insight.getDim())){
-                    if (querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))){
-                        isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
-                        isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
-                    }
-                }
-            }
-        });
+                .forEach(agg -> {
+                    insights.parallelStream().filter(in -> agg.getGroupBySet().contains(in.getDim())).forEach(insight -> {
+                        for (DatasetDimension otherDim : ds.getTheDimensions()){
+                            if (!otherDim.equals(insight.getDim()) && agg.getGroupBySet().contains(otherDim)){
+                                if (querySupports(insight, agg.assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))){
+                                    isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                                    isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
+                                }
+                            }
+                        }
+                    });
+                });
+
+
         return isSupportedBy;
     }
 
