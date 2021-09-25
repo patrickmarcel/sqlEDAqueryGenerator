@@ -312,8 +312,20 @@ public class AssessQuery implements TimeableOp, Measurable {
         return convivialNames.get(getFunction()) + "(" + measure.getPrettyName() + ") for " + assessed.getPrettyName() + " = " + val2;
     }
 
+    /*
     public String getDescription(){
-        return "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 + "\" on " + convivialNames.get(function) + " of " + measure.getName() + " grouped by " + reference.getName();// + "\n\\n" + testComment;
+        return "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 +
+                "\" on " + convivialNames.get(function) +
+                " of " + measure.getName() +
+                " grouped by " + reference.getName();// + "\n\\n" + testComment;
+    }
+
+     */
+
+    public String getDescription(){
+        return "\"\nFor measure " + convivialNames.get(function) + " of " + measure.getName() +
+                "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 +
+                "\ngrouped by " + reference.getName();// + "\n\\n" + testComment;
     }
 
     public String getDiffs(AssessQuery previous){

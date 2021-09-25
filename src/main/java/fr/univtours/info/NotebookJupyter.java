@@ -49,7 +49,7 @@ public class NotebookJupyter {
                 "   \"cell_type\": \"markdown\",\n" +
                 "   \"metadata\": {},\n" +
                 "   \"source\": [");
-        sb.append("\"### Q").append(qnb).append("\\n\",\n");
+        sb.append("\"### Query ").append(qnb).append("\\n\",\n");
 
         String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
         for (int j = 0; j < qlines.length; j++) {
@@ -142,7 +142,8 @@ public class NotebookJupyter {
             "   \"id\": \"frequent-consultancy\",\n" +
             "   \"metadata\": {},\n" +
             "   \"source\": [\n" +
-            "    \"# TAP Story for <dataset_name>\\n\",\n" +
+//            "    \"# TAP Story for <dataset_name>\\n\",\n" +
+            "    \"# SQL comparison notebooks <dataset_name>\\n\",\n" +
             "    \"This data analysis was automatically generated using the TAP algorithm.\"\n" +
             "   ]\n" +
             "  }";

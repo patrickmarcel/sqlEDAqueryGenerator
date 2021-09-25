@@ -55,7 +55,7 @@ public class Insight extends DefaultEdge {
     }
 
     @Override
-    public String toString() {
+/*    public String toString() {
         return "I{" +
                 dim.getPrettyName() +
                 ";" + selA +
@@ -64,6 +64,11 @@ public class Insight extends DefaultEdge {
                 ";" + pprint[type] +
                 ";" + p +
                 '}';
+    }
+
+ */
+    public String toString() {
+        return "Insight is: "+ pprint[type] + " for " + selA ;
     }
 
     @Override
