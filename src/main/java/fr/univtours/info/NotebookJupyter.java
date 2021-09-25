@@ -11,7 +11,7 @@ import java.util.List;
 public class NotebookJupyter {
     List<AssessQuery> queries;
     String dbUrl = "<db_url>";
-    NumberFormat formatter = new DecimalFormat("#0.00");
+    NumberFormat formatter = new DecimalFormat("#0.000");
 
     public NotebookJupyter(){
         queries = new ArrayList<>();
@@ -49,9 +49,12 @@ public class NotebookJupyter {
                 "   \"cell_type\": \"markdown\",\n" +
                 "   \"metadata\": {},\n" +
                 "   \"source\": [");
-        sb.append("\"### Q").append(qnb).append("\\n\",\n");
+        sb.append("\"### Query ").append(qnb).append("\\n\",\n");
 
-        String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
+ //         String[] qlines = (q.getDescription() + diffs).split("\\r?\\n");
+//        String[] qlines = (diffs + q.getDescription()).split("\\r?\\n");
+                String[] qlines = (q.getDescription()).split("\\r?\\n");
+
         for (int j = 0; j < qlines.length; j++) {
             sb.append(getLineRepr(qlines[j]));
             if (j != qlines.length - 1)
@@ -59,7 +62,9 @@ public class NotebookJupyter {
         }
         sb.append(",\n\"\\n\",\n");
         sb.append(getLineRepr(q.getTestComment())).append(",\n\"\\n\",\n");
-        sb.append("\"Interestingness ").append(formatter.format(q.getInterest())).append("\\n\"\n");
+  //      sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest())).append("\\n\"\n");
+        //      sb.append("\"Interestingness score: ").append(formatter.format(q.getInterest()*100)).append("\\n\"\n");
+             sb.append("\"").append("").append("\\n\"\n");
 
         sb.append("]");
         sb.append("}");
@@ -142,7 +147,8 @@ public class NotebookJupyter {
             "   \"id\": \"frequent-consultancy\",\n" +
             "   \"metadata\": {},\n" +
             "   \"source\": [\n" +
-            "    \"# TAP Story for <dataset_name>\\n\",\n" +
+//            "    \"# TAP Story for <dataset_name>\\n\",\n" +
+            "    \"# SQL comparison notebooks <dataset_name>\\n\",\n" +
             "    \"This data analysis was automatically generated using the TAP algorithm.\"\n" +
             "   ]\n" +
             "  }";
