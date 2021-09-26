@@ -295,9 +295,9 @@ public class AssessQuery implements TimeableOp, Measurable {
         // Group by dimension
         if (!this.reference.equals(other.reference)){
             if (DBUtils.checkAimpliesB(this.reference, other.reference, conn, table) || DBUtils.checkAimpliesB(other.reference, this.reference, conn, table))
-                diffs += 3;
+                diffs += 6;
             else
-                diffs += 4;
+                diffs += 8;
         }
 
         return diffs;

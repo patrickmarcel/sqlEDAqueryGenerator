@@ -298,7 +298,7 @@ public class MainTAP {
     }
 
     public static double conciseness(int nbGroups, int nbTuples){
-        double alpha = 0.02, beta = 5, delta = 0.5;
+        double alpha = 0.02, beta = 1, delta = 0.5;
 
         return Math.exp((-1 * (1/Math.pow(nbTuples, delta)) * Math.pow(nbGroups - (alpha*nbTuples) - beta,2)));
     }
