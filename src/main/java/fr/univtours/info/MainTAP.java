@@ -248,7 +248,7 @@ public class MainTAP {
                     insights.parallelStream().filter(in -> agg.getGroupBySet().contains(in.getDim())).forEach(insight -> {
                         for (DatasetDimension otherDim : ds.getTheDimensions()){
                             if (!otherDim.equals(insight.getDim()) && agg.getGroupBySet().contains(otherDim)){
-                                if (querySupports(insight, agg.assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))){
+                                if (querySupports(insight, agg.assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB())) && !DBUtils.checkAimpliesB(insight.getDim(), otherDim, conn, table)){
                                     isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
                                     isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
                                 }
@@ -273,8 +273,10 @@ public class MainTAP {
                         .filter(insight -> querySupports(insight, pa.assessSum(insight.getMeasure(), dimA, insight.getDim(), insight.getSelA(), insight.getSelB())))
                         //.map(insight -> new Pair<>(insight, new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum")))
                         .forEach( insight -> {
-                            isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
-                            isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum"));
+                            if (! DBUtils.checkAimpliesB(insight.getDim(), dimA, conn, table)) {
+                                isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                                isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), dimA, insight.getMeasure(), "sum"));
+                            }
                         });
             }
         });
