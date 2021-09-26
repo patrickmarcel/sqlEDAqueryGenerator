@@ -77,12 +77,14 @@ public class PartialAggregate {
                 resultB.put(g, resultB.get(g) + data[mIdx][i]);
             }
         }
-        double[][] result = new double[2][Math.max(resultA.size(), resultB.size())];
+        double[][] result = new double[2][Math.min(resultA.size(), resultB.size())];
         int pos = 0;
         for (Object key : resultA.size() > resultB.size() ? resultA.keySet() : resultB.keySet()){
-            result[0][pos] = resultA.getOrDefault(key, 0d);
-            result[1][pos] = resultB.getOrDefault(key, 0d);
-            pos++;
+            if (resultA.get(key) != null && resultB.get(key) != null) {
+                result[0][pos] = resultA.get(key);
+                result[1][pos] = resultB.get(key);
+                pos++;
+            }
         }
         return result;
     }

@@ -228,7 +228,7 @@ public class MainTAP {
         for (int i = 2; i <= 4; i++) {
             if (i == 2) {
                 candidates.addAll(Sets.combinations(new HashSet<>(ds.getTheDimensions()), i).stream().map(s -> Set.of(s))
-                        .filter(s -> stats.estimateAggregateSize(s.stream().flatMap(Set::stream).collect(Collectors.toSet())) < AGG_RAM)
+                        //.filter(s -> stats.estimateAggregateSize(s.stream().flatMap(Set::stream).collect(Collectors.toSet())) < AGG_RAM)
                         .collect(Collectors.toSet()));
             }
                 //if not dealing with pairs already we need to map them to a set of pairs
