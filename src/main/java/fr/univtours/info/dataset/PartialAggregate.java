@@ -67,11 +67,11 @@ public class PartialAggregate {
         int grpDimIdx = groupBySet.indexOf(group);
         int mIdx = measures.indexOf(m);
         for (int i = 0; i < len; i++) {
-            if (dims[selDimIdx][i].equals(val1)){
+            if (Objects.equals(dims[selDimIdx][i], val1)){
                 Object g = dims[grpDimIdx][i];
                 resultA.putIfAbsent(g, 0d);
                 resultA.put(g, resultA.get(g) + data[mIdx][i]);
-            }else if (dims[selDimIdx][i].equals(val2)){
+            }else if (Objects.equals(dims[selDimIdx][i],val2)){
                 Object g = dims[grpDimIdx][i];
                 resultB.putIfAbsent(g, 0d);
                 resultB.put(g, resultB.get(g) + data[mIdx][i]);
