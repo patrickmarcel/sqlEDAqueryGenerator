@@ -223,8 +223,8 @@ public class StatisticalVerifier {
         }
 
         var perm_stats = Permutations.meanAndvariance(a, b, permNb);
-        double[] meanStats = perm_stats.getA();
-        double[] varStats = perm_stats.getB();
+        double[] meanStats = perm_stats[0];
+        double[] varStats = perm_stats[1];
 
         // variance Smaller
         double base_stat = StatUtils.mean(b) - StatUtils.mean(a);
