@@ -2,21 +2,19 @@ package fr.univtours.info;
 
 import com.alexscode.utilities.math.BenjaminiHochbergFDR;
 import com.alexscode.utilities.math.Permutations;
+import com.alexscode.utilities.math.PowerSet;
 import com.google.common.base.Stopwatch;
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnel;
-import com.google.common.hash.Funnels;
-import com.google.common.hash.PrimitiveSink;
+import com.google.common.math.BigIntegerMath;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import org.apache.commons.math3.stat.StatUtils;
 
-import java.nio.charset.Charset;
+import java.math.BigInteger;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -222,15 +220,74 @@ public class StatisticalVerifier {
             return List.of();
         }
 
-        var perm_stats = Permutations.meanAndvariance(a, b, permNb);
-        double[] meanStats = perm_stats[0];
-        double[] varStats = perm_stats[1];
+        int permutations = permNb;
+
+        double[] meanDiffs = new double[permutations];
+        double[] varDiffs = new double[permutations];
+
+        double[] ab = new double[a.length + b.length];
+        System.arraycopy(a, 0, ab, 0, a.length);
+        System.arraycopy(b, 0, ab, a.length, b.length);
+
+        final int fullSize = ab.length;
+        if (BigIntegerMath.binomial(fullSize, a.length).compareTo(BigInteger.valueOf(permutations)) < 0){
+            permutations = BigIntegerMath.binomial(fullSize, a.length).intValue();
+        }
+
+        // Very low probability of drawing the same permutation twice ....
+        ThreadLocalRandom rd = null;
+        PowerSet ps = null;
+        boolean safe = fullSize <= 20;
+        if (safe)
+            ps = new PowerSet(ab);
+        else {
+            rd = ThreadLocalRandom.current();
+        }
+
+        for (int i1 = 0; i1 < permutations; ++i1) {
+            double mua = 0, mub = 0; // mean
+            double muasq = 0, mubsq = 0; // mean of squares
+            int countA = 0, countB = 0; // count
+
+            BitSet pa;
+            if (safe) pa = ps.getNewRandomElementOFSize_new(a.length);
+            else {
+                pa = new BitSet(fullSize);
+                for (int iter = 0; iter < a.length; iter++){
+                    int pos = rd.nextInt(fullSize);
+                    while (pa.get(pos)){
+                        pos = rd.nextInt(fullSize);
+                    }
+                    pa.set(pos);
+                }
+            }
+            for (int j1 = 0; j1 < fullSize; j1++) {
+                if (pa.get(j1)){
+                    countA++;
+                    mua += ab[j1];
+                    muasq += ab[j1]*ab[j1];
+                } else {
+                    countB ++;
+                    mub += ab[j1];
+                    mubsq += ab[j1]*ab[j1];
+                }
+            }
+            //Compute means
+            mub = mub/countB;
+            mua = mua/countA;
+            mubsq = mubsq/countB;
+            muasq = muasq/countA;
+            // Compute stat: var(b) - var(a)
+            varDiffs[i1] =  (mubsq - (mub*mub)) - (muasq - (mua*mua));
+            //Compute stat: E[b] - E[a]
+            meanDiffs[i1] =  (mub/countB) - (mua/countA);
+        }
 
         // variance Smaller
         double base_stat = StatUtils.mean(b) - StatUtils.mean(a);
         int count = 0;
         for (int j = 0; j < permNb; j++) {
-            if (varStats[j] > base_stat)
+            if (varDiffs[j] > base_stat)
                 count++;
         }
         i.setType(Insight.VARIANCE_SMALLER);
@@ -241,7 +298,7 @@ public class StatisticalVerifier {
         base_stat = -base_stat;
         count = 0;
         for (int j = 0; j < permNb; j++) {
-            if (-varStats[j] > base_stat)
+            if (-varDiffs[j] > base_stat)
                 count++;
         }
         Insight tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.VARIANCE_GREATER);
@@ -252,7 +309,7 @@ public class StatisticalVerifier {
         base_stat = Math.abs(base_stat);
         count = permNb;
         for (int j = 0; j < permNb; j++) {
-            if (Math.abs(varStats[j]) > base_stat)
+            if (Math.abs(varDiffs[j]) > base_stat)
                 count--;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.VARIANCE_EQUALS);
@@ -264,7 +321,7 @@ public class StatisticalVerifier {
         base_stat = StatUtils.mean(b) - StatUtils.mean(a);
         count = 0;
         for (int j = 0; j < permNb; j++) {
-            if (meanStats[j] > base_stat)
+            if (meanDiffs[j] > base_stat)
                 count++;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_SMALLER);
@@ -275,7 +332,7 @@ public class StatisticalVerifier {
         base_stat = -base_stat;
         count = 0;
         for (int j = 0; j < permNb; j++) {
-            if (-meanStats[j] > base_stat)
+            if (-meanDiffs[j] > base_stat)
                 count++;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_GREATER);
@@ -286,7 +343,7 @@ public class StatisticalVerifier {
         base_stat = Math.abs(base_stat);
         count = permNb;
         for (int j = 0; j < permNb; j++) {
-            if (Math.abs(meanStats[j]) > base_stat)
+            if (Math.abs(meanDiffs[j]) > base_stat)
                 count--;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_EQUALS);
