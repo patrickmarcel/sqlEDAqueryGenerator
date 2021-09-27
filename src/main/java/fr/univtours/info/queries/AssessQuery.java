@@ -3,6 +3,7 @@ package fr.univtours.info.queries;
 import com.alexscode.utilities.collection.Pair;
 import com.alexscode.utilities.math.FTest;
 import fr.univtours.info.DBUtils;
+import fr.univtours.info.Insight;
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
@@ -61,6 +62,9 @@ public class AssessQuery implements TimeableOp, Measurable {
     final String val1, val2;
     @Getter @Setter
     String testComment;
+
+    @Getter @Setter
+    Collection<Insight> insights;
 
 
     public AssessQuery(Connection conn, String table, DatasetDimension assessed, String val1, String val2, DatasetDimension reference, DatasetMeasure m, String agg){

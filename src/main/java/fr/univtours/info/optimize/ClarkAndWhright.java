@@ -89,8 +89,8 @@ public class ClarkAndWhright {
                         continue;
                     //Attempt to add them
                     double backup = total_dist;
-                    total_dist += KnapsackStyle.insert_opt(solution, i, ist.distances, total_dist);
-                    total_dist += KnapsackStyle.insert_opt(solution, j, ist.distances, total_dist);
+                    total_dist += KnapsackStyle.insert_opt(solution, i, ist.distances);
+                    total_dist += KnapsackStyle.insert_opt(solution, j, ist.distances);
 
                     if (total_dist > epdist) {
                         //rollback and check next couple

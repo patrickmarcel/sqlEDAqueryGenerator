@@ -2,15 +2,13 @@ package com.alexscode.utilities.math;
 
 import com.alexscode.utilities.collection.Pair;
 import com.google.common.math.BigIntegerMath;
-import org.apache.commons.rng.core.source64.XoRoShiRo128Plus;
+
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.random.RandomGenerator;
 
 public class Permutations {
     /**

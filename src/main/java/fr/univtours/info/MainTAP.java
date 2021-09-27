@@ -118,7 +118,7 @@ public class MainTAP {
                 supports.get(q).add(insight);
             });
         }));
-
+        supports.forEach(AssessQuery::setInsights);
 
         List<AssessQuery> tapQueries = new ArrayList<>(supports.keySet());
         System.out.println("[INFO] Total queries (Instance size) " + tapQueries.size());

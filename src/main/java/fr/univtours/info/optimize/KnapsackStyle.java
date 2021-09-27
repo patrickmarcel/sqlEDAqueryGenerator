@@ -30,7 +30,7 @@ public class KnapsackStyle implements TAPEngine{
 
         var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
         for (int i = 0; i < 30; i++) {
-            for (int size : new int[]{100, 200, 300, 400, 500}) {
+            for (int size : new int[]{100, 200, 300, 400, 500, 600, 700}) {
                 var in = folder + "tap_" + i + "_" + size + ".dat";
                 var out = folder + "tap_" + i + "_" + size + ".warm";
                 compute(in, out, temps, dist);
@@ -64,7 +64,7 @@ public class KnapsackStyle implements TAPEngine{
 
             if (eptime - (total_time + ist.costs[current]) > 0){
                 double backup = total_dist;
-                total_dist += insert_opt(solution, current, ist.distances, total_dist);
+                total_dist += insert_opt(solution, current, ist.distances);
                 if (total_dist > epdist){
                     //rollback and check next querry
                     solution.remove(Integer.valueOf(current));
@@ -89,7 +89,7 @@ public class KnapsackStyle implements TAPEngine{
         System.out.printf("%s;%s;%s;%s%n",path.substring(39).replace("_"+ist.size+".dat", ""),ist.size,z,solution.stream().map(String::valueOf).collect(Collectors.joining(",")));
     }
 
-    static double insert_opt(List<Integer> solution, int candidate, double[][] distances, double base_dist) {
+    static double insert_opt(List<Integer> solution, int candidate, double[][] distances) {
         if (solution.size() == 0){
             solution.add(candidate);
             return 0;
@@ -115,6 +115,36 @@ public class KnapsackStyle implements TAPEngine{
             }
         }
         //System.out.println(best_insert_pos);
+        solution.add(best_insert_pos, candidate);
+        return best_insert_cost;
+    }
+
+    static double insert_opt(List<Integer> solution, int candidate, List<AssessQuery> queries) {
+        if (solution.size() == 0){
+            solution.add(candidate);
+            return 0;
+        }
+        double best_insert_cost = 10e50;// large enough
+        int best_insert_pos = -1;
+        AssessQuery candidateQuery = queries.get(candidate);
+        for (int i = 0; i < solution.size() + 1; i++) {
+            double new_cost = 0;
+            // insert at first position
+            if (i == 0){
+                new_cost += candidateQuery.dist(queries.get(solution.get(0)));
+            } else if (i < solution.size()){
+                int current_querry = solution.get(i);
+                new_cost += candidateQuery.dist(solution.get(i-1));
+                new_cost += candidateQuery.dist(current_querry);
+                new_cost -= queries.get(solution.get(i-1)).dist(queries.get(current_querry));
+            } else {
+                new_cost += queries.get(solution.get(solution.size()-1)).dist(candidateQuery);
+            }
+            if (new_cost < best_insert_cost){
+                best_insert_cost = new_cost;
+                best_insert_pos = i;
+            }
+        }
         solution.add(best_insert_pos, candidate);
         return best_insert_cost;
     }
@@ -162,9 +192,17 @@ public class KnapsackStyle implements TAPEngine{
             if (timeBudget - (total_time + theQ.get(current).estimatedTime()) >= 0){
                 if (solution.size() > 0 && maxDistance - (total_dist + theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current))) < 0)
                     continue;
-                if (solution.size() > 0)
-                    //total_dist += ist.distances[solution.get(solution.size() - 1)][current];
-                    total_dist += theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current));
+                if (solution.size() > 0) {
+                    double backup = total_dist;
+                    total_dist += insert_opt(solution, current, theQ);
+                    if (total_dist > maxDistance){
+                        //rollback and check next querry
+                        solution.remove(Integer.valueOf(current));
+                        total_dist = backup;
+                        continue;
+                    }
+                }
+
                 total_time += theQ.get(current).estimatedTime();
                 solution.add(current);
                 z += theQ.get(current).getInterest();

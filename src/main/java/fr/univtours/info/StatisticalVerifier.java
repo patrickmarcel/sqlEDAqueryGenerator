@@ -131,13 +131,11 @@ public class StatisticalVerifier {
                 System.out.println("[VERIF][TIME][s] p-values " + stopwatch.elapsed(TimeUnit.SECONDS));
 
                 // FDR compensation for multiple testing problem
-                stopwatch = Stopwatch.createStarted();
                 double[] p = thisDimAndMeasure.stream().mapToDouble(Insight::getP).toArray();
                 BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
                 p = corrector.getAdjustedPvalues();
                 for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
-                System.out.println("[VERIF][TIME][s] p-values correction " + stopwatch.elapsed(TimeUnit.SECONDS));
 
                 //Identify Triangles for transitivity elimination
                 if (!keep_transitive) {
