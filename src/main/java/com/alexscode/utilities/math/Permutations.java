@@ -2,7 +2,6 @@ package com.alexscode.utilities.math;
 
 import com.alexscode.utilities.collection.Pair;
 import com.google.common.math.BigIntegerMath;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.rng.core.source64.XoRoShiRo128Plus;
 
 import java.math.BigInteger;
@@ -11,6 +10,7 @@ import java.util.BitSet;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 public class Permutations {
     /**
@@ -53,7 +53,7 @@ public class Permutations {
     }
 
 
-    public static double[][] meanAndvariance(double[] a, double[] b, int permutations, RandomGenerator rd){
+    public static double[][] meanAndvariance(double[] a, double[] b, int permutations){
 
         double[] meanDiffs = new double[permutations];
         double[] varDiffs = new double[permutations];
@@ -68,13 +68,13 @@ public class Permutations {
         }
 
         // Very low probability of drawing the same permutation twice ....
-        //ThreadLocalRandom rd = null;
+        ThreadLocalRandom rd = null;
         PowerSet ps = null;
         boolean safe = fullSize <= 20;
         if (safe)
             ps = new PowerSet(ab);
         else {
-            //rd = ThreadLocalRandom.current();
+            rd = ThreadLocalRandom.current();
         }
 
         for (int i = 0; i < permutations; ++i) {
@@ -211,7 +211,7 @@ public class Permutations {
         }
 
         long startTime = System.nanoTime();
-        //meanAndvariance(biga, bigb, biga.length*bigb.length);
+        meanAndvariance(biga, bigb, biga.length*bigb.length);
         long endTime = System.nanoTime();
 
         long duration = (endTime - startTime)/1000000;
