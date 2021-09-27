@@ -82,7 +82,18 @@ public class Permutations {
             double muasq = 0, mubsq = 0; // mean of squares
             int countA = 0, countB = 0; // count
 
-            BitSet pa = safe ? ps.getNewRandomElementOFSize_new(a.length) : randomPermNoCheck(fullSize, a.length, rd);
+            BitSet pa;
+            if (safe) pa = ps.getNewRandomElementOFSize_new(a.length);
+            else {
+                pa = new BitSet(fullSize);
+                for (int iter = 0; iter < a.length; iter++){
+                    int pos = rd.nextInt(fullSize);
+                    while (pa.get(pos)){
+                        pos = rd.nextInt(fullSize);
+                    }
+                    pa.set(pos);
+                }
+            }
             for (int j = 0; j < fullSize; j++) {
                 if (pa.get(j)){
                     countA++;
