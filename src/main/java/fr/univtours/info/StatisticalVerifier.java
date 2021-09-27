@@ -121,6 +121,7 @@ public class StatisticalVerifier {
                 DatasetMeasure thisMeasure = kv.getKey();
                 System.out.println("[INFO] Working on " + thisDimension + "/" + thisMeasure + " | Size = " + kv.getValue().size() * pprint.length);
                 Stopwatch stopwatch = Stopwatch.createStarted();
+
                 // Handle sampling if needed
                 List<Insight> thisDimAndMeasure = null;
                 if (sampleRatio < 1.0)
@@ -128,12 +129,15 @@ public class StatisticalVerifier {
                 else
                     thisDimAndMeasure = check(kv.getValue(), ds, thisDimension, thisMeasure, permNb);
                 System.out.println("[VERIF][TIME][s] p-values " + stopwatch.elapsed(TimeUnit.SECONDS));
+
                 // FDR compensation for multiple testing problem
+                stopwatch = Stopwatch.createStarted();
                 double[] p = thisDimAndMeasure.stream().mapToDouble(Insight::getP).toArray();
                 BenjaminiHochbergFDR corrector = new BenjaminiHochbergFDR(p);
                 p = corrector.getAdjustedPvalues();
                 for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
+                System.out.println("[VERIF][TIME][s] p-values correction " + stopwatch.elapsed(TimeUnit.SECONDS));
 
                 //Identify Triangles for transitivity elimination
                 if (!keep_transitive) {
@@ -249,29 +253,43 @@ public class StatisticalVerifier {
             double muasq = 0, mubsq = 0; // mean of squares
             int countA = 0, countB = 0; // count
 
-            BitSet pa;
-            if (safe) pa = ps.getNewRandomElementOFSize_new(a.length);
-            else {
-                pa = new BitSet(fullSize);
+
+            if (safe) {
+                BitSet pa;
+                pa = ps.getNewRandomElementOFSize_new(a.length);
+                for (int j1 = 0; j1 < fullSize; j1++) {
+                    if (pa.get(j1)){
+                        countA++;
+                        mua += ab[j1];
+                        muasq += ab[j1]*ab[j1];
+                    } else {
+                        countB ++;
+                        mub += ab[j1];
+                        mubsq += ab[j1]*ab[j1];
+                    }
+                }
+            } else {
+                boolean[] pa = new boolean[fullSize];
                 for (int iter = 0; iter < a.length; iter++){
                     int pos = rd.nextInt(fullSize);
-                    while (pa.get(pos)){
+                    while (pa[pos]){
                         pos = rd.nextInt(fullSize);
                     }
-                    pa.set(pos);
+                    pa[pos] = true;
+                }
+                for (int j1 = 0; j1 < fullSize; j1++) {
+                    if (pa[j1]){
+                        countA++;
+                        mua += ab[j1];
+                        muasq += ab[j1]*ab[j1];
+                    } else {
+                        countB ++;
+                        mub += ab[j1];
+                        mubsq += ab[j1]*ab[j1];
+                    }
                 }
             }
-            for (int j1 = 0; j1 < fullSize; j1++) {
-                if (pa.get(j1)){
-                    countA++;
-                    mua += ab[j1];
-                    muasq += ab[j1]*ab[j1];
-                } else {
-                    countB ++;
-                    mub += ab[j1];
-                    mubsq += ab[j1]*ab[j1];
-                }
-            }
+
             //Compute means
             mub = mub/countB;
             mua = mua/countA;
