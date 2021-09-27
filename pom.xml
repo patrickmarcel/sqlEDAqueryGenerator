@@ -132,11 +132,13 @@
       <version>1.4.200</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/it.unimi.dsi/dsiutils -->
     <dependency>
       <groupId>it.unimi.dsi</groupId>
-      <artifactId>fastutil</artifactId>
-      <version>8.5.6</version>
+      <artifactId>dsiutils</artifactId>
+      <version>2.6.17</version>
     </dependency>
+
 
 
   </dependencies>

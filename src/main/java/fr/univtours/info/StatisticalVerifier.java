@@ -11,7 +11,11 @@ import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
+import it.unimi.dsi.util.XoRoShiRo128PlusRandomGenerator;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.StatUtils;
+import org.apache.commons.rng.core.source32.XoShiRo128Plus;
+import org.apache.commons.rng.simple.RandomSource;
 
 import java.nio.charset.Charset;
 import java.sql.*;
@@ -188,6 +192,7 @@ public class StatisticalVerifier {
 
         List<Insight> toAdd;
         // Switch to parallel processing if more large number of insights are available
+        ThreadLocal<RandomGenerator> rng = ThreadLocal.withInitial(XoRoShiRo128PlusRandomGenerator::new);
         if (insights.size() > 50){
             toAdd = insights.parallelStream()
                 .map(in -> {
@@ -197,14 +202,14 @@ public class StatisticalVerifier {
                         System.err.println("[Warning] Sample too small for " + in.getDim() + " values '" + in.selA + "' and/or '" + in.selB + "'.");
                         return List.of(in);
                     }
-                    return computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb);
+                    return computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb, rng);
                 })
                 .flatMap(Collection::stream).collect(Collectors.toList());
         } else {
             toAdd = new ArrayList<>();
             for (Insight in : insights) {
                 // Check that no dimensions is floating point if crash in here
-                toAdd.addAll(computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb));
+                toAdd.addAll(computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb, rng));
 
             }
         }
@@ -213,7 +218,7 @@ public class StatisticalVerifier {
     }
 
 
-    private static List<Insight> computeMeanAndVariance(Insight i, double[] a, double[] b, int permNb) {
+    private static List<Insight> computeMeanAndVariance(Insight i, double[] a, double[] b, int permNb, ThreadLocal<RandomGenerator> rng) {
         List<Insight> added = new ArrayList<>(10);
 
         //Sample size too small
@@ -222,7 +227,7 @@ public class StatisticalVerifier {
             return List.of();
         }
 
-        var perm_stats = Permutations.meanAndvariance(a, b, permNb);
+        var perm_stats = Permutations.meanAndvariance(a, b, permNb, rng.get());
         double[] meanStats = perm_stats[0];
         double[] varStats = perm_stats[1];
 
