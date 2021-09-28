@@ -120,7 +120,9 @@ public class MainTAP {
         }));
         supports.forEach(AssessQuery::setInsights);
 
-        List<AssessQuery> tapQueries = new ArrayList<>(supports.keySet());
+        List<AssessQuery> tapQueries =  supports.keySet().parallelStream()
+                .collect(Collectors.groupingByConcurrent(q -> q.getAssessed().getPrettyName() + "_" + q.getVal1() + "_" + q.getVal2() + "_" + q.getMeasure().getPrettyName()))
+                .values().parallelStream().map(l -> l.stream().max(Comparator.comparing(AssessQuery::getInterest)).get()).collect(Collectors.toList());
         System.out.println("[INFO] Total queries (Instance size) " + tapQueries.size());
 
 
