@@ -190,22 +190,16 @@ public class KnapsackStyle implements TAPEngine{
             int current = order[i].index;
 
             if (timeBudget - (total_time + theQ.get(current).estimatedTime()) >= 0){
-                if (solution.size() > 0 && maxDistance - (total_dist + theQ.get(solution.get(solution.size() - 1)).dist(theQ.get(current))) < 0)
-                    continue;
-                if (solution.size() > 0) {
-                    double backup = total_dist;
-                    total_dist += insert_opt(solution, current, theQ);
-                    if (total_dist > maxDistance){
-                        //rollback and check next querry
-                        solution.remove(Integer.valueOf(current));
-                        total_dist = backup;
-                        continue;
-                    }
+                double backup = total_dist;
+                total_dist += insert_opt(solution, current, theQ);
+                if (total_dist > maxDistance){
+                    //rollback and check next querry
+                    solution.remove(Integer.valueOf(current));
+                    total_dist = backup;
+                } else {
+                    total_time += theQ.get(current).estimatedTime();
+                    z += theQ.get(current).getInterest();
                 }
-
-                total_time += theQ.get(current).estimatedTime();
-                solution.add(current);
-                z += theQ.get(current).getInterest();
             }
         }
         System.out.println("[INFO] KS Heuristic : solution is done z=" + z);
