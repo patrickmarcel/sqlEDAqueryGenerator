@@ -134,8 +134,8 @@ public class KnapsackStyle implements TAPEngine{
                 new_cost += candidateQuery.dist(queries.get(solution.get(0)));
             } else if (i < solution.size()){
                 int current_querry = solution.get(i);
-                new_cost += candidateQuery.dist(solution.get(i-1));
-                new_cost += candidateQuery.dist(current_querry);
+                new_cost += candidateQuery.dist(queries.get(solution.get(i-1)));
+                new_cost += candidateQuery.dist(queries.get(current_querry));
                 new_cost -= queries.get(solution.get(i-1)).dist(queries.get(current_querry));
             } else {
                 new_cost += queries.get(solution.get(solution.size()-1)).dist(candidateQuery);

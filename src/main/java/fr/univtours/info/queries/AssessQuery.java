@@ -21,7 +21,7 @@ import org.apache.commons.math3.stat.inference.TTest;
 import java.sql.*;
 import java.util.*;
 
-public class AssessQuery implements TimeableOp, Measurable {
+public class AssessQuery implements TimeableOp {
 
     static HashMap<String, String> convivialNames;
     static {
@@ -262,9 +262,8 @@ public class AssessQuery implements TimeableOp, Measurable {
         return support;
     }
 
-    @Override
-    public double dist(Object other) {
-        return getDistance((AssessQuery) other);
+    public double dist(AssessQuery other) {
+        return getDistance(other);
     }
 
     public float getDistance(AssessQuery other) {
