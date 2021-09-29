@@ -161,9 +161,7 @@ public class StatisticalVerifier {
             }
         }
 
-        if (sampleRatio < 1.0){
-            samples.values().forEach(Dataset::drop);
-        }
+        if (sampleRatio < 1.0 && !MainTAP.USE_UNIFORM_SAMPLING) samples.values().forEach(Dataset::drop);
 
         return output;
     }
