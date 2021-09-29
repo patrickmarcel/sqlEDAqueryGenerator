@@ -98,10 +98,10 @@ public class Dataset {
             rows++;
             int pos = 1;
             for (DatasetAttribute dim : theDimensions){
-                insertSt.setString(pos++, origin.getString(dim.getName()));
+                insertSt.setString(pos++, origin.getString(dim.getPrettyName()));
             }
             for (DatasetMeasure meas : theMeasures){
-                insertSt.setFloat(pos++, origin.getFloat(meas.getName()));
+                insertSt.setFloat(pos++, origin.getFloat(meas.getPrettyName()));
             }
             insertSt.addBatch();
             if (rows % 10000 == 0)
@@ -113,7 +113,7 @@ public class Dataset {
 
         insertSt.close();
         originSt.close();
-        return new Dataset(destination, sampleTableName, theDimensions, theMeasures);
+        return new Dataset(destination, sampleTableName, theDimensions, theMeasures, true);
     }
 
     public Dataset computeStatisticalSample(DatasetDimension dim, int size, Connection destination) throws SQLException {

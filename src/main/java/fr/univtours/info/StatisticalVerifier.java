@@ -99,9 +99,11 @@ public class StatisticalVerifier {
             try {
                 Class.forName(config.getSampleDriver());
                 sample_db = DriverManager.getConnection(config.getSampleURL(), config.getSampleUser(), config.getSamplePassword());
+                Dataset sample = null;
+                if (MainTAP.USE_UNIFORM_SAMPLING) sample = ds.computeUniformSample(sampleRatio, sample_db);
                 for (DatasetDimension d : ds.getTheDimensions()) {
                     if (MainTAP.USE_UNIFORM_SAMPLING)
-                        samples.put(d, ds.computeUniformSample(sampleRatio, sample_db));
+                        samples.put(d, sample);
                     else
                         samples.put(d, ds.computeStatisticalSample(d, (int) (ds.getTableSize() * sampleRatio), sample_db));
                 }
