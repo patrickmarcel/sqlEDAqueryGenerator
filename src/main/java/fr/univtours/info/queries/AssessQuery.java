@@ -63,8 +63,8 @@ public class AssessQuery implements TimeableOp {
     @Getter @Setter
     String testComment;
 
-    @Getter @Setter
-    Collection<Insight> insights;
+    //@Getter @Setter
+    //Collection<Insight> insights;
     @Getter
     Insight insight;
 
