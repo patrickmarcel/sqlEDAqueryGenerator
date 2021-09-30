@@ -268,7 +268,7 @@ public class MainTAP {
          */
         insights.parallelStream().forEach(insight -> {
             ds.getTheDimensions().stream().filter(d -> !d.equals(insight.dim)).forEach( otherDim -> {
-                if (!Objects.equals(otherDim, insight.getDim()) && !DBUtils.checkAimpliesB(insight.getDim(), otherDim, conn, table) && querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))) {
+                if (!DBUtils.checkAimpliesB(insight.getDim(), otherDim, conn, table) && querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))) {
                     isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
                     isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
                 }
