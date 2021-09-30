@@ -65,6 +65,8 @@ public class AssessQuery implements TimeableOp {
 
     @Getter @Setter
     Collection<Insight> insights;
+    @Getter
+    Insight insight;
 
 
     public AssessQuery(Connection conn, String table, DatasetDimension assessed, String val1, String val2, DatasetDimension reference, DatasetMeasure m, String agg){
@@ -79,6 +81,11 @@ public class AssessQuery implements TimeableOp {
 
         this.val1 = val1;
         this.val2 = val2;
+    }
+
+    public AssessQuery(Connection conn, String table, DatasetDimension assessed, String val1, String val2, DatasetDimension reference, DatasetMeasure m, String agg , Insight in){
+        this(conn, table, assessed, val1, val2, reference, m, agg);
+        insight = in;
     }
 
     @Override
