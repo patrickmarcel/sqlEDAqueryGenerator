@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static fr.univtours.info.Insight.*;
 
@@ -266,10 +267,13 @@ public class MainTAP {
         /*
                 Actually check support for the insights
          */
-        return insights.parallelStream().flatMap(insight -> ds.getTheDimensions().stream()
+        return insights.stream().parallel()
+                .map(insight -> ds.getTheDimensions().stream().parallel()
                 .filter(d -> !d.equals(insight.dim) && !DBUtils.checkAimpliesB(insight.getDim(), d, conn, table))
                 .filter(d -> querySupports(insight, cache.get(insight.getDim(), d).assessSum(insight.getMeasure(), d, insight.getDim(), insight.getSelA(), insight.getSelB())))
-                .map(d -> new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), d, insight.getMeasure(), "sum", insight))).collect(Collectors.groupingByConcurrent(AssessQuery::getInsight, Collectors.toSet()));
+                .map(d -> new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), d, insight.getMeasure(), "sum", insight)))
+                .reduce(Stream::concat).orElse(Stream.empty())
+                .collect(Collectors.groupingByConcurrent(AssessQuery::getInsight, Collectors.toSet()));
     }
 
     private static ConcurrentMap<Insight, Set<AssessQuery>> checkSupportMerge(List<Insight> insights){
