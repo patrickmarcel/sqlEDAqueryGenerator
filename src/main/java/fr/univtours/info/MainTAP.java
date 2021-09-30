@@ -215,7 +215,7 @@ public class MainTAP {
     }
 
     private static ConcurrentMap<Insight, Set<AssessQuery>> checkSupportMergeOPT(List<Insight> insights) {
-
+        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy = new ConcurrentHashMap<>();
         /*
                 Build the partial aggregates for quick query processing
          */
@@ -266,17 +266,14 @@ public class MainTAP {
         /*
                 Actually check support for the insights
          */
-        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy =
-        insights.parallelStream().flatMap(insight -> {
-            return ds.getTheDimensions().stream()
-                    .filter(d -> !d.equals(insight.dim) && !DBUtils.checkAimpliesB(insight.getDim(), d, conn, table))
-                    .filter(d -> querySupports(insight, cache.get(insight.getDim(), d).assessSum(insight.getMeasure(), d, insight.getDim(), insight.getSelA(), insight.getSelB())))
-                    .map(d -> new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), d, insight.getMeasure(), "sum", insight));
-                    //.forEach( otherDim -> {
-                    //    isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
-                    //    isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
-                    // });
-        }).collect(Collectors.groupingByConcurrent(AssessQuery::getInsight, Collectors.toSet()));
+        insights.parallelStream().forEach(insight -> {
+            ds.getTheDimensions().stream().filter(d -> !d.equals(insight.dim)).forEach( otherDim -> {
+                if (!Objects.equals(otherDim, insight.getDim()) && !DBUtils.checkAimpliesB(insight.getDim(), otherDim, conn, table) && querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))) {
+                    isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                    isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
+                }
+            });
+        });
         return isSupportedBy;
     }
 
