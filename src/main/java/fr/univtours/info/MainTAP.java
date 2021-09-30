@@ -267,12 +267,12 @@ public class MainTAP {
                 Actually check support for the insights
          */
         insights.parallelStream().forEach(insight -> {
-            for (DatasetDimension otherDim : ds.getTheDimensions()) {
+            ds.getTheDimensions().stream().filter(d -> !d.equals(insight.dim)).forEach( otherDim -> {
                 if (!Objects.equals(otherDim, insight.getDim()) && !DBUtils.checkAimpliesB(insight.getDim(), otherDim, conn, table) && querySupports(insight, cache.get(insight.getDim(), otherDim).assessSum(insight.getMeasure(), otherDim, insight.getDim(), insight.getSelA(), insight.getSelB()))) {
                     isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
                     isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
                 }
-            }
+            });
         });
         return isSupportedBy;
     }
