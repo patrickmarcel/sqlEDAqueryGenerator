@@ -118,7 +118,7 @@ public class MainTAP {
                 supports.get(q).add(insight);
             });
         }));
-        //supports.forEach(AssessQuery::setInsights);
+        supports.forEach(AssessQuery::setInsights);
 
         List<AssessQuery> tapQueries =  supports.keySet().parallelStream()
                 .collect(Collectors.groupingByConcurrent(q -> q.getAssessed().getPrettyName() + "_" + q.getVal1() + "_" + q.getVal2() + "_" + q.getMeasure().getPrettyName()))
@@ -266,10 +266,18 @@ public class MainTAP {
         /*
                 Actually check support for the insights
          */
-        return insights.parallelStream().flatMap(insight -> ds.getTheDimensions().stream()
-                .filter(d -> !d.equals(insight.dim) && !DBUtils.checkAimpliesB(insight.getDim(), d, conn, table))
-                .filter(d -> querySupports(insight, cache.get(insight.getDim(), d).assessSum(insight.getMeasure(), d, insight.getDim(), insight.getSelA(), insight.getSelB())))
-                .map(d -> new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), d, insight.getMeasure(), "sum", insight))).collect(Collectors.groupingByConcurrent(AssessQuery::getInsight, Collectors.toSet()));
+        ConcurrentMap<Insight, Set<AssessQuery>> isSupportedBy =
+        insights.parallelStream().flatMap(insight -> {
+            return ds.getTheDimensions().stream()
+                    .filter(d -> !d.equals(insight.dim) && !DBUtils.checkAimpliesB(insight.getDim(), d, conn, table))
+                    .filter(d -> querySupports(insight, cache.get(insight.getDim(), d).assessSum(insight.getMeasure(), d, insight.getDim(), insight.getSelA(), insight.getSelB())))
+                    .map(d -> new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), d, insight.getMeasure(), "sum", insight));
+                    //.forEach( otherDim -> {
+                    //    isSupportedBy.computeIfAbsent(insight, k -> ConcurrentHashMap.newKeySet());
+                    //    isSupportedBy.get(insight).add(new AssessQuery(conn, ds.getTable(), insight.getDim(), insight.getSelA(), insight.getSelB(), otherDim, insight.getMeasure(), "sum"));
+                    // });
+        }).collect(Collectors.groupingByConcurrent(AssessQuery::getInsight, Collectors.toSet()));
+        return isSupportedBy;
     }
 
     private static ConcurrentMap<Insight, Set<AssessQuery>> checkSupportMerge(List<Insight> insights){
