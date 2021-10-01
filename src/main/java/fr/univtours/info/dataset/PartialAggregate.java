@@ -1,7 +1,9 @@
 package fr.univtours.info.dataset;
 
 import com.alexscode.utilities.collection.Pair;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 import fr.univtours.info.dataset.metadata.DatasetAttribute;
 import fr.univtours.info.dataset.metadata.DatasetDimension;
 import fr.univtours.info.dataset.metadata.DatasetMeasure;
@@ -18,13 +20,17 @@ public class PartialAggregate {
     @Getter
     final List<DatasetDimension> groupBySet;
     final List<DatasetMeasure> measures;
-    final Object[][] dims;
+    final Table<DatasetDimension, Object, Integer> valMap;
+    final int[][] dims;
     final double[][] data;
     final int len;
+    final int[] idxs;
 
     public PartialAggregate(List<DatasetDimension> groupBySet, List<DatasetMeasure> measures, Dataset origin) {
         this.groupBySet = groupBySet;
         this.measures = measures;
+        valMap = HashBasedTable.create();
+        idxs = new int[groupBySet.size()];
 
         List<List<Object>> tmpDim = groupBySet.stream().map(ignored -> (List<Object>) new ArrayList<>()).collect(Collectors.toList());
         List<List<Double>> tmpMeas = measures.stream().map(ignored -> (List<Double>) new ArrayList<Double>()).collect(Collectors.toList());
@@ -37,7 +43,7 @@ public class PartialAggregate {
                             " from " + origin.getTable() + " group by " +  groupBySet.stream().map(DatasetAttribute::getName).collect(Collectors.joining(",")) + ";");
             while (rs.next()) {
                 for (int i = 0; i < groupBySet.size(); i++)
-                    tmpDim.get(i).add(rs.getObject(1 + i));
+                    tmpDim.get(i).add(rs.getString(1 + i));
                 for (int i = groupBySet.size(); i < measures.size() + groupBySet.size(); i++) {
                     tmpMeas.get(i - groupBySet.size()).add(rs.getDouble(1 + i));
                 }
@@ -47,10 +53,18 @@ public class PartialAggregate {
             System.err.println("[ERROR] Impossible to construct aggregate !\n" + e.getMessage());
         }
 
-        dims = new Object[groupBySet.size()][counter];
+        dims = new int[groupBySet.size()][counter];
         data = new double[measures.size()][counter];
-        for (int i = 0; i < groupBySet.size(); i++)
-            dims[i] = tmpDim.get(i).toArray();
+        for (int i = 0; i < groupBySet.size(); i++) {
+            Map<Object, Integer> thisMap = valMap.row(groupBySet.get(i));
+            for (int j = 0; j < counter; j++) {
+                Object o = tmpDim.get(i).get(j);
+                if (!thisMap.containsKey(o)){
+                    thisMap.put(o, idxs[i]++);
+                }
+                dims[i][j] = thisMap.get(o);
+            }
+        }
         tmpDim.clear();
         for (int i = 0; i < measures.size(); i++)
             data[i] = tmpMeas.get(i).stream().mapToDouble(Double::doubleValue).toArray();
@@ -61,28 +75,52 @@ public class PartialAggregate {
     }
 
     public double[][] assessSum(DatasetMeasure m, DatasetDimension group, DatasetDimension selection, Object val1, Object val2){
-        HashMap<Object, Double> resultA = new HashMap<>();
-        HashMap<Object, Double> resultB = new HashMap<>();
+        //HashMap<Integer, Double> resultA = new HashMap<>();
+        //HashMap<Integer, Double> resultB = new HashMap<>();
+        if (valMap.get(selection, val1) == null || valMap.get(selection, val2) == null)
+            System.out.println("debug");
+        int val1ID = valMap.get(selection, val1);
+        int val2ID = valMap.get(selection, val2);
         int selDimIdx = groupBySet.indexOf(selection);
         int grpDimIdx = groupBySet.indexOf(group);
+        double[] resA = new double[idxs[grpDimIdx]];
+        double[] resB = new double[idxs[grpDimIdx]];
         int mIdx = measures.indexOf(m);
         for (int i = 0; i < len; i++) {
-            if (Objects.equals(dims[selDimIdx][i], val1)){
-                Object g = dims[grpDimIdx][i];
-                resultA.putIfAbsent(g, 0d);
-                resultA.put(g, resultA.get(g) + data[mIdx][i]);
-            }else if (Objects.equals(dims[selDimIdx][i],val2)){
-                Object g = dims[grpDimIdx][i];
-                resultB.putIfAbsent(g, 0d);
-                resultB.put(g, resultB.get(g) + data[mIdx][i]);
+            if (dims[selDimIdx][i] == val1ID){
+                int g = dims[grpDimIdx][i];
+                resA[g] += data[mIdx][i];
+                //resultA.putIfAbsent(g, 0d);
+                //resultA.put(g, resultA.get(g) + data[mIdx][i]);
+            }else if (dims[selDimIdx][i] == val2ID){
+                int g = dims[grpDimIdx][i];
+                resB[g] += data[mIdx][i];
+                //resultB.putIfAbsent(g, 0d);
+                //resultB.put(g, resultB.get(g) + data[mIdx][i]);
             }
         }
-        double[][] result = new double[2][Math.min(resultA.size(), resultB.size())];
+        int raNZ = 0; int rbNZ = 0;
+        for (int i = 0; i < resA.length; i++) {
+            if (resA[i] != 0d) {
+                raNZ++;
+            }
+            if (resB[i] != 0d)
+                rbNZ++;
+        }
+        //double[][] result = new double[2][Math.min(resultA.size(), resultB.size())];
+        double[][] result = new double[2][Math.min(rbNZ, raNZ)];
         int pos = 0;
-        for (Object key : resultA.size() > resultB.size() ? resultA.keySet() : resultB.keySet()){
+        /*for (int key : resultA.size() > resultB.size() ? resultA.keySet() : resultB.keySet()){
             if (resultA.get(key) != null && resultB.get(key) != null) {
                 result[0][pos] = resultA.get(key);
                 result[1][pos] = resultB.get(key);
+                pos++;
+            }
+        }*/
+        for (int i = 0; i < resA.length; i++) {
+            if (resA[i] != 0d && resB[i] != 0d){
+                result[0][pos] = resA[i];
+                result[1][pos] = resB[i];
                 pos++;
             }
         }
