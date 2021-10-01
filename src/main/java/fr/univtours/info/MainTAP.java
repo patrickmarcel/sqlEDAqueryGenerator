@@ -373,6 +373,7 @@ public class MainTAP {
             Set<List<String>> combiVals = Sets.combinations(values, 2).stream().map(ArrayList::new).collect(Collectors.toSet());
 
             for (List<String> pair : combiVals) {
+                //intuitions.add(new Insight(dim, pair.get(0), pair.get(1), null));
                 ds.getTheMeasures().stream().map(measure -> new Insight(dim, pair.get(0), pair.get(1), measure)).forEach(intuitions::add);
             }
         }

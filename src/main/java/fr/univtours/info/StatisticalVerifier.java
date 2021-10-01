@@ -139,25 +139,6 @@ public class StatisticalVerifier {
                 p = corrector.getAdjustedPvalues();
                 for (int i = 0; i < p.length; i++) thisDimAndMeasure.get(i).setP(p[i]);
                 thisDimAndMeasure.removeIf(insight -> insight.getP() > sigLevel);
-
-                //Identify Triangles for transitivity elimination
-                if (!keep_transitive) {
-                    stopwatch = Stopwatch.createStarted();
-                    thisDimAndMeasure.parallelStream()
-                            .filter(insight -> insight.type == MEAN_SMALLER || insight.type == MEAN_GREATER || insight.type == VARIANCE_SMALLER || insight.type == VARIANCE_GREATER)
-                            .collect(Collectors.groupingByConcurrent(Insight::getType)).entrySet().parallelStream().forEach(e -> {
-                        var list = e.getValue();
-                        Set<String> things = list.stream().map(i -> i.selA + "_" + i.selB).collect(Collectors.toSet());
-                        for (Insight ac : list) {
-                            thisDimension.getActiveDomain().parallelStream().forEach(b -> {
-                                if (things.contains(ac.getSelA() + "_" + b) && things.contains(b + "_" + ac.getSelB()))
-                                    ac.setP(-1); //mark for delete
-                            });
-                        }
-                    });
-                    thisDimAndMeasure.removeIf(insight -> insight.getP() == -1);// delete
-                    System.out.println("[VERIF][TIME][s] triangles " + stopwatch.elapsed(TimeUnit.SECONDS));
-                }
                 output.addAll(thisDimAndMeasure);
             }
         }
@@ -172,8 +153,8 @@ public class StatisticalVerifier {
      * @param insights insights on the same measure and dimension
      */
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
+        Stopwatch stopwatch = Stopwatch.createStarted();
         HashMap<String, double[]> cache = new HashMap<>();
-
         try (Statement st = ds.getConn().createStatement()){
             ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + " order by "+dd.getName()+";");
             String prev = null;
@@ -194,27 +175,18 @@ public class StatisticalVerifier {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+        System.out.println("[VERIF][TIME][ms] dim cache " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
         return insights.stream().parallel()
                 .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
-                .flatMap(in -> computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb).stream())
+                .flatMap(in -> Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb)))
                 //.reduce(Stream::concat).orElse(Stream.empty())
                 .collect(Collectors.toList());
 
     }
 
 
-    private static List<Insight> computeMeanAndVariance(Insight i, double[] a, double[] b, int permNb) {
-        List<Insight> added = new ArrayList<>(10);
-
-        //Sample size too small
-        //if (a.length <= n_threshold || b.length <= n_threshold){
-        //    i.setP(1.0);
-        //    return List.of();
-        //}
-
-        int permutations = permNb;
-
+    private static Insight[] computeMeanAndVariance(Insight i, double[] a, double[] b, int permutations) {
         double[] meanDiffs = new double[permutations];
         double[] varDiffs = new double[permutations];
 
@@ -290,72 +262,74 @@ public class StatisticalVerifier {
             meanDiffs[i1] =  (mub/countB) - (mua/countA);
         }
 
+        Insight[] added = new Insight[6];
+        int addPos = 0;
         // variance Smaller
         double base_stat = StatUtils.mean(b) - StatUtils.mean(a);
         int count = 0;
-        for (int j = 0; j < permNb; j++) {
+        for (int j = 0; j < permutations; j++) {
             if (varDiffs[j] > base_stat)
                 count++;
         }
         i.setType(Insight.VARIANCE_SMALLER);
-        added.add(i);
-        i.setP((count)/((double) permNb));
+        added[addPos++] = i;
+        i.setP((count)/((double) permutations));
 
         // variance higher
         base_stat = -base_stat;
         count = 0;
-        for (int j = 0; j < permNb; j++) {
+        for (int j = 0; j < permutations; j++) {
             if (-varDiffs[j] > base_stat)
                 count++;
         }
         Insight tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.VARIANCE_GREATER);
-        added.add(tmp);
-        tmp.setP((count)/((double) permNb));
+        added[addPos++] = tmp;
+        tmp.setP((count)/((double) permutations));
 
         // variance equals
         base_stat = Math.abs(base_stat);
-        count = permNb;
-        for (int j = 0; j < permNb; j++) {
+        count = permutations;
+        for (int j = 0; j < permutations; j++) {
             if (Math.abs(varDiffs[j]) > base_stat)
                 count--;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.VARIANCE_EQUALS);
-        added.add(tmp);
-        tmp.setP((count)/((double) permNb));
+        added[addPos++] = tmp;
+        tmp.setP((count)/((double) permutations));
 
 
         // Mean Smaller
         base_stat = StatUtils.mean(b) - StatUtils.mean(a);
         count = 0;
-        for (int j = 0; j < permNb; j++) {
+        for (int j = 0; j < permutations; j++) {
             if (meanDiffs[j] > base_stat)
                 count++;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_SMALLER);
-        added.add(tmp);
-        tmp.setP((count)/((double) permNb));
+        added[addPos++] = tmp;
+        tmp.setP((count)/((double) permutations));
 
         // Mean higher
         base_stat = -base_stat;
         count = 0;
-        for (int j = 0; j < permNb; j++) {
+        for (int j = 0; j < permutations; j++) {
             if (-meanDiffs[j] > base_stat)
                 count++;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_GREATER);
-        added.add(tmp);
-        tmp.setP((count)/((double) permNb));
+        added[addPos++] = tmp;
+        tmp.setP((count)/((double) permutations));
 
         // Mean equals
         base_stat = Math.abs(base_stat);
-        count = permNb;
-        for (int j = 0; j < permNb; j++) {
+        count = permutations;
+        for (int j = 0; j < permutations; j++) {
             if (Math.abs(meanDiffs[j]) > base_stat)
                 count--;
         }
         tmp = new Insight(i.getDim(), i.getSelA(), i.getSelB(), i.getMeasure(), Insight.MEAN_EQUALS);
-        added.add(tmp);
-        tmp.setP((count)/((double) permNb));
+        added[addPos++] = tmp;
+        tmp.setP((count)/((double) permutations));
 
 
         return added;
