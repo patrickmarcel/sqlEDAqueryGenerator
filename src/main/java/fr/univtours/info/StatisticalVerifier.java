@@ -172,23 +172,32 @@ public class StatisticalVerifier {
      * @param insights insights on the same measure and dimension
      */
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
-        HashMap<String, List<Double>> cache = new HashMap<>();
+        HashMap<String, double[]> cache = new HashMap<>();
 
         try (Statement st = ds.getConn().createStatement()){
-            ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + ";");
+            ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + " order by "+dd.getName()+";");
+            String prev = null;
+            List<Double> tmp = null;
             while (rs.next()) {
                 String key = rs.getString(1);
                 double val = rs.getDouble(2);
-                cache.computeIfAbsent(key, i_ -> new ArrayList<>());
-                cache.get(key).add(val);
+                if (!Objects.equals(key, prev)){
+                    if (tmp != null)
+                        cache.put(prev, tmp.stream().mapToDouble(Double::doubleValue).toArray());
+                    tmp = new ArrayList<>();
+                    prev = key;
+                }
+                tmp.add(val);
             }
+            if (tmp != null)
+                cache.put(prev, tmp.stream().mapToDouble(Double::doubleValue).toArray());
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
 
         return insights.stream().parallel()
-                .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).size() >= n_threshold && cache.get(in.selA).size() >= n_threshold)
-                .map(in -> computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb).stream().parallel())
+                .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
+                .map(in -> computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb).stream().parallel())
                 .reduce(Stream::concat).orElse(Stream.empty())
                 .collect(Collectors.toList());
 
