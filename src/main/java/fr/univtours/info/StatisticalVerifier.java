@@ -197,8 +197,8 @@ public class StatisticalVerifier {
 
         return insights.stream().parallel()
                 .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
-                .map(in -> computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb).stream().parallel())
-                .reduce(Stream::concat).orElse(Stream.empty())
+                .flatMap(in -> computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb).stream())
+                //.reduce(Stream::concat).orElse(Stream.empty())
                 .collect(Collectors.toList());
 
     }
