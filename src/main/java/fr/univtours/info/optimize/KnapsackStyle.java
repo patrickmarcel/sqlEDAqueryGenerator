@@ -171,7 +171,7 @@ public class KnapsackStyle implements TAPEngine{
         List<Integer> solution = new ArrayList<>();
         Element[] order = new Element[size];
         for (int i = 0; i < size; i++) {
-            order[i] = new Element(i, theQ.get(i).getInterest());
+            order[i] = new Element(i, theQ.get(i).getInterest()/theQ.get(i).estimatedTime());
         }
 
         // Merge sort see javadoc
