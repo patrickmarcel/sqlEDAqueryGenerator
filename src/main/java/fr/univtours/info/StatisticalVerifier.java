@@ -187,7 +187,7 @@ public class StatisticalVerifier {
         }
 
         return insights.stream().parallel()
-                .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB))
+                .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).size() >= n_threshold && cache.get(in.selA).size() >= n_threshold)
                 .map(in -> computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb).stream().parallel())
                 .reduce(Stream::concat).orElse(Stream.empty())
                 .collect(Collectors.toList());
@@ -199,10 +199,10 @@ public class StatisticalVerifier {
         List<Insight> added = new ArrayList<>(10);
 
         //Sample size too small
-        if (a.length <= n_threshold || b.length <= n_threshold){
-            i.setP(1.0);
-            return List.of();
-        }
+        //if (a.length <= n_threshold || b.length <= n_threshold){
+        //    i.setP(1.0);
+        //    return List.of();
+        //}
 
         int permutations = permNb;
 
