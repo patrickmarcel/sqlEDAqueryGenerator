@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static fr.univtours.info.Insight.*;
 import static fr.univtours.info.Insight.VARIANCE_GREATER;
@@ -185,31 +186,12 @@ public class StatisticalVerifier {
             throwables.printStackTrace();
         }
 
+        return insights.stream().parallel()
+                .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB))
+                .map(in -> computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb).stream().parallel())
+                .reduce(Stream::concat).orElse(Stream.empty())
+                .collect(Collectors.toList());
 
-        List<Insight> toAdd;
-        // Switch to parallel processing if more large number of insights are available
-        if (insights.size() > 50){
-            toAdd = insights.parallelStream()
-                .map(in -> {
-                    //Sample is too small
-                    if (cache.get(in.selA) == null || cache.get(in.selB) == null) {
-                        in.setP(1);
-                        System.err.println("[Warning] Sample too small for " + in.getDim() + " values '" + in.selA + "' and/or '" + in.selB + "'.");
-                        return List.of(in);
-                    }
-                    return computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb);
-                })
-                .flatMap(Collection::stream).collect(Collectors.toList());
-        } else {
-            toAdd = new ArrayList<>();
-            for (Insight in : insights) {
-                // Check that no dimensions is floating point if crash in here
-                toAdd.addAll(computeMeanAndVariance(in, cache.get(in.selA).stream().mapToDouble(d -> d).toArray(), cache.get(in.selB).stream().mapToDouble(d -> d).toArray(), permNb));
-
-            }
-        }
-
-        return toAdd;
     }
 
 
