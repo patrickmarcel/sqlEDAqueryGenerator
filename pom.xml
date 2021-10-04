@@ -40,6 +40,31 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>org.jcuda</groupId>
+      <artifactId>jcuda</artifactId>
+      <version>11.2.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jcuda</groupId>
+      <artifactId>jcurand</artifactId>
+      <version>11.4.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jcuda</groupId>
+      <artifactId>jcuda-natives</artifactId>
+      <version>11.4.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jcuda</groupId>
+      <artifactId>jcurand-natives</artifactId>
+      <version>11.4.1</version>
+    </dependency>
+
+
     <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
     <dependency>
       <groupId>org.postgresql</groupId>
