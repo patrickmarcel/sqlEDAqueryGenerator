@@ -14,13 +14,10 @@ import org.apache.commons.math3.stat.StatUtils;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static fr.univtours.info.Insight.*;
-import static fr.univtours.info.Insight.VARIANCE_GREATER;
 
 public class StatisticalVerifier {
     public static int n_threshold = 10;
@@ -177,16 +174,17 @@ public class StatisticalVerifier {
         }
         System.out.println("[VERIF][TIME][ms] dim cache " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
+        ThreadLocal<CudaRand> rng = ThreadLocal.withInitial(CudaRand::new);
         return insights.stream().parallel()
                 .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
-                .flatMap(in -> Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb)))
+                .flatMap(in -> Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb, rng.get())))
                 //.reduce(Stream::concat).orElse(Stream.empty())
                 .collect(Collectors.toList());
 
     }
 
 
-    private static Insight[] computeMeanAndVariance(Insight i, double[] a, double[] b, int permutations) {
+    private static Insight[] computeMeanAndVariance(Insight i, double[] a, double[] b, int permutations, CudaRand rd) {
         double[] meanDiffs = new double[permutations];
         double[] varDiffs = new double[permutations];
 
@@ -200,13 +198,13 @@ public class StatisticalVerifier {
         }
 
         // Very low probability of drawing the same permutation twice ....
-        ThreadLocalRandom rd = null;
+        //ThreadLocalRandom rd = null;
         PowerSet ps = null;
         boolean safe = fullSize <= 20;
         if (safe)
             ps = new PowerSet(ab);
         else {
-            rd = ThreadLocalRandom.current();
+            //rd = ThreadLocalRandom.current();
         }
 
         for (int i1 = 0; i1 < permutations; ++i1) {
