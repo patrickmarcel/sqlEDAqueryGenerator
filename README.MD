@@ -55,9 +55,9 @@ datasource.password=1234
 
 You can now run the various shell scripts used to produce the results:
 ```shell
-./exp1.sq # description
-./exp1.sq # description
-./exp1.sq # description
+./scale.sh # Runs multi-threading scaling test
+./exp1.sh # description
+./exp1.sh # description
 ```
 
 ### Notes
