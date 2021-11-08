@@ -5,13 +5,14 @@ import jcuda.Sizeof;
 import jcuda.jcurand.curandGenerator;
 
 import java.time.LocalTime;
+import java.util.Random;
 
 import static jcuda.jcurand.JCurand.*;
 import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT;
 import static jcuda.runtime.JCuda.*;
 import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost;
 
-public class CudaRand {
+public class CudaRand extends Random {
     public static int BUFFER_SIZE = 4000000;
     public float[] buffer;
     public int pos;
@@ -45,6 +46,7 @@ public class CudaRand {
         cudaMemcpy(Pointer.to(buffer), deviceData,((long) BUFFER_SIZE) * Sizeof.FLOAT, cudaMemcpyDeviceToHost);
     }
 
+    @Override
     public int nextInt(int ub){
         if (pos == BUFFER_SIZE - 1){
             pos = 0;

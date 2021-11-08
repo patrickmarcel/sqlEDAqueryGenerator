@@ -8,7 +8,7 @@ cd sqlEDAqueryGenerator
 mvn clean compile assembly:single
 cp ./target/sqlEDAqueryGenerator-1.0-SNAPSHOT-jar-with-dependencies.jar ./tap-eda.jar
 ```
-
+Alternatively you can use one of the jar files in the release section
 ## Loading the example data
 Right now we only support postgresql but we are working on adding support for monetdb.
 We recommend using a dedicated user and database to avoid messing with your own databases 

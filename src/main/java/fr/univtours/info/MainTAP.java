@@ -65,6 +65,7 @@ public class MainTAP {
     static boolean DISABLE_AGG_MERGING = false;
     public static boolean USE_UNIFORM_SAMPLING = false;
     static long AGG_RAM = 8589934592L; // 1 GB
+    public static boolean CUDA_PRESENT = false;
 
     public static void main( String[] args ) throws Exception{
 
@@ -72,6 +73,15 @@ public class MainTAP {
         parseCmdLineArgs(args, options);
 
         System.out.println("[INFO] CPU Threads/Cores: " + Runtime.getRuntime().availableProcessors() + " | " + "Streams will use : " + ForkJoinPool.commonPool().getParallelism());
+
+        //Attempting to detect cuda
+        try {
+            CudaRand dummy = new CudaRand();
+            dummy.nextInt(10);
+            CUDA_PRESENT = true;
+        }catch (UnsatisfiedLinkError e){
+            System.out.println("[INFO] Couldn't initialize cuda runtime falling back tu CPU");
+        }
 
         //Load config and base dataset
         init();

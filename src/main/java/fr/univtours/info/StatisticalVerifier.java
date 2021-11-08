@@ -14,6 +14,7 @@ import org.apache.commons.math3.stat.StatUtils;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -174,7 +175,11 @@ public class StatisticalVerifier {
         }
         System.out.println("[VERIF][TIME][ms] dim cache " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
-        ThreadLocal<CudaRand> rng = ThreadLocal.withInitial(CudaRand::new);
+        ThreadLocal<Random> rng;
+        if (MainTAP.CUDA_PRESENT)
+            rng = ThreadLocal.withInitial(CudaRand::new);
+        else
+            rng = ThreadLocal.withInitial(ThreadLocalRandom::current);
         return insights.stream().parallel()
                 .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
                 .flatMap(in -> Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb, rng.get())))
@@ -184,7 +189,7 @@ public class StatisticalVerifier {
     }
 
 
-    private static Insight[] computeMeanAndVariance(Insight i, double[] a, double[] b, int permutations, CudaRand rd) {
+    private static Insight[] computeMeanAndVariance(Insight i, double[] a, double[] b, int permutations, Random rd) {
         double[] meanDiffs = new double[permutations];
         double[] varDiffs = new double[permutations];
 
