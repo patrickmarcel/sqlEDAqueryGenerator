@@ -19,8 +19,8 @@ postgres=# create user tapuser with encrypted password '1234';
 postgres=# grant all privileges on database tap to tapuser;
 ````
 ### Electricity consumption data
-You can load the small electricity dataset by first running `./sql/conso_iris.sql` as tap user and then loading the `./sql/conso_iris.csv` file into the table
-this can be done in a shell or using a GUI tool such as PGAdmin or DataGrip.
+You can load the small electricity dataset by first running `./sql/conso_iris.sql` as tap user and then loading the `./sql/conso_iris.csv` file into the table.
+This can be done in a shell or using a GUI tool such as PGAdmin or DataGrip.
 ```shell
 psql -U tapuser -d tap < ./sql/conso_iris.sql
 psql -U tapuser -d tap #Log into psql
@@ -28,8 +28,8 @@ psql -U tapuser -d tap #Log into psql
 ```
 
 ### Flights data
-First you need to download a copy of the data from the internet it's available on [kaggle](https://www.kaggle.com/usdot/flight-delays)
-You can create the table as show previously with `./sql/flights.sql`
+First you need to download a copy of the data from the internet: it's available on [kaggle](https://www.kaggle.com/usdot/flight-delays)
+You can create the table as shown previously with `./sql/flights.sql`
 ```shell
 psql -U tapuser -d tap < ./sql/flights.sql
 ```
@@ -46,7 +46,7 @@ cp ./src/main/resources/flights.properties ./flights.properties
 cp ./src/main/resources/enedis.properties ./enedis.properties
 ```
 
-Edit the two files to match your own database namely those three lines, the rest of the file namely table and column names should be good assuming you followed previous instructions
+Edit both files to match your own database, as illustrated in the next three lines. The rest of the file - noticeably table and column names - should be correct assuming you followed previous instructions
 ```properties
 datasource.url=jdbc:postgresql://localhost:5432/tap
 datasource.user=tapuser
