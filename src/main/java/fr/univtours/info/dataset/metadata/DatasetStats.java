@@ -48,7 +48,17 @@ public class DatasetStats {
             Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
             ResultSet rs = st.executeQuery(sql) ;
             rs.next();
-            avgWidth.put(dim, rs.getInt(1));
+            try {
+                avgWidth.put(dim, rs.getInt(1));
+            } catch (SQLException e){
+                //close statement
+                st.close();
+                //run analyse
+                String analyse = "analyse " + table + ";";
+                boolean status = conn.createStatement().execute(analyse);
+                System.err.println("\n[ERROR] An analyse command was issued on table " + table + " statistics are necessary for TAP sampling please wait a few second before restarting TAP");
+                System.exit(2);
+            }
             st.close();
         }
 
