@@ -53,6 +53,8 @@ datasource.user=tapuser
 datasource.password=1234
 ```
 
+Before running the experiments you should run the analyse SQL command on the tables as we use the statistics from postgres to guide the sampling (The system will automatically issue the command but as it is a background process and can take up to a minute we advise running it after importing the data).
+
 You can now run the various shell scripts used to produce the results:
 ```shell
 ./scale.sh # Runs multi-threading scaling test
