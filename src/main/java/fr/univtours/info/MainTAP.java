@@ -193,7 +193,7 @@ public class MainTAP {
         //cp.close();
 
         // dump data for learning
-        try (BufferedWriter out = new BufferedWriter(new FileWriter("tap_dump.csv"))){
+        try (BufferedWriter out = new BufferedWriter(new FileWriter("/users/21500078t/tap_dump.csv"))){
             out.write("qid,measure,function,ref,val1,val2,val1_f,val2_f,gb_ad_size,agg_size,interest\n");
             int n = 0;
             for (AssessQuery query : tapQueries){
