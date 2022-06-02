@@ -25,6 +25,9 @@ import org.apache.commons.rng.simple.RandomSource;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.SimpleGraph;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -188,6 +191,29 @@ public class MainTAP {
             //cp.returnConnection(c);
         });
         //cp.close();
+
+        // dump data for learning
+        try (BufferedWriter out = new BufferedWriter(new FileWriter("tap_dump.csv"))){
+            out.write("qid,measure,function,ref,val1,val2,val1_f,val2_f,gb_ad_size,agg_size,interest\n");
+            int n = 0;
+            for (AssessQuery query : tapQueries){
+                out.write(n + ",");
+                out.write(query.getMeasure() + ",");
+                out.write(query.getFunction() + ",");
+                out.write(query.getReference() + ",");
+                out.write(query.getVal1() + ",");
+                out.write(query.getVal2() + ",");
+                out.write( stats.getFrequency().get(query.getAssessed()).get(query.getVal1()) + ",");
+                out.write( stats.getFrequency().get(query.getAssessed()).get(query.getVal2()) + ",");
+                out.write( stats.getAdSize().get((query.getAssessed())) + ",");
+                out.write( stats.estimateAggregateSize(List.of(query.getReference())) + ",");
+                out.write(String.valueOf(query.getInterest()));
+                out.write("\n");
+                n++;
+            }
+        } catch (IOException e){
+
+        }
 
         // --- SOLVING TAP ----
         System.out.println("[INFO] Started solving TAP instance ...");

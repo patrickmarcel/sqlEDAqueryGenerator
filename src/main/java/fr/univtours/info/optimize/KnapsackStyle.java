@@ -17,20 +17,20 @@ public class KnapsackStyle implements TAPEngine{
 
 
     public static void main(String[] args) throws Exception {
-        final String file = "22_500.dat";
+        final String file = "special_200.dat";
         final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
         final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;/*
         final String file = "22_100.dat";
         final String path="data/tap_" + file;
         final String out_path = "data/warm_start_" + file;*/
-        double temps = 0.15, dist = 0.1;
+        double temps = 0.25, dist = 0.35;
 
-        //compute(path, out_path, temps, dist);
-        //System.exit(0);
+        compute(path, out_path, temps, dist);
+        System.exit(0);
 
         var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
         for (int i = 0; i < 30; i++) {
-            for (int size : new int[]{100, 200, 300, 400, 500, 600, 700}) {
+            for (int size : new int[]{600, 700}) {
                 var in = folder + "tap_" + i + "_" + size + ".dat";
                 var out = folder + "tap_" + i + "_" + size + ".warm";
                 compute(in, out, temps, dist);
