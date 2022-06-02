@@ -60,6 +60,8 @@ public class PartialAggregate {
             for (int j = 0; j < counter; j++) {
                 Object o = tmpDim.get(i).get(j);
                 if (!thisMap.containsKey(o)){
+                    if (o == null)
+                        o = "null";
                     thisMap.put(o, idxs[i]++);
                 }
                 dims[i][j] = thisMap.get(o);
@@ -75,10 +77,10 @@ public class PartialAggregate {
     }
 
     public double[][] assessSum(DatasetMeasure m, DatasetDimension group, DatasetDimension selection, Object val1, Object val2){
-        //HashMap<Integer, Double> resultA = new HashMap<>();
-        //HashMap<Integer, Double> resultB = new HashMap<>();
-        //if (valMap.get(selection, val1) == null || valMap.get(selection, val2) == null)
-        //    System.out.println("debug");
+        if (val1 == null)
+            val1 = "null";
+        if (val2 == null)
+            val2 = "null";
         int val1ID = valMap.get(selection, val1);
         int val2ID = valMap.get(selection, val2);
         int selDimIdx = groupBySet.indexOf(selection);
