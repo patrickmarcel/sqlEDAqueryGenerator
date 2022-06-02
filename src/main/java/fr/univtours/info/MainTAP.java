@@ -183,7 +183,7 @@ public class MainTAP {
 
         // Fetching runtime
         //ConnectionPool cp = new ConnectionPool(config);
-        System.out.println("[INFO] Estimating query runtime ...");
+        System.out.println("[INFO] Estimating query runtime ... -+-");
         tapQueries.stream().parallel().forEach(q -> {
             //Connection c = cp.getConnection();
             q.setExplainCost(1);
