@@ -193,6 +193,7 @@ public class MainTAP {
         //cp.close();
 
         // dump data for learning
+        System.out.println("[INFO] Attempting to dump query info ...");
         try (BufferedWriter out = new BufferedWriter(new FileWriter("/users/21500078t/tap_dump.csv"))){
             out.write("qid,measure,function,ref,val1,val2,val1_f,val2_f,gb_ad_size,agg_size,interest\n");
             int n = 0;
@@ -211,6 +212,7 @@ public class MainTAP {
                 out.write("\n");
                 n++;
             }
+            System.out.println("[INFO] Success");
         } catch (IOException e){
             e.printStackTrace();
         }
