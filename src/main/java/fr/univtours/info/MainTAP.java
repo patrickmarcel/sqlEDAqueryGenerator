@@ -212,7 +212,7 @@ public class MainTAP {
                 n++;
             }
         } catch (IOException e){
-
+            e.printStackTrace();
         }
 
         // --- SOLVING TAP ----
