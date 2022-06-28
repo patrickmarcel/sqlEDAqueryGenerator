@@ -68,7 +68,7 @@ public class Insight extends DefaultEdge {
 
  */
     public String toString() {
-        return "Insight is: "+ pprint[type] + " for " + selA ;
+        return "Insight is: "+ pprint[type] + " for " + selA  + " (p="+p+")";
     }
 
     @Override

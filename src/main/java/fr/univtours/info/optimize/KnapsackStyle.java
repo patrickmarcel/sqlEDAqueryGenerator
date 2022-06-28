@@ -14,37 +14,40 @@ import java.util.stream.Collectors;
 
 
 public class KnapsackStyle implements TAPEngine{
-
+    private static int current_ID = -1;
+    private static int current_SIZE = -1;
 
     public static void main(String[] args) throws Exception {
-        final String file = "special_200.dat";
-        final String path="C:\\Users\\chanson\\Desktop\\instances\\tap_" + file;
-        final String out_path = "C:\\Users\\chanson\\Desktop\\warm_start_" + file;/*
-        final String file = "22_100.dat";
-        final String path="data/tap_" + file;
-        final String out_path = "data/warm_start_" + file;*/
-        double temps = 0.25, dist = 0.35;
+        double temps = 0.6, dist = 0.3;
 
-        compute(path, out_path, temps, dist);
-        System.exit(0);
+        //REMOVE ME
+        //compute("C:\\Users\\chanson\\Desktop\\tap_special_10.dat", "C:\\Users\\chanson\\Desktop\\deleteme", temps, dist);
+        //System.exit(0);
 
-        var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
+        //var folder = "C:\\Users\\chanson\\PycharmProjects\\tap_coupes\\filtered_instances\\";
+        var folder = "C:\\Users\\chanson\\Desktop\\filtered_instances_f3\\";
+        System.out.println("series_id;size;time;z;solution");
         for (int i = 0; i < 30; i++) {
-            for (int size : new int[]{600, 700}) {
+            current_ID = i;
+            for (int size : new int[]{40, 60, 80, 100, 200, 300}) {
+                current_SIZE = size;
                 var in = folder + "tap_" + i + "_" + size + ".dat";
-                var out = folder + "tap_" + i + "_" + size + ".warm";
+                var out = folder + "tap_" + i + "_" + size + ".ks";
                 compute(in, out, temps, dist);
             }
         }
 
-        //compute(path, out_path, temps, dist);
     }
 
     private static void compute(String path, String out_path, double temps, double dist) throws IOException {
         InstanceLegacy ist = InstanceLegacy.readFile(path);
         //System.out.println("Loaded " + path + " | " + ist.size + " queries");
-        double epdist = Math.round( dist * ist.size * 4.5);
+        double epdist = Math.round(dist * ist.size * 4.5);
+        //double epdist = Math.round(dist * ist.size * 7); //f2
+        //double epdist = Math.round(dist * ist.size * 5.5); //f1
         double eptime = Math.round(temps * ist.size * 27.5f);
+        //double eptime = Math.round(temps * ist.size * 6); //f2
+        //double eptime = Math.round(temps * ist.size * 27.5); //f1
 
 
         List<Integer> solution = new ArrayList<>();
@@ -77,16 +80,58 @@ public class KnapsackStyle implements TAPEngine{
                 z += ist.interest[current];
             }
         }
-        //System.out.println("Distance: " + total_dist + "/" + epdist);
-        //System.out.println("Time: " + total_time + "/" + eptime);
-        // Write best solution to file for CPLEX
+        //System.out.println("Distance: " + total_dist + "/" + epdist + " |Time: " + total_time + "/" + eptime);
         //System.out.println("Z=" + z + " | Sol=" + solution);
-        //FileOutputStream fos = new FileOutputStream(out_path);
-        //PrintWriter pw = new PrintWriter(fos);
-        //pw.println(solution.toString().replace("[", "").replace("]", "").replace(", ", " "));
-        //pw.close();
-        //fos.close();
-        System.out.printf("%s;%s;%s;%s%n",path.substring(39).replace("_"+ist.size+".dat", ""),ist.size,z,solution.stream().map(String::valueOf).collect(Collectors.joining(",")));
+
+        // Post processing
+        while (true) {
+            List<Integer> prevSolution = new ArrayList<>(solution);
+            int victim = argMinInt(solution, ist);
+            solution.remove(Integer.valueOf(victim));
+            total_dist = sequenceDistance(solution, ist);
+            total_time -= ist.costs[victim];
+            z -= ist.interest[victim];
+
+            List<Element> potential = new ArrayList<>();
+            for (int i = 0; i < ist.size; i++) {
+                if (i != victim && !solution.contains(Integer.valueOf(i)) && ist.interest[victim] < ist.interest[i])
+                    potential.add(new Element(i, ist.interest[i]));
+            }
+            potential.sort(Comparator.comparing(Element::getValue).reversed());
+
+            boolean success = false;
+            for (Element e : potential) {
+                if (eptime - (total_time + ist.costs[e.index]) > 0) {
+                    double backup = total_dist;
+                    total_dist += insert_opt(solution, e.index, ist.distances);
+                    if (total_dist > epdist) {
+                        //rollback and check next querry
+                        solution.remove(Integer.valueOf(e.index));
+                        total_dist = backup;
+                        continue;
+                    }
+                    total_time += ist.costs[e.index];
+                    z += ist.interest[e.index];
+                    success = true;
+                    break;
+                }
+            }
+            if (!success){
+                solution = prevSolution;
+                z = solution.stream().mapToDouble(idx -> ist.interest[idx]).sum();
+                break;
+            }
+        }
+
+        assert sequenceDistance(solution, ist) <= epdist && solution.stream().mapToDouble(idx -> ist.costs[idx]).sum() <= eptime;
+
+        // Write best solution to file for CPLEX
+        FileOutputStream fos = new FileOutputStream(out_path);
+        PrintWriter pw = new PrintWriter(fos);
+        pw.println(solution.toString().replace("[", "").replace("]", "").replace(", ", " "));
+        pw.close();
+        fos.close();
+        System.out.printf("%s;%s;%s;%s;%s%n",current_ID,current_SIZE,"0.01",z,solution.stream().map(String::valueOf).collect(Collectors.joining(",")));
     }
 
     static double insert_opt(List<Integer> solution, int candidate, double[][] distances) {
@@ -96,7 +141,7 @@ public class KnapsackStyle implements TAPEngine{
         }
         double best_insert_cost = 10e50;// large enough
         int best_insert_pos = -1;
-        for (int i = 0; i < solution.size() + 1; i++) {
+        for (int i = 0; i <= solution.size(); i++) {
             double new_cost = 0;
             // insert at first position
             if (i == 0){
@@ -109,6 +154,7 @@ public class KnapsackStyle implements TAPEngine{
             } else {
                 new_cost += distances[solution.get(solution.size()-1)][candidate];
             }
+
             if (new_cost < best_insert_cost){
                 best_insert_cost = new_cost;
                 best_insert_pos = i;
@@ -204,6 +250,23 @@ public class KnapsackStyle implements TAPEngine{
         }
         System.out.println("[INFO] KS Heuristic : solution is done z=" + z);
         return solution.stream().map(theQ::get).collect(Collectors.toList());
+    }
+
+    private static int argMinInt(List<Integer> sol, InstanceLegacy ist){
+        List<Element> order = new ArrayList<>();
+        for (int i : sol) {
+            order.add(new Element(i, ist.interest[i]));
+        }
+        order.sort(Comparator.comparing(Element::getValue));
+        return order.get(0).getIndex();
+    }
+
+    public static double sequenceDistance(List<Integer> tour, InstanceLegacy ist){
+        double d = 0;
+        for (int i = 0; i < tour.size() - 1; i++) {
+            d += ist.distances[tour.get(i)][tour.get(i+1)];
+        }
+        return d;
     }
 }
 
