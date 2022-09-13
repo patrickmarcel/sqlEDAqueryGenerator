@@ -83,6 +83,7 @@ public class MainTAP {
             dummy.nextInt(10);
             CUDA_PRESENT = true;
         }catch (UnsatisfiedLinkError e){
+            CUDA_PRESENT = false;
             System.out.println("[INFO] Couldn't initialize cuda runtime falling back tu CPU");
         }
 
@@ -194,7 +195,7 @@ public class MainTAP {
 
         // dump data for learning
         System.out.println("[INFO] Attempting to dump query info ...");
-        try (BufferedWriter out = new BufferedWriter(new FileWriter("/users/21500078t/tap_dump.csv"))){
+        try (BufferedWriter out = new BufferedWriter(new FileWriter(System.getProperty("user.home") + "/tap_queries_dump.csv"))){
             out.write("qid,measure,function,ref,val1,val2,val1_f,val2_f,gb_ad_size,agg_size,interest\n");
             int n = 0;
             for (AssessQuery query : tapQueries){

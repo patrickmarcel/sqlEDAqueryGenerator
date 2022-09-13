@@ -55,6 +55,8 @@ public class PartialAggregate {
 
         dims = new int[groupBySet.size()][counter];
         data = new double[measures.size()][counter];
+        // For each possible value in each column we assign an integer
+        // this yields an improved memory footprint and avoids using .equals methods
         for (int i = 0; i < groupBySet.size(); i++) {
             Map<Object, Integer> thisMap = valMap.row(groupBySet.get(i));
             for (int j = 0; j < counter; j++) {
@@ -77,28 +79,27 @@ public class PartialAggregate {
     }
 
     public double[][] assessSum(DatasetMeasure m, DatasetDimension group, DatasetDimension selection, Object val1, Object val2){
+        // Match selection predicates to their id
         if (val1 == null)
             val1 = "null";
         if (val2 == null)
             val2 = "null";
         int val1ID = valMap.get(selection, val1);
         int val2ID = valMap.get(selection, val2);
+        //get column ids
         int selDimIdx = groupBySet.indexOf(selection);
         int grpDimIdx = groupBySet.indexOf(group);
         double[] resA = new double[idxs[grpDimIdx]];
         double[] resB = new double[idxs[grpDimIdx]];
         int mIdx = measures.indexOf(m);
+        //scan the aggregates (equivalent to left and right sub-queries of the compare)
         for (int i = 0; i < len; i++) {
             if (dims[selDimIdx][i] == val1ID){
                 int g = dims[grpDimIdx][i];
                 resA[g] += data[mIdx][i];
-                //resultA.putIfAbsent(g, 0d);
-                //resultA.put(g, resultA.get(g) + data[mIdx][i]);
             }else if (dims[selDimIdx][i] == val2ID){
                 int g = dims[grpDimIdx][i];
                 resB[g] += data[mIdx][i];
-                //resultB.putIfAbsent(g, 0d);
-                //resultB.put(g, resultB.get(g) + data[mIdx][i]);
             }
         }
         int raNZ = 0; int rbNZ = 0;
@@ -109,16 +110,9 @@ public class PartialAggregate {
             if (resB[i] != 0d)
                 rbNZ++;
         }
-        //double[][] result = new double[2][Math.min(resultA.size(), resultB.size())];
+        //natural join (groups must exist on both sides)
         double[][] result = new double[2][Math.min(rbNZ, raNZ)];
         int pos = 0;
-        /*for (int key : resultA.size() > resultB.size() ? resultA.keySet() : resultB.keySet()){
-            if (resultA.get(key) != null && resultB.get(key) != null) {
-                result[0][pos] = resultA.get(key);
-                result[1][pos] = resultB.get(key);
-                pos++;
-            }
-        }*/
         for (int i = 0; i < resA.length; i++) {
             if (resA[i] != 0d && resB[i] != 0d){
                 result[0][pos] = resA[i];

@@ -37,7 +37,7 @@ public class Instance {
         this.interest = new double[size];
         for (int i = 0; i < size; i++) {
             AssessQuery qi = queries.get(i);
-            costs[i] = qi.getExplainCost();
+            costs[i] = qi.estimatedTime();
             interest[i] = qi.getInterest();
             for (int j = i; j < size; j++) {
                 AssessQuery qj = queries.get(j);
@@ -57,7 +57,7 @@ public class Instance {
         this.interest = new double[size];
         for (int i = 0; i < size; i++) {
             AssessQuery qi = queries.get(i);
-            costs[i] = qi.getExplainCost();
+            costs[i] = qi.estimatedTime();
             interest[i] = qi.getInterest();
         }
 

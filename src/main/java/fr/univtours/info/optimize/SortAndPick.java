@@ -12,11 +12,11 @@ import java.util.stream.Collectors;
 
 public class SortAndPick implements TAPEngine{
     public static void main(String[] args) throws Exception {
-        double temps = 0.15, dist = 0.1;
+        double temps = 0.25, dist = 0.35;
 
-        var folder = "C:\\Users\\chanson\\Desktop\\instances\\";
+        var folder = "/home/alex/instances/";
         for (int i = 0; i < 30; i++) {
-            for (int size : new int[]{100, 200, 300, 400, 500, 600, 700}) {
+            for (int size : new int[]{20, 40, 60, 80, 100, 150, 200, 250, 300, 350, 400, 450, 500}) {
                 var in = folder + "tap_" + i + "_" + size + ".dat";
                 var out = folder + "tap_" + i + "_" + size + ".warm";
                 compute(in, out, temps, dist);
@@ -57,7 +57,7 @@ public class SortAndPick implements TAPEngine{
                 z += ist.interest[current];
             }
         }
-        System.out.printf("%s;%s;%s;%s%n",path.substring(39).replace("_"+ist.size+".dat", ""),ist.size,z,solution.stream().map(String::valueOf).collect(Collectors.joining(",")));
+        System.out.printf("%s;%s;%s;%s%n",path.substring(21).replace("_"+ist.size+".dat", ""),ist.size,z,solution.stream().map(String::valueOf).collect(Collectors.joining(",")));
     }
 
     @Override

@@ -21,7 +21,7 @@ import org.apache.commons.math3.stat.inference.TTest;
 import java.sql.*;
 import java.util.*;
 
-public class AssessQuery implements TimeableOp {
+public class AssessQuery extends Query implements TimeableOp {
 
     static HashMap<String, String> convivialNames;
     static {
@@ -43,12 +43,7 @@ public class AssessQuery implements TimeableOp {
 
     String table;
 
-    private String sql;
 
-    @Getter @Setter
-    long actualCost = 0;
-    @Setter @Getter
-    long explainCost = -1;
     @Getter @Setter
     double interest = 0;
     int support = -1;
@@ -94,96 +89,7 @@ public class AssessQuery implements TimeableOp {
         return Objects.hash(getAssessed(), getReference(), table, getMeasure(), getFunction(), getVal1(), getVal2());
     }
 
-    @Override
-    public long estimatedTime() {
-        if (explainCost == -1)
-            explain();
-        return explainCost;
-    }
 
-    @Override
-    public long actualTime() {
-        return (long) actualCost;
-    }
-
-    public String getSql(){
-        if (sql == null)
-            sql = this.getSqlInt();
-        return sql;
-    }
-
-    public void explainAnalyze() throws Exception{
-        final Statement pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = pstmt.executeQuery("explain analyze " + this.getSql()) ;
-
-        ResultSetMetaData rmsd = rs.getMetaData();
-        rs.beforeFirst();
-        ResultSetIterator rsit=new ResultSetIterator(rs);
-        Object[] tab=null;
-        while(rsit.hasNext()) { // move to last for getting execution time
-            tab=rsit.next();
-        }
-        String last= tab[0].toString();
-        String tmp1=last.split("Execution Time: ")[1];
-        String[] tmp2=tmp1.split(" ms");
-        this.actualCost = (long) Float.parseFloat(tmp2[0]);
-
-        pstmt.close();
-        rs.close();
-    }
-
-    public void explain(){
-        explain(this.conn);
-    }
-
-    public void explain(Connection conn) {
-        try (Statement pstmt = conn.createStatement()) {
-            // For classic dbms
-            if (DBConfig.DIALECT != 2) {
-                ResultSet rs = pstmt.executeQuery("explain  " + this.getSql());
-
-                rs.next();
-
-                String s1 = rs.getString("QUERY PLAN");
-                String[] s2 = s1.split("=");
-                String[] s3 = s2[1].split("\\.\\.");
-                this.explainCost = (long) Float.parseFloat(s3[0]);
-                rs.close();
-            }
-            // For MonetDB
-            else {
-                String line = "";
-                ResultSet rs = pstmt.executeQuery("explain  " + this.getSql());
-                while (rs.next()){
-                    line = rs.getString(1);
-                    if (line.contains("#total") && line.contains("time=")){
-                        this.explainCost = 1 + Long.parseLong(line.split("time=")[1].replace("usec", "").stripTrailing())/1000;
-                    }
-                }
-            }
-        } catch (SQLException e){
-            System.err.println("[ERROR] Failed to fetch query plan for " + this);
-        }
-
-    }
-
-
-    @Deprecated
-    public ResultSet execute() {
-        final Statement pstmt;
-        try {
-            pstmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = pstmt.executeQuery(this.getSql()) ;
-            this.resultset=rs;
-            rs.next();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        return resultset;
-
-    }
 
     protected String getSqlInt() {
         return "select t1." + reference.getName() + ",\n" +
@@ -200,46 +106,6 @@ public class AssessQuery implements TimeableOp {
                 "where t1."+reference.getName()+" = t2."+reference.getName()+" order by " + reference.getName() + ";";
     }
 
-
-    public void print(){
-        System.out.println(this.getSql());
-    }
-
-    public void printResult() throws SQLException {
-        if (resultset == null)
-            this.execute();
-
-        System.out.println("--- Result Set ---");
-        resultset.beforeFirst();
-        ResultSetMetaData rsmd = resultset.getMetaData();
-        int columnsNumber = rsmd.getColumnCount();
-        boolean first = true;
-        while (resultset.next()) {
-            if (first){
-                for (int i = 1; i <= columnsNumber; i++) {
-                    if (i > 1) System.out.print(",  ");
-                    System.out.print(rsmd.getColumnName(i));
-                }
-                System.out.println();
-                first = false;
-            }
-            for (int i = 1; i <= columnsNumber; i++) {
-                if (i > 1) System.out.print(",  ");
-                String columnValue = resultset.getString(i);
-                System.out.print(columnValue);
-            }
-            System.out.println();
-        }
-        System.out.println("--- Result Set END ---");
-        resultset.close();
-
-    }
-
-    public int support(){
-        if (support != -1)
-            return support;
-        else return support(this.conn);
-    }
 
     //This is way too slow use stats instead
     @Deprecated
@@ -311,19 +177,11 @@ public class AssessQuery implements TimeableOp {
         return convivialNames.get(getFunction()) + "(" + measure.getPrettyName() + ") for " + assessed.getPrettyName() + " = " + val1;
     }
 
+
     public String m2PrettyName(){
         return convivialNames.get(getFunction()) + "(" + measure.getPrettyName() + ") for " + assessed.getPrettyName() + " = " + val2;
     }
 
-    /*
-    public String getDescription(){
-        return "\nComparing " + assessed.getName() + " \"" + val1 + "\" vs \"" + val2 +
-                "\" on " + convivialNames.get(function) +
-                " of " + measure.getName() +
-                " grouped by " + reference.getName();// + "\n\\n" + testComment;
-    }
-
-     */
 
     public String getDescription(){
         return "\nFor measure " + convivialNames.get(function) + " of " + measure.getName() +
@@ -331,24 +189,6 @@ public class AssessQuery implements TimeableOp {
                 "\ngrouped by " + reference.getName();// + "\n\\n" + testComment;
     }
 
- /*   public String getDiffs(AssessQuery previous){
-        StringBuilder sb = new StringBuilder("\r\n\\n Differences from Previous Query: ");
-        if (!measure.getName().equals(previous.measure.getName()))
-            sb.append(previous.measure.getName()).append(" -> ").append(measure.getName()).append(" | ");
-        if (!function.equals(previous.function))
-            sb.append(previous.function).append(" -> ").append(function).append(" | ");
-        if (!previous.getAssessed().getName().equals(getAssessed().getName()))
-            sb.append(previous.getAssessed().getName()).append(" -> ").append(assessed.getName()).append(" | ");
-        if (!val1.equals(previous.val1))
-            sb.append(previous.val1).append(" -> ").append(val1).append(" | ");
-        if (!val2.equals(previous.val2))
-            sb.append(previous.val2).append(" -> ").append(val2).append(" | ");
-        if(!reference.getName().equals(previous.reference.getName()))
-            sb.append(previous.reference.getName()).append(" -> ").append(reference.getName()).append(" | ");
-        return sb.toString();
-    }
-
-  */
 
     public String getDiffs(AssessQuery previous){
         StringBuilder sb = new StringBuilder("\r\n\\n Changing: ");
@@ -366,6 +206,37 @@ public class AssessQuery implements TimeableOp {
             sb.append(previous.reference.getName()).append(" by ").append(reference.getName()).append(" and ");
         return sb.toString();
     }
+
+    /**
+     *            OLD Stuff - Only needed for backward compatibility with edbt 22
+     */
+
+    /**
+     * Assess queries hold directly a connection object for historic reasons
+     */
+    @Override
+    public void explain(){
+        explainInt(this.conn);
+    }
+
+    /**
+     * Only used for edbt 22
+     * @param t
+     */
+    public void setExplainCost(long t){
+        this.explainCost = t;
+    }
+
+    /**
+     * Only used for edbt 22
+     * @param t
+     */
+    public void setActualCost(long t){
+        this.actualCost = t;
+    }
+
+
+    @Deprecated
     public Pair<Double, Double> pearsonTest(boolean close) throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();
@@ -409,6 +280,7 @@ public class AssessQuery implements TimeableOp {
         return new Pair<>(correlation, pvalue);
     }
 
+    @Deprecated
     public double TTest(boolean close) throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();
@@ -448,6 +320,7 @@ public class AssessQuery implements TimeableOp {
     }
 
 
+    @Deprecated
     public double FTest(boolean close) throws SQLException {
         ArrayList<Double> left = new ArrayList<>();
         ArrayList<Double> right = new ArrayList<>();

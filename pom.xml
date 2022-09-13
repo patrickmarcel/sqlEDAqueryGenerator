@@ -138,6 +138,14 @@
       <version>1.4.200</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/monetdb/monetdbe-java -->
+    <dependency>
+      <groupId>monetdb</groupId>
+      <artifactId>monetdbe-java</artifactId>
+      <version>1.10</version>
+    </dependency>
+
+
     <!--<dependency>
       <groupId>it.unimi.dsi</groupId>
       <artifactId>fastutil</artifactId>
