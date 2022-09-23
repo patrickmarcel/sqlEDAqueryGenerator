@@ -44,8 +44,7 @@ public class AssessQuery extends Query implements TimeableOp {
     String table;
 
 
-    @Getter @Setter
-    double interest = 0;
+
     int support = -1;
 
     @Getter

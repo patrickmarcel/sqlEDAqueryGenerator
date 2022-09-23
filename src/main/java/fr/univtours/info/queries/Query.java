@@ -2,6 +2,8 @@ package fr.univtours.info.queries;
 
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
@@ -21,6 +23,10 @@ public abstract class Query {
      * Estimated execution cost (DBMS dependant)
      */
     protected long explainCost = -1;
+
+    @Getter
+    @Setter
+    double interest = 0;
 
     public String getSql(){
         if (sqlText == null)
