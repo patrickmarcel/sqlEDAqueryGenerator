@@ -17,6 +17,7 @@ import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.optimize.*;
 import fr.univtours.info.queries.AssessQuery;
 import fr.univtours.info.queries.ConnectionPool;
+import fr.univtours.info.queries.Query;
 import fr.univtours.info.tap.Instance;
 import org.apache.commons.cli.*;
 import org.apache.commons.rng.UniformRandomProvider;
@@ -135,7 +136,7 @@ public class MainTAP {
         }));
         supports.forEach(AssessQuery::setInsights);
 
-        List<AssessQuery> tapQueries =  supports.keySet().parallelStream()
+        List<Query> tapQueries =  supports.keySet().parallelStream()
                 .collect(Collectors.groupingByConcurrent(q -> q.getAssessed().getPrettyName() + "_" + q.getVal1() + "_" + q.getVal2() + "_" + q.getMeasure().getPrettyName()))
                 .values().parallelStream().map(l -> l.stream().max(Comparator.comparing(AssessQuery::getInterest)).get()).collect(Collectors.toList());
         System.out.println("[INFO] Total queries (Instance size) " + tapQueries.size());
@@ -174,9 +175,9 @@ public class MainTAP {
         tapQueries.stream().parallel().forEach(q ->{
 
             if (INTERESTINGNESS.equals("full"))
-                q.setInterest(q.getInterest() * conciseness(q.getReference().getActiveDomain().size(), q.support(stats)));
+                q.setInterest(q.getInterest() * conciseness(((AssessQuery)q).getReference().getActiveDomain().size(), ((AssessQuery)q).support(stats)));
             else if (INTERESTINGNESS.equals("con"))
-                q.setInterest(conciseness(q.getReference().getActiveDomain().size(), q.support(stats)));
+                q.setInterest(conciseness(((AssessQuery)q).getReference().getActiveDomain().size(), ((AssessQuery)q).support(stats)));
 
         });
         stopwatch.stop();
@@ -187,8 +188,8 @@ public class MainTAP {
         System.out.println("[INFO] Estimating query runtime ... -+-");
         tapQueries.stream().parallel().forEach(q -> {
             //Connection c = cp.getConnection();
-            q.setExplainCost(1);
-            q.setActualCost(1);
+            ((AssessQuery)q).setExplainCost(1);
+            ((AssessQuery)q).setActualCost(1);
             //cp.returnConnection(c);
         });
         //cp.close();
@@ -198,7 +199,8 @@ public class MainTAP {
         try (BufferedWriter out = new BufferedWriter(new FileWriter(System.getProperty("user.home") + "/tap_queries_dump.csv"))){
             out.write("qid,measure,function,ref,val1,val2,val1_f,val2_f,gb_ad_size,agg_size,interest\n");
             int n = 0;
-            for (AssessQuery query : tapQueries){
+            for (Query q : tapQueries){
+                AssessQuery query = (AssessQuery) q;
                 out.write(n + ",");
                 out.write(query.getMeasure() + ",");
                 out.write(query.getFunction() + ",");
@@ -226,7 +228,8 @@ public class MainTAP {
 
         // Naive heuristic
         TAPEngine naive = new KnapsackStyle();
-        List<AssessQuery> naiveSolution = naive.solve(tapQueries, QUERIESNB, MAX_DISTANCE);
+        List<AssessQuery> naiveSolution = naive.solve(tapQueries, QUERIESNB, MAX_DISTANCE).stream()
+                .map(AssessQuery.class::cast).collect(Collectors.toList());
         naiveSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
         NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
         naiveSolution.forEach(out::addQuery);
@@ -239,7 +242,8 @@ public class MainTAP {
 
         if (tapQueries.size() < 1000 && ! CPLEX_BIN.equals("")){
             TAPEngine exact = new CPLEXTAP(CPLEX_BIN, "data/tap_instance.dat");
-            List<AssessQuery> exactSolution = exact.solve(tapQueries, QUERIESNB, MAX_DISTANCE);
+            List<AssessQuery> exactSolution = exact.solve(tapQueries, QUERIESNB, MAX_DISTANCE).stream()
+                    .map(AssessQuery.class::cast).collect(Collectors.toList());
             exactSolution.forEach(q -> q.setTestComment(supports.get(q).stream().map(Insight::toString).collect(Collectors.joining(", "))));
             out = new NotebookJupyter(config.getBaseURL());
             exactSolution.forEach(out::addQuery);

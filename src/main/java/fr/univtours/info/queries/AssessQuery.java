@@ -15,13 +15,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.dbutils.ResultSetIterator;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.inference.TTest;
 
 import java.sql.*;
 import java.util.*;
 
-public class AssessQuery extends Query implements TimeableOp {
+public class AssessQuery extends Query {
 
     static HashMap<String, String> convivialNames;
     static {
@@ -127,15 +128,15 @@ public class AssessQuery extends Query implements TimeableOp {
         return support;
     }
 
-    public double dist(AssessQuery other) {
-        return getDistance(other);
+    @Override
+    public double dist(Query other) {
+        if (other instanceof AssessQuery)
+            return getDistanceHamming((AssessQuery) other);
+        else
+            throw new NotImplementedException();
     }
 
-    public float getDistance(AssessQuery other) {
-        return getDistanceHamming(other);
-    }
-
-    public float getDistanceHamming(AssessQuery other) {
+    public double getDistanceHamming(AssessQuery other) {
         int diffs = 0;
         // Agg function changed ?
         if(this.function.compareTo(other.getFunction())!=0)  diffs += 1;
@@ -357,6 +358,4 @@ public class AssessQuery extends Query implements TimeableOp {
 
         return pvalue;
     }
-
-
 }

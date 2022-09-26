@@ -96,20 +96,20 @@ public class Generator {
 
         if (theQ.size() < 10000){
             TAPEngine exact = new CPLEXTAP("C:\\Users\\achan\\source\\repos\\cplex_test\\x64\\Release\\cplex_test.exe", "data/tap_instance.dat");
-            List<AssessQuery> exactSolution = exact.solve(queries, 25, 150);
-            NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
-            exactSolution.forEach(out::addQuery);
-            Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+            //List<AssessQuery> exactSolution = exact.solve(queries, 25, 150);
+            //NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
+            //exactSolution.forEach(out::addQuery);
+            //Files.write(Paths.get("data/outpout_exact.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
         } else {
             System.err.println("[WARNING] Couldn't run exact solver : too many queries");
         }
 
         //Naive heuristic from 2020 paper
         TAPEngine naive = new NaiveTAP();
-        List<AssessQuery> naiveSolution = naive.solve(queries, 25, 150);
-        NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
-        naiveSolution.forEach(out::addQuery);
-        Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
+        //List<AssessQuery> naiveSolution = naive.solve(queries, 25, 150);
+        //NotebookJupyter out = new NotebookJupyter(config.getBaseURL());
+        //naiveSolution.forEach(out::addQuery);
+        //Files.write(Paths.get("data/outpout.ipynb"), out.toJson().getBytes(StandardCharsets.UTF_8));
 
 
         conn.close();

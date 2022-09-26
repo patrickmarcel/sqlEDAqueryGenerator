@@ -1,6 +1,7 @@
 package fr.univtours.info.optimize;
 
 import fr.univtours.info.queries.AssessQuery;
+import fr.univtours.info.queries.Query;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -87,28 +88,28 @@ public class InstanceLegacy {
         return new InstanceLegacy(nbActions, distances, costsOrig, relevancesOrig);
     }
 
-    public static void writeFile(String path, List<AssessQuery> theQ){
+    public static void writeFile(String path, List<Query> theQ){
         try {
             FileOutputStream fos = new FileOutputStream(path);
             PrintWriter io = new PrintWriter(fos);
             io.println(theQ.size());
             for (int i = 0; i < theQ.size(); i++) {
-                AssessQuery q = theQ.get(i);
+                Query q = theQ.get(i);
                 io.print(Double.toString(q.getInterest()));
                 if (i < theQ.size() - 1)
                     io.print(" ");
             }
             io.print('\n');
             for (int i = 0; i < theQ.size(); i++) {
-                AssessQuery q = theQ.get(i);
+                Query q = theQ.get(i);
                 io.print((int) q.estimatedTime());// Now using time estimate not real run time
                 if (i < theQ.size() - 1)
                     io.print(" ");
             }
             io.print('\n');
-            for (AssessQuery q : theQ){
+            for (Query q : theQ){
                 for (int i = 0; i < theQ.size(); i++) {
-                    AssessQuery qp = theQ.get(i);
+                    Query qp = theQ.get(i);
                     io.print((int) q.dist(qp));
                     if (i < theQ.size() - 1)
                         io.print(" ");

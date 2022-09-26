@@ -2,6 +2,7 @@ package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.collection.Element;
 import fr.univtours.info.queries.AssessQuery;
+import fr.univtours.info.queries.Query;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class SortAndPick implements TAPEngine{
     }
 
     @Override
-    public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
+    public List<Query> solve(List<Query> theQ, int timeBudget, int maxDistance) {
         int size = theQ.size();
 
         List<Integer> solution = new ArrayList<>();

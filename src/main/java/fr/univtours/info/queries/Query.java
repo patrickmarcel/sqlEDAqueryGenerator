@@ -2,13 +2,14 @@ package fr.univtours.info.queries;
 
 import fr.univtours.info.dataset.DBConfig;
 import fr.univtours.info.dataset.Dataset;
+import fr.univtours.info.optimize.tsp.Measurable;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.dbutils.ResultSetIterator;
 
 import java.sql.*;
 
-public abstract class Query {
+public abstract class Query implements Measurable<Query> {
 
     Dataset source;
 

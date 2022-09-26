@@ -1,6 +1,7 @@
 package fr.univtours.info.optimize;
 
 import fr.univtours.info.queries.AssessQuery;
+import fr.univtours.info.queries.Query;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -18,7 +19,7 @@ public class CPLEXTAP implements TAPEngine{
     }
 
     @Override
-    public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
+    public List<Query> solve(List<Query> theQ, int timeBudget, int maxDistance) {
 
         InstanceLegacy.writeFile(temp_file_path, theQ);
 
@@ -46,7 +47,7 @@ public class CPLEXTAP implements TAPEngine{
 
             System.out.println("CPLEX is Done");
             System.out.println(solutionRaw);
-            ArrayList<AssessQuery> solution = new ArrayList<>();
+            ArrayList<Query> solution = new ArrayList<>();
             Arrays.stream(solutionRaw.replace("SOLUTION: ", "").stripTrailing().split(" "))
                     .mapToInt(Integer::parseInt)
                     .forEach(i -> solution.add(theQ.get(i-1)));

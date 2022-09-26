@@ -2,6 +2,7 @@ package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.collection.Element;
 import fr.univtours.info.queries.AssessQuery;
+import fr.univtours.info.queries.Query;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -165,14 +166,14 @@ public class KnapsackStyle implements TAPEngine{
         return best_insert_cost;
     }
 
-    static double insert_opt(List<Integer> solution, int candidate, List<AssessQuery> queries) {
+    static double insert_opt(List<Integer> solution, int candidate, List<Query> queries) {
         if (solution.size() == 0){
             solution.add(candidate);
             return 0;
         }
         double best_insert_cost = 10e50;// large enough
         int best_insert_pos = -1;
-        AssessQuery candidateQuery = queries.get(candidate);
+        Query candidateQuery = queries.get(candidate);
         for (int i = 0; i < solution.size() + 1; i++) {
             double new_cost = 0;
             // insert at first position
@@ -210,7 +211,7 @@ public class KnapsackStyle implements TAPEngine{
 
 
     @Override
-    public List<AssessQuery> solve(List<AssessQuery> theQ, int timeBudget, int maxDistance) {
+    public List<Query> solve(List<Query> theQ, int timeBudget, int maxDistance) {
         System.out.println("[INFO] KS Heuristic : Init");
         int size = theQ.size();
 
