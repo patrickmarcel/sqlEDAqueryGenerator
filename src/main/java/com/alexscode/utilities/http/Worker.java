@@ -7,7 +7,7 @@ import java.net.Socket;
 import java.util.zip.GZIPOutputStream;
 
 
-class Worker implements Runnable {
+public class Worker implements Runnable {
 
     private static String _404 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Page Not Found</title></head><body><h1>Erreur 404</h1><h2>Elsa n'a pas trouvée la page demandée !</h2><img src=\"https://media.giphy.com/media/xSlfy3sa3ecEw/giphy.gif\"></body></html>";
 
@@ -15,7 +15,7 @@ class Worker implements Runnable {
     private HttpReq requete;
     private Handler handler;
 
-    Worker(Socket socket, Handler h) {
+    public Worker(Socket socket, Handler h) {
         this.socket = socket;
         requete = new HttpReq();
         handler = h;
