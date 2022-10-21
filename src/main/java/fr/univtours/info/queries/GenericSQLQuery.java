@@ -28,7 +28,7 @@ public class GenericSQLQuery extends Query{
 
     @Override
     public String toString() {
-        return "--- GenericSQLQuery ---\n" + getSqlInt() + "\n --- END Query ---";
+        return getSqlInt();
     }
 
     @Override

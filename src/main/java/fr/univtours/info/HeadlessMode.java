@@ -66,6 +66,7 @@ public class HeadlessMode {
             @Override
             public Response act(final Request req) throws IOException {
                 final String rawBody = new RqPrint(req).printBody();
+                //System.out.println(rawBody);
                 ArrayList<Long> times = new ArrayList<>();
 
                 JsonArray body = gson.fromJson(rawBody, JsonArray.class);
@@ -73,8 +74,27 @@ public class HeadlessMode {
                     GenericSQLQuery sqlQuery = queryFromJson(jquery.getAsJsonObject());
                     timeCache.computeIfAbsent(sqlQuery, Query::estimatedTime);
                     times.add(timeCache.get(sqlQuery));
+                    System.out.println(sqlQuery);
                 }
-                System.out.println(gson.toJson(times));
+                //System.out.println(gson.toJson(times));
+                return new RsText(gson.toJson(times));
+            }
+        }
+
+        final class TkInterest implements Take {
+            @Override
+            public Response act(final Request req) throws IOException {
+                final String rawBody = new RqPrint(req).printBody();
+                ArrayList<Long> times = new ArrayList<>();
+
+                JsonArray body = gson.fromJson(rawBody, JsonArray.class);
+                for (JsonElement jquery : body){
+                    GenericSQLQuery sqlQuery = queryFromJson(jquery.getAsJsonObject());
+                    timeCache.computeIfAbsent(sqlQuery, Query::estimatedTime);
+                    times.add(timeCache.get(sqlQuery));
+                    System.out.println(sqlQuery);
+                }
+                //System.out.println(gson.toJson(times));
                 return new RsText(gson.toJson(times));
             }
         }
@@ -87,31 +107,6 @@ public class HeadlessMode {
     }
 
 
-    static private String readString(InputStream is) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        InputStreamReader sr = new InputStreamReader(is);
-        char[] buf = new char[1024];
-        int len;
-        while ((len = sr.read(buf)) > 0) {
-            sb.append(buf, 0, len);
-        }
-        return sb.toString();
-    }
-
-    /*
-        select t1."Type IRIS",
-               t1.measure1 as "Sum(Conso moyenne (MWh)) for Type EPCI = ZZ", t2.measure2 as "Sum(Conso moyenne (MWh)) for Type EPCI = CU"
-        from
-          (select  "Type IRIS", sum("Conso moyenne (MWh)") as measure1
-           from conso_iris
-           where  "Type EPCI" = 'ZZ'
-           group by "Type EPCI", "Type IRIS") t1,
-          (select  "Type IRIS",sum("Conso moyenne (MWh)") as measure2
-           from conso_iris
-           where "Type EPCI" = 'CU'
-           group by "Type EPCI", "Type IRIS") t2
-        where t1."Type IRIS" = t2."Type IRIS" order by "Type IRIS";
-     */
     static private GenericSQLQuery queryFromJson(JsonObject json){
         String gbAtt = json.get("gb").getAsString();
         String fun = json.get("agg").getAsString();
