@@ -58,7 +58,6 @@ public class CPSovler implements TAPEngine {
 
         // interest and size of solution
         IntVar solSize = model.intVar("sol_size", 0, ist.getSize());
-        IntVar solTime = model.intVar("sol_time", 0, ist.getSize());
         IntVar solInterest = model.intVar("sol_value", 0, Arrays.stream(I).sum());
 
         /*
@@ -84,6 +83,7 @@ public class CPSovler implements TAPEngine {
         model.sum(interest, "=", solInterest).post();
 
         // ep_t
+        model.sum(time, "<=", timeBudget).post();
         for (int i = 0; i < ist.getSize(); i++) {
             Tuples time_tup = new Tuples(true);
             for (int j = 0; j < ist.getSize(); j++) {
@@ -95,9 +95,6 @@ public class CPSovler implements TAPEngine {
             time_tup.add(ist.getSize(), T[i]);
             model.table(succ[i], time[i], time_tup).post();
         }
-        model.sum(time, "=", solTime).post();
-        solTime.le(maxTime).post();
-
 
         // ep_d
         model.sum(dist, "<=", maxDistance).post();
