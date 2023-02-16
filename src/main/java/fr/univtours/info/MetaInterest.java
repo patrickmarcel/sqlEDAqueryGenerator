@@ -21,7 +21,7 @@ public class MetaInterest {
     static List<DatasetMeasure> theMeasures;
 
     public static void main(String[] args) throws SQLException, IOException {
-        //DBConfig.CONF_FILE_PATH = "/some/path";
+        DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/insects.properties";
 
         config = DBConfig.newFromFile();
         conn = config.getConnection();
@@ -33,7 +33,9 @@ public class MetaInterest {
         System.out.println("Connection to database successful");
 
         System.out.print("Collecting statistics ... ");
-        stats = new DatasetStats(ds);
+        //stats = new DatasetStats(ds);
         System.out.println(" Done");
+
+
     }
 }

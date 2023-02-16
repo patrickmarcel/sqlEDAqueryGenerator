@@ -35,7 +35,7 @@ public class Dataset {
          this.theDimensions=theDimensions;
          this.theMeasures=theMeasures;
          theSchema = new DatasetSchema(this);
-         try (ResultSet rs = conn.createStatement().executeQuery("Select count(*) from " +table)){
+         try (ResultSet rs = conn.createStatement().executeQuery("Select count(*) from \"" + table + "\";")){
              rs.next();
              tableSize = rs.getInt(1);
          }catch (SQLException e){

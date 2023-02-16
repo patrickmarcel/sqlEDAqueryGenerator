@@ -1,42 +1,99 @@
 package fr.univtours.info.optimize;
 
 import com.alexscode.utilities.collection.Element;
-import fr.univtours.info.queries.AssessQuery;
 import fr.univtours.info.queries.Query;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class KnapsackStyle implements TAPEngine{
     private static int current_ID = -1;
     private static int current_SIZE = -1;
 
-    public static void main(String[] args) throws Exception {
-        double temps = 0.6, dist = 0.3;
+    static class DPQ {
+        int gbId, LselId, RselId, lmId, rmId;
+        String selDim, agg;
 
-        //REMOVE ME
-        //compute("C:\\Users\\chanson\\Desktop\\tap_special_10.dat", "C:\\Users\\chanson\\Desktop\\deleteme", temps, dist);
-        //System.exit(0);
-
-        //var folder = "C:\\Users\\chanson\\PycharmProjects\\tap_coupes\\filtered_instances\\";
-        var folder = "C:\\Users\\chanson\\Desktop\\filtered_instances_f3\\";
-        System.out.println("series_id;size;time;z;solution");
-        for (int i = 0; i < 30; i++) {
-            current_ID = i;
-            for (int size : new int[]{40, 60, 80, 100, 200, 300}) {
-                current_SIZE = size;
-                var in = folder + "tap_" + i + "_" + size + ".dat";
-                var out = folder + "tap_" + i + "_" + size + ".ks";
-                compute(in, out, temps, dist);
-            }
+        public DPQ(String in){
+            String tmp[] = in.split(";");
+            agg = tmp[0];
+            lmId = Integer.parseInt(tmp[1]);
+            rmId = Integer.parseInt(tmp[2]);
+            gbId = Integer.parseInt(tmp[3]);
+            selDim = tmp[4].split("=")[0];
+            LselId = Integer.parseInt(tmp[4].split("=")[1].replace("&", ""));
+            RselId = Integer.parseInt(tmp[5].split("=")[1].replace("&", ""));
         }
+
+        public double dist(DPQ other){
+            int diffs = 0;
+            // Agg function changed ?
+            if(agg != other.agg)  diffs += 1;
+            // Measure changed ?
+            if(lmId != other.lmId) diffs += 1;
+            if(rmId != other.rmId) diffs += 1;
+
+            // predicates
+            if(!selDim.equals(other.selDim) || LselId != other.LselId) {
+                diffs += 2;
+            }
+            if(!selDim.equals(other.selDim) || RselId != other.RselId) {
+                diffs += 2;
+            }
+            // Group by dimension
+            if (gbId != other.gbId){
+                diffs += 5;
+            }
+
+            return diffs;
+        }
+
+    }
+
+    public static void main(String[] args) throws Exception {
+        try (Stream<Path> paths = Files.walk(Paths.get("/home/alex/IdeaProjects/sqlEDAqueryGenerator/data/to_run"))) {
+            paths.filter(Files::isRegularFile).forEach(file -> {
+                try {
+                    List<String> lines = Files.readAllLines(file);
+                    var tmp = file.getFileName().toString().split("_");
+                    int epdist = Integer.parseInt(tmp[4]);
+                    int eptime = Integer.parseInt(tmp[3]);
+                    int nbQ = Integer.parseInt(lines.get(0));
+                    double[] interest = new double[nbQ];
+                    double[] temps = new double[nbQ];
+                    int idx = 0;
+                    for (String el : lines.get(1).split(" "))
+                        interest[idx++] = Double.parseDouble(el);
+                    idx = 0;
+                    for (String el : lines.get(2).split(" "))
+                        temps[idx++] = Double.parseDouble(el);
+
+
+                    List<DPQ> qs = new ArrayList<>(nbQ);
+                    for (String line : lines.subList(3, lines.size())){
+                        qs.add(new DPQ(line));
+                    }
+
+                    System.out.println(tmp[4]+"_"+tmp[2]+"_"+tmp[3]);
+                    System.out.println(solve(qs, eptime, epdist, interest, temps));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+
 
     }
 
@@ -251,6 +308,86 @@ public class KnapsackStyle implements TAPEngine{
         }
         System.out.println("[INFO] KS Heuristic : solution is done z=" + z);
         return solution.stream().map(theQ::get).collect(Collectors.toList());
+    }
+
+    public static List<Integer> solve(List<DPQ> theQ, int timeBudget, int maxDistance, double[] interest , double[] times ) {
+        System.out.println("[INFO] KS Heuristic : Init, |Q|=" + theQ.size());
+        int size = theQ.size();
+
+        List<Integer> solution = new ArrayList<>();
+        Element[] order = new Element[size];
+        for (int i = 0; i < size; i++) {
+            order[i] = new Element(i, interest[i]/times[i]);
+        }
+
+        // Merge sort see javadoc
+        System.out.println("[INFO] KS Heuristic : Starting sort");
+        Arrays.sort(order, Comparator.comparing(Element::getValue).reversed());
+        System.out.println("[INFO] KS Heuristic : Sort Complete");
+
+        for (int i = 0; i < 100; i++) {
+            System.out.print(order[i].index + "|" + order[i].value + " ");
+        }
+        System.out.println();
+
+        double total_dist = 0;
+        double total_time = 0;
+        double z = 0;
+
+
+        System.out.println("[INFO] KS Heuristic : Construction Solution");
+        for (int i = 0; i < size; i++)
+        {
+            int current = order[i].index;
+
+            if (timeBudget - (total_time + times[current]) >= 0){
+                double backup = total_dist;
+                total_dist += insert_opt_dpq(solution, current, theQ);
+                if (total_dist > maxDistance){
+                    //rollback and check next querry
+                    solution.remove(Integer.valueOf(current));
+                    total_dist = backup;
+                } else {
+                    total_time += times[current];
+                    z += interest[current];
+                }
+            }
+        }
+        System.out.println("[INFO] KS Heuristic : eptime=" + total_time + "/" + timeBudget);
+        System.out.println("[INFO] KS Heuristic : epdist=" + total_dist + "/" + maxDistance);
+        System.out.println("[INFO] KS Heuristic : solution is done z=" + z);
+
+        return solution;
+    }
+
+    static double insert_opt_dpq(List<Integer> solution, int candidate, List<DPQ> queries) {
+        if (solution.size() == 0){
+            solution.add(candidate);
+            return 0;
+        }
+        double best_insert_cost = 10e50;// large enough
+        int best_insert_pos = -1;
+        DPQ candidateQuery = queries.get(candidate);
+        for (int i = 0; i < solution.size() + 1; i++) {
+            double new_cost = 0;
+            // insert at first position
+            if (i == 0){
+                new_cost += candidateQuery.dist(queries.get(solution.get(0)));
+            } else if (i < solution.size()){
+                int current_querry = solution.get(i);
+                new_cost += candidateQuery.dist(queries.get(solution.get(i-1)));
+                new_cost += candidateQuery.dist(queries.get(current_querry));
+                new_cost -= queries.get(solution.get(i-1)).dist(queries.get(current_querry));
+            } else {
+                new_cost += queries.get(solution.get(solution.size()-1)).dist(candidateQuery);
+            }
+            if (new_cost < best_insert_cost){
+                best_insert_cost = new_cost;
+                best_insert_pos = i;
+            }
+        }
+        solution.add(best_insert_pos, candidate);
+        return best_insert_cost;
     }
 
     private static int argMinInt(List<Integer> sol, InstanceLegacy ist){

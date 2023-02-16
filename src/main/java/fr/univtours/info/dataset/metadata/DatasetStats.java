@@ -54,7 +54,7 @@ public class DatasetStats {
                 //close statement
                 st.close();
                 //run analyse
-                String analyse = "analyse " + table + ";";
+                String analyse = "analyse \"" + table + "\";";
                 boolean status = conn.createStatement().execute(analyse);
                 System.err.println("\n[ERROR] An analyse command was issued on table " + table + " statistics are necessary for TAP sampling please wait a few second before restarting TAP");
                 System.exit(2);
@@ -65,7 +65,7 @@ public class DatasetStats {
         // Absolute frequency - Active domain size
         for (DatasetDimension dim : dimensions) {
             HashMap<String, Integer> tmp = new HashMap<>();
-            String sql = "select " + dim.getName() + ", count(*) from " + table + " group by " + dim.getName() + ";";
+            String sql = "select " + dim.getName() + ", count(*) from \"" + table + "\" group by " + dim.getName() + ";";
             Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
             ResultSet rs = st.executeQuery(sql) ;
             while (rs.next()) {
