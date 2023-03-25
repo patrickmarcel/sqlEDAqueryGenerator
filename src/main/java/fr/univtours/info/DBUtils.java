@@ -19,18 +19,18 @@ public class DBUtils {
     public static boolean checkAimpliesB(DatasetDimension A, DatasetDimension B, Connection db_conn, String table){
         if (cache.get(A.getName() + B.getName() + table) != null)
             return cache.get(A.getName() + B.getName() + table);
-        String sql = "select count(*) from (select "+A.getName()+", count(distinct "+B.getName()+") from \""+table+"\" group by "+A.getName()+" having  count(distinct "+B.getName()+")>1) as T;";
+        String sql = "select count(1) = 0 from (select "+A.getName()+", count(distinct "+B.getName()+") from \""+table+"\" group by "+A.getName()+" having  count(distinct "+B.getName()+")>1) as T;";
         //System.out.println(sql);
         try {
             final Statement pstmt = db_conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_UPDATABLE);
+                    ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = pstmt.executeQuery(sql) ;
             rs.next();
-            int cnt = rs.getInt(1);
+            boolean cnt = rs.getBoolean(1);
             pstmt.close();
             rs.close();
-            cache.put(A.getName() + B.getName() + table, cnt == 0);
-            return cnt == 0;
+            cache.put(A.getName() + B.getName() + table, cnt);
+            return cnt;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             return false;

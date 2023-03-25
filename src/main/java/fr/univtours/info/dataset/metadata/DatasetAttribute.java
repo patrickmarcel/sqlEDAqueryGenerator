@@ -1,14 +1,19 @@
 package fr.univtours.info.dataset.metadata;
 
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
 
-public abstract class DatasetAttribute {
+public abstract class DatasetAttribute implements JsonSerializer<DatasetAttribute> {
 
     @Getter
     String name;
@@ -36,5 +41,10 @@ public abstract class DatasetAttribute {
     @Override
     public int hashCode() {
         return Objects.hash(getName(), table);
+    }
+
+    @Override
+    public JsonElement serialize(DatasetAttribute datasetAttribute, Type type, JsonSerializationContext jsonSerializationContext) {
+        return new JsonPrimitive(name);
     }
 }

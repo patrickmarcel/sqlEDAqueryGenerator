@@ -1,3 +1,5 @@
+package fr.univtours.info;
+
 import com.google.errorprone.annotations.Var;
 import fr.univtours.info.optimize.InstanceLegacy;
 import fr.univtours.info.optimize.TAPEngine;
@@ -29,8 +31,8 @@ public class CPSovler implements TAPEngine {
     public static List<Integer> solve(InstanceLegacy ist, int timeBudget, int maxDistance) {
 
         int maxDist = 20;
+        int precision = 1000;
 
-        int precision = 10000;
         int[] I = new int[ist.getInterest().length];
         for (int i = 0; i < I.length; i++) {
             I[i] = (int) Math.floor(ist.getInterest()[i] * precision);
@@ -117,7 +119,7 @@ public class CPSovler implements TAPEngine {
             // in a solution
             model.table(succ[i], dist[i], tuples).post();
         }
-
+/*
 
         //First is not a successor
         for (int i = 0; i < ist.getSize(); i++) {
@@ -128,7 +130,7 @@ public class CPSovler implements TAPEngine {
         //last is one with successor = size
         for (int i = 0; i < ist.getSize(); i++) {
             succ[i].eq(ist.getSize()).imp(last.eq(i)).post();
-        }
+        }*/
 
 
         model.subPath(succ, first, last, 0, solSize).post();
