@@ -167,6 +167,13 @@
       <version>1.24.4</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/com.oracle.database.jdbc/ojdbc11 -->
+    <dependency>
+      <groupId>com.oracle.database.jdbc</groupId>
+      <artifactId>ojdbc11</artifactId>
+      <version>21.9.0.0</version>
+    </dependency>
+
 
     <!--<dependency>
       <groupId>it.unimi.dsi</groupId>
@@ -185,6 +192,12 @@
       <groupId>org.choco-solver</groupId>
       <artifactId>choco-solver</artifactId>
       <version>4.10.10</version>
+    </dependency>
+
+    <dependency>
+      <groupId>me.tongfei</groupId>
+      <artifactId>progressbar</artifactId>
+      <version>0.9.4</version>
     </dependency>
 
 

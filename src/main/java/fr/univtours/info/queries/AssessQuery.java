@@ -2,6 +2,7 @@ package fr.univtours.info.queries;
 
 import com.alexscode.utilities.collection.Pair;
 import com.alexscode.utilities.math.FTest;
+import com.google.common.base.Stopwatch;
 import fr.univtours.info.DBUtils;
 import fr.univtours.info.Insight;
 import fr.univtours.info.dataset.DBConfig;
@@ -21,6 +22,7 @@ import org.apache.commons.math3.stat.inference.TTest;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class AssessQuery extends Query {
 
@@ -89,6 +91,56 @@ public class AssessQuery extends Query {
         return Objects.hash(getAssessed(), getReference(), table, getMeasure(), getFunction(), getVal1(), getVal2());
     }
 
+    public void explainAnalyze() throws Exception{
+        String dbms = conn.getMetaData().getDatabaseProductName();
+
+        final Statement pstmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+
+        if (dbms.equalsIgnoreCase("monetdb")){
+            Stopwatch timer = Stopwatch.createStarted();
+
+            ResultSet rs = pstmt.executeQuery(this.getSql());
+            int lines = 0;
+            while (rs.next()) { // move to last for getting execution time
+                lines++;
+            }
+            rs.close();
+            timer.stop();
+            this.actualCost = timer.elapsed(TimeUnit.MICROSECONDS);
+        } else if (dbms.equalsIgnoreCase("oracle")) {
+            Stopwatch timer = Stopwatch.createStarted();
+
+            String sql = this.getSql();
+            sql = sql.replace("\"" + this.table + "\"", this.table);
+            ResultSet rs = pstmt.executeQuery(sql.substring(0, sql.length()-1));
+            int lines = 0;
+            while (rs.next()) { // move to last for getting execution time
+                lines++;
+            }
+            rs.close();
+            timer.stop();
+            this.actualCost = timer.elapsed(TimeUnit.MILLISECONDS);
+        } else {
+            ResultSet rs = pstmt.executeQuery("explain analyze " + this.getSql());
+
+            ResultSetMetaData rmsd = rs.getMetaData();
+            rs.beforeFirst();
+            ResultSetIterator rsit = new ResultSetIterator(rs);
+            Object[] tab = null;
+            while (rsit.hasNext()) { // move to last for getting execution time
+                tab = rsit.next();
+            }
+            String last = tab[0].toString();
+            String tmp1 = last.split("Execution Time: ")[1];
+            String[] tmp2 = tmp1.split(" ms");
+            this.actualCost = (long) Float.parseFloat(tmp2[0]);
+
+            rs.close();
+        }
+
+        pstmt.close();
+    }
+
 
 
     protected String getSqlInt() {
@@ -96,11 +148,11 @@ public class AssessQuery extends Query {
                 "       t1.measure1 as \"" + m1PrettyName() + "\", t2.measure2 as \"" + m2PrettyName() + "\" \n" +
                 "from\n" +
                 "  (select "+assessed.getName()+", "+reference.getName()+", " + this.function + "(" + this.measure.getName() + ") as measure1\n" +
-                "   from "+ table +"\n" +
+                "   from \""+ table +"\"\n" +
                 "   where  "+assessed.getName()+" = '"+ val1.replaceAll("'", "''") +"'\n" +
                 "   group by "+assessed.getName()+", "+reference.getName()+") t1,\n" +
                 "  (select "+assessed.getName()+", "+reference.getName() + "," + this.function + "(" + this.measure.getName() +") as measure2\n" +
-                "   from "+ table +"\n" +
+                "   from \""+ table +"\"\n" +
                 "   where "+assessed.getName()+" = '" + val2.replaceAll("'", "''") + "'\n" +
                 "   group by "+assessed.getName()+", "+reference.getName() + ") t2\n" +
                 "where t1."+reference.getName()+" = t2."+reference.getName()+" order by " + reference.getName() + ";";

@@ -97,28 +97,6 @@ public abstract class Query implements Measurable<Query> {
     }
 
 
-    public void explainAnalyze() throws Exception{
-        final Statement pstmt = source.getConn().createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE);
-        ResultSet rs = pstmt.executeQuery("explain analyze " + this.getSql()) ;
-
-        ResultSetMetaData rmsd = rs.getMetaData();
-        rs.beforeFirst();
-        ResultSetIterator rsit=new ResultSetIterator(rs);
-        Object[] tab=null;
-        while(rsit.hasNext()) { // move to last for getting execution time
-            tab=rsit.next();
-        }
-        String last= tab[0].toString();
-        String tmp1=last.split("Execution Time: ")[1];
-        String[] tmp2=tmp1.split(" ms");
-        this.actualCost = (long) Float.parseFloat(tmp2[0]);
-
-        pstmt.close();
-        rs.close();
-    }
-
-
     //TODO add caching ?
     public ResultSet execute() {
         final Statement pstmt;

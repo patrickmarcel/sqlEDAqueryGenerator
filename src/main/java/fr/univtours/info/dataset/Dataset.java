@@ -35,9 +35,19 @@ public class Dataset {
          this.theDimensions=theDimensions;
          this.theMeasures=theMeasures;
          //theSchema = new DatasetSchema(this);
-         try (ResultSet rs = conn.createStatement().executeQuery("Select count(*) from \"" + table + "\";")){
+         try {
+             DatabaseMetaData databaseMetaData = conn.getMetaData();
+             String dbms = databaseMetaData.getDatabaseProductName();
+             String tabQuote = "\"";
+             String endStmt = ";";
+             if (dbms.toLowerCase().contains("oracle")) {
+                 tabQuote = "";
+                 endStmt = "";
+             }
+             ResultSet rs = conn.createStatement().executeQuery("Select count(*) from " + tabQuote + table + tabQuote + endStmt);
              rs.next();
              tableSize = rs.getInt(1);
+             rs.close();
          }catch (SQLException e){
              System.err.println("[ERROR] impossible to fetch table size");
          }

@@ -5,10 +5,7 @@ import fr.univtours.info.dataset.Dataset;
 import lombok.Getter;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -42,30 +39,42 @@ public class DatasetStats {
         frequency = new HashMap<>();
         avgWidth = new HashMap<>();
 
+        DatabaseMetaData databaseMetaData = conn.getMetaData();
+        String dbms = databaseMetaData.getDatabaseProductName();
+
+        String tabQuote = "\"";
+        String endStmt = ";";
+        if (dbms.toLowerCase().contains("oracle")) {
+            tabQuote = "";
+            endStmt = "";
+        }
+
         // strings width
         for (DatasetDimension dim : dimensions) {
-            String sql = "select avg_width from pg_stats where tablename = '" + table + "' and attname = '"+dim.getPrettyName()+"';";
-            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-            ResultSet rs = st.executeQuery(sql) ;
-            rs.next();
-            try {
-                avgWidth.put(dim, rs.getInt(1));
-            } catch (SQLException e){
-                //close statement
+            if (dbms.toLowerCase().contains("postgres")) {
+                String sql = "select avg_width from pg_stats where tablename = '" + table + "' and attname = '" + dim.getPrettyName() + "';";
+                Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+                ResultSet rs = st.executeQuery(sql);
+                rs.next();
+                try {
+                    avgWidth.put(dim, rs.getInt(1));
+                } catch (SQLException e) {
+                    //close statement
+                    st.close();
+                    //run analyse
+                    String analyse = "analyse " + tabQuote + table + tabQuote + ";";
+                    boolean status = conn.createStatement().execute(analyse);
+                    System.err.println("\n[ERROR] An analyse command was issued on table " + table + " statistics are necessary for TAP sampling please wait a few second before restarting TAP");
+                    System.exit(2);
+                }
                 st.close();
-                //run analyse
-                String analyse = "analyse \"" + table + "\";";
-                boolean status = conn.createStatement().execute(analyse);
-                System.err.println("\n[ERROR] An analyse command was issued on table " + table + " statistics are necessary for TAP sampling please wait a few second before restarting TAP");
-                System.exit(2);
             }
-            st.close();
         }
 
         // Absolute frequency - Active domain size
         for (DatasetDimension dim : dimensions) {
             HashMap<String, Integer> tmp = new HashMap<>();
-            String sql = "select " + dim.getName() + ", count(*) from \"" + table + "\" group by " + dim.getName() + ";";
+            String sql = "select " + dim.getName() + ", count(*) from " + tabQuote + table + tabQuote + " group by " + dim.getName() + endStmt;
             Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
             ResultSet rs = st.executeQuery(sql) ;
             while (rs.next()) {

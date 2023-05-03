@@ -24,8 +24,10 @@ This can be done in a shell or using a GUI tool such as PGAdmin or DataGrip.
 ```shell
 psql -U tapuser -d tap < ./sql/conso_iris.sql
 psql -U tapuser -d tap #Log into psql
-\copy conso_iris FROM 'absolute/path/sql/conso_iris.csv' DELIMITER ',' CSV
+\copy conso_iris FROM 'absolute/path/sql/conso_iris.csv' DELIMITER ',' CSV NULL as 'NULL'
 ```
+
+Alternatively Windows users can use PgAdmin GUI to create the table using the DDL in `conso_iris.sql` and load the data in `conso_iris.csv`.
 
 ### Flights data
 First you need to download a copy of the data from the internet: it's available on [kaggle](https://www.kaggle.com/usdot/flight-delays)
