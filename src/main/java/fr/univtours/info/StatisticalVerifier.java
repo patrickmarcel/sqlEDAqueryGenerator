@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static fr.univtours.info.Insight.*;
 
@@ -153,6 +154,7 @@ public class StatisticalVerifier {
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
         Stopwatch stopwatch = Stopwatch.createStarted();
         HashMap<String, double[]> cache = new HashMap<>();
+        //Fetch samples
         try (Statement st = ds.getConn().createStatement()){
             ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + " order by "+dd.getName()+";");
             String prev = null;
@@ -175,15 +177,29 @@ public class StatisticalVerifier {
         }
         System.out.println("[VERIF][TIME][ms] dim cache " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
+        // Use cuda for RNG if present
         ThreadLocal<Random> rng;
         if (MainTAP.CUDA_PRESENT)
             rng = ThreadLocal.withInitial(CudaRand::new);
         else
             rng = ThreadLocal.withInitial(ThreadLocalRandom::current);
+
         return insights.stream().parallel()
                 .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
-                .flatMap(in -> Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb, rng.get())))
-                //.reduce(Stream::concat).orElse(Stream.empty())
+                .flatMap(in -> {
+                    boolean usePerm = true;
+                    //TODO Logic to check if parametric test is possible goes here
+                    // in : the insight
+                    // cache.get(in.selA) : gets you the left sample
+                    // cache.get(in.selB) : gets you the right sample
+
+                    if (usePerm){
+                        return Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb, rng.get()));
+                    } else {
+                        return Stream.empty(); //TODO call parametric test in this else
+                    }
+                }
+                )
                 .collect(Collectors.toList());
 
     }
