@@ -254,7 +254,6 @@ public class MainTAP {
             if (tapQueries.size() > 1000) System.err.println("[WARNING] Couldn't run exact solver : too many queries");
             else System.err.println("[WARNING] No CPLEX binary defined with parameter -c");
         }
-        
         conn.close();
     }
 
@@ -298,7 +297,7 @@ public class MainTAP {
                     cache.put(a, b, ag);
                     cache.put(b, a, ag);
                     break;
-                } else {
+                } else { 
                     //Sanity check
                     if (i == aggregatesSize - 1) {
                         System.err.println("[ERROR] No partial aggregate was found for " + a + " and " + b);

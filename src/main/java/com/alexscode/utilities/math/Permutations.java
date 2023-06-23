@@ -29,6 +29,7 @@ public class Permutations {
         PowerSet ps = new PowerSet(ab);
         if (BigIntegerMath.binomial(ab.length, a.length).compareTo(BigInteger.valueOf(permutations)) < 0){
             permutations = BigIntegerMath.binomial(ab.length, a.length).intValue();
+            //On vérifie si le nbre de combinaison est sup nbre de permutation, si true le nbre de permutiation prend la valeur du nbre de permutation
         }
 
         for (int i = 0; i < permutations; ++i) {

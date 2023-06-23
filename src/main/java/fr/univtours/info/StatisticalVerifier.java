@@ -1,8 +1,6 @@
 package fr.univtours.info;
 
-import com.alexscode.utilities.math.BenjaminiHochbergFDR;
-import com.alexscode.utilities.math.Permutations;
-import com.alexscode.utilities.math.PowerSet;
+import com.alexscode.utilities.math.*;
 import com.google.common.base.Stopwatch;
 import com.google.common.math.BigIntegerMath;
 import fr.univtours.info.dataset.DBConfig;
@@ -16,8 +14,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static fr.univtours.info.Insight.*;
 
@@ -151,6 +149,13 @@ public class StatisticalVerifier {
      * Internal check in bulk (same dimension/measure)
      * @param insights insights on the same measure and dimension
      */
+    //the parametric test counter
+    static AtomicInteger tParam = new AtomicInteger(0);
+    //the non-parametric test counter
+    static AtomicInteger tPermu = new AtomicInteger(0);
+    //the total test counter
+    static AtomicInteger tTotal = new AtomicInteger(0);
+
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
         Stopwatch stopwatch = Stopwatch.createStarted();
         HashMap<String, double[]> cache = new HashMap<>();
@@ -176,7 +181,6 @@ public class StatisticalVerifier {
             throwables.printStackTrace();
         }
         System.out.println("[VERIF][TIME][ms] dim cache " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
-
         // Use cuda for RNG if present
         ThreadLocal<Random> rng;
         if (MainTAP.CUDA_PRESENT)
@@ -184,26 +188,39 @@ public class StatisticalVerifier {
         else
             rng = ThreadLocal.withInitial(ThreadLocalRandom::current);
 
-        return insights.stream().parallel()
+        List<Insight> resultList = insights.stream().parallel()
                 .filter(in -> cache.containsKey(in.selA) && cache.containsKey(in.selB) && cache.get(in.selA).length >= n_threshold && cache.get(in.selA).length >= n_threshold)
                 .flatMap(in -> {
-                    boolean usePerm = true;
+                    //boolean usePerm = true;
                     //TODO Logic to check if parametric test is possible goes here
                     // in : the insight
                     // cache.get(in.selA) : gets you the left sample
                     // cache.get(in.selB) : gets you the right sample
 
-                    if (usePerm){
-                        return Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb, rng.get()));
+                    //Initialisation des tests de normalités
+                    NormalityTest a = new NormalityTest(cache.get(in.selA));
+                    NormalityTest b = new NormalityTest(cache.get(in.selB));
+
+                   if ( NormalityTest.isNormal(a, b)){ // Check if the samples are considered normal
+
+                      tParam.incrementAndGet();
+                      tTotal.incrementAndGet();
+                       // Use parametric tests (Welch's t-test)
+                        return Arrays.stream(WelchTTest.MeanTest(in, a, b));
                     } else {
-                        return Stream.empty(); //TODO call parametric test in this else
-                    }
+                       tPermu.incrementAndGet();
+                       tTotal.incrementAndGet();
+                       // Use non-parametric tests (permutation test)
+                       return Arrays.stream(computeMeanAndVariance(in, cache.get(in.selA), cache.get(in.selB), permNb, rng.get()));
+                   }
                 }
                 )
                 .collect(Collectors.toList());
 
+        System.out.println("pourcentage d'exécution des tests paramétriques : " + (double) tParam.get()/tTotal.get() *(100) );
+        System.out.println("pourcentage d'exécution des tests non paramétriques : " + (double) tPermu.get()/tTotal.get() *(100));
+        return resultList;
     }
-
 
     private static Insight[] computeMeanAndVariance(Insight i, double[] a, double[] b, int permutations, Random rd) {
         double[] meanDiffs = new double[permutations];
@@ -232,7 +249,6 @@ public class StatisticalVerifier {
             double mua = 0, mub = 0; // mean
             double muasq = 0, mubsq = 0; // mean of squares
             int countA = 0, countB = 0; // count
-
 
             if (safe) {
                 BitSet pa;
@@ -316,7 +332,6 @@ public class StatisticalVerifier {
         added[addPos++] = tmp;
         tmp.setP((count)/((double) permutations));
 
-
         // Mean Smaller
         base_stat = StatUtils.mean(b) - StatUtils.mean(a);
         count = 0;
@@ -350,10 +365,8 @@ public class StatisticalVerifier {
         added[addPos++] = tmp;
         tmp.setP((count)/((double) permutations));
 
-
         return added;
     }
-
 
     /**
      * Finds relevant mean relation between samples and associated p-value by permutation testing
@@ -407,7 +420,6 @@ public class StatisticalVerifier {
             System.out.println("calling debugger");
         return added;
     }
-
 
     private static int boolToInt(boolean b) {
         return Boolean.compare(b, false);
