@@ -12,6 +12,7 @@ import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.queries.AssessQuery;
 import me.tongfei.progressbar.ProgressBar;
+import org.apache.commons.math3.distribution.TDistribution;
 import org.chocosolver.solver.constraints.nary.nvalue.amnv.graph.G;
 
 import java.io.FileOutputStream;
@@ -34,7 +35,7 @@ public class MetaInterest {
     static List<DatasetMeasure> theMeasures;
 
     public static void main(String[] args) throws Exception {
-        DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/flights.properties";
+        DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/enedis.properties";
 
         config = DBConfig.newFromFile();
         conn = config.getConnection();

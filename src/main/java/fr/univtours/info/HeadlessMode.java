@@ -12,6 +12,7 @@ import fr.univtours.info.dataset.metadata.DatasetMeasure;
 import fr.univtours.info.dataset.metadata.DatasetStats;
 import fr.univtours.info.queries.GenericSQLQuery;
 import fr.univtours.info.queries.Query;
+import org.apache.commons.cli.*;
 import org.takes.Request;
 import org.takes.Response;
 import org.takes.Take;
@@ -44,7 +45,27 @@ public class HeadlessMode {
     static List<DatasetMeasure> theMeasures;
 
     public static void main(String[] args) throws SQLException, IOException {
-        DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/vaccines.properties";
+        Options options = new Options();
+        Option input = new Option("d", "database", true, "database config file path");
+        options.addOption(input);
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+
+        try {
+            CommandLine cmd = parser.parse(options, args, false);
+            if (cmd.hasOption('d')){
+                DBConfig.CONF_FILE_PATH = cmd.getOptionValue('d');
+            } else {
+                DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/enedis.properties";
+            }
+
+
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("utility-name", options);
+            System.exit(1);
+        }
 
         config = DBConfig.newFromFile();
         conn = config.getConnection();
@@ -85,23 +106,40 @@ public class HeadlessMode {
             @Override
             public Response act(final Request req) throws IOException {
                 final String rawBody = new RqPrint(req).printBody();
-                ArrayList<Long> times = new ArrayList<>();
+                JsonObject body = gson.fromJson(rawBody, JsonObject.class);
+                System.out.println("[DEBUG] raw query body: " + rawBody);
 
+                Insight rawInsight = insightFromJSON(body);
+                List<Insight> valid = StatisticalVerifier.check(List.of(rawInsight), ds, 0.05, 10000, 1, config, true);
+
+                boolean checks = !valid.isEmpty();
+
+                return new RsText("{\"response\":" + checks + "}");
+            }
+        }
+
+        final class TkInterestArr implements Take {
+            @Override
+            public Response act(final Request req) throws IOException {
+                final String rawBody = new RqPrint(req).printBody();
                 JsonArray body = gson.fromJson(rawBody, JsonArray.class);
-                for (JsonElement jquery : body){
-                    GenericSQLQuery sqlQuery = queryFromJson(jquery.getAsJsonObject());
-                    timeCache.computeIfAbsent(sqlQuery, Query::estimatedTime);
-                    times.add(timeCache.get(sqlQuery));
-                    System.out.println(sqlQuery);
+
+                List<Boolean> r = new ArrayList<>();
+                for (JsonElement q : body) {
+                    Insight rawInsight = insightFromJSON(q.getAsJsonObject());
+                    List<Insight> valid = StatisticalVerifier.check(List.of(rawInsight), ds, 0.05, 10000, 1, config, true);
+
+                    r.add(!valid.isEmpty());
                 }
-                //System.out.println(gson.toJson(times));
-                return new RsText(gson.toJson(times));
+
+                return new RsText(gson.toJson(r));
             }
         }
 
 
         new FtBasic(
-                new TkFork(new FkRegex("/time", new TkTime())), 8000
+                new TkFork(new FkRegex("/insight", new TkInterest())
+                           , new FkRegex("/insights", new TkInterestArr())), 4242
         ).start(Exit.NEVER);
 
     }
@@ -142,6 +180,34 @@ public class HeadlessMode {
         q.append(";");
 
         return new GenericSQLQuery(ds, q.toString());
+    }
+
+    static private Insight insightFromJSON(JsonObject json){
+
+        DatasetMeasure lMeasure = null;
+        for (var dim : theMeasures){
+            if (json.get("leftMeasure").getAsString().equals(dim.getPrettyName()))
+                lMeasure = dim;
+        }
+
+        List<Pair<String, String>> lPred =
+                json.get("leftPredicate").getAsJsonObject().entrySet().stream()
+                        .map(e -> new Pair<>(e.getKey(), e.getValue().getAsString()))
+                        .collect(Collectors.toList());
+        List<Pair<String, String>> rPred =
+                json.get("rightPredicate").getAsJsonObject().entrySet().stream()
+                        .map(e -> new Pair<>(e.getKey(), e.getValue().getAsString()))
+                        .collect(Collectors.toList());
+
+
+        DatasetDimension selAtt = null;
+        for (DatasetDimension dim : theDimensions){
+            if (lPred.get(0).left.equals(dim.getPrettyName()))
+                selAtt = dim;
+        }
+
+
+        return new Insight(selAtt, lPred.get(0).right, rPred.get(0).right, lMeasure, Insight.RAW);
     }
 
 
