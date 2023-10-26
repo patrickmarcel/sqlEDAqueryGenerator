@@ -125,13 +125,26 @@ public class HeadlessMode {
                 JsonArray body = gson.fromJson(rawBody, JsonArray.class);
 
                 List<Boolean> r = new ArrayList<>();
-                for (JsonElement q : body) {
-                    Insight rawInsight = insightFromJSON(q.getAsJsonObject());
-                    List<Insight> valid = StatisticalVerifier.check(List.of(rawInsight), ds, 0.05, 10000, 1, config, true);
+                List<Insight> raw = new ArrayList<>();
+                List<Insight> raw_ = new ArrayList<>();
 
-                    r.add(!valid.isEmpty());
+                for (JsonElement q : body) {
+                    raw_.add(insightFromJSON(q.getAsJsonObject()));
+                    raw.add(insightFromJSON(q.getAsJsonObject()));
                 }
 
+                List<Insight> checked = StatisticalVerifier.check(raw_, ds, 0.05, 10000, 1, config, true);
+                for (Insight toCheck : raw) {
+                    boolean check = false;
+                    for (Insight candidate : checked) {
+                        if (toCheck.measure.equals(candidate.measure) && toCheck.dim.equals(candidate.dim) && candidate.selA.equals(toCheck.selA) && toCheck.selB.equals(candidate.selB)) {
+                            check = true;
+                            break;
+                        }
+                    }
+                    r.add(check);
+                }
+                System.out.println(r);
                 return new RsText(gson.toJson(r));
             }
         }
