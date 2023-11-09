@@ -161,7 +161,7 @@ public class StatisticalVerifier {
         HashMap<String, double[]> cache = new HashMap<>();
         //Fetch samples
         try (Statement st = ds.getConn().createStatement()){
-            ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from " + ds.getTable() + " order by "+dd.getName()+";");
+            ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from \"" + ds.getTable() + "\" order by "+dd.getName()+";");
             String prev = null;
             List<Double> tmp = null;
             while (rs.next()) {
