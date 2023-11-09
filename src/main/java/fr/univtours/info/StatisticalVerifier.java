@@ -22,6 +22,9 @@ import static fr.univtours.info.Insight.*;
 public class StatisticalVerifier {
     public static int n_threshold = 10;
 
+    public static boolean persist_cache = false;
+    public static Map<String, Map<String, double[]>> globalCache = new HashMap<>();
+
     /**
      * Prototype for checking one insight at a time (only mean)
      * @param i the insight to check
@@ -158,27 +161,36 @@ public class StatisticalVerifier {
 
     private static List<Insight> check(List<Insight> insights, Dataset ds, DatasetDimension dd, DatasetMeasure dm, int permNb){
         Stopwatch stopwatch = Stopwatch.createStarted();
-        HashMap<String, double[]> cache = new HashMap<>();
-        //Fetch samples
-        try (Statement st = ds.getConn().createStatement()){
-            ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from \"" + ds.getTable() + "\" order by "+dd.getName()+";");
-            String prev = null;
-            List<Double> tmp = null;
-            while (rs.next()) {
-                String key = rs.getString(1);
-                double val = rs.getDouble(2);
-                if (!Objects.equals(key, prev)){
-                    if (tmp != null)
-                        cache.put(prev, tmp.stream().mapToDouble(Double::doubleValue).toArray());
-                    tmp = new ArrayList<>();
-                    prev = key;
+        Map<String, double[]> cache;
+        if (persist_cache && globalCache.containsKey(dd.getName()+dm.getName())){
+            cache = globalCache.get(dd.getName()+dm.getName());
+        }
+        else {
+            cache = new HashMap<>();
+            //Fetch samples
+            try (Statement st = ds.getConn().createStatement()) {
+                ResultSet rs = st.executeQuery("select " + dd.getName() + ", " + dm.getName() + " from \"" + ds.getTable() + "\" order by " + dd.getName() + ";");
+                String prev = null;
+                List<Double> tmp = null;
+                while (rs.next()) {
+                    String key = rs.getString(1);
+                    double val = rs.getDouble(2);
+                    if (!Objects.equals(key, prev)) {
+                        if (tmp != null)
+                            cache.put(prev, tmp.stream().mapToDouble(Double::doubleValue).toArray());
+                        tmp = new ArrayList<>();
+                        prev = key;
+                    }
+                    tmp.add(val);
                 }
-                tmp.add(val);
+                if (tmp != null)
+                    cache.put(prev, tmp.stream().mapToDouble(Double::doubleValue).toArray());
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
             }
-            if (tmp != null)
-                cache.put(prev, tmp.stream().mapToDouble(Double::doubleValue).toArray());
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            if (persist_cache) {
+                globalCache.put(dd.getName() + dm.getName(), cache);
+            }
         }
         System.out.println("[VERIF][TIME][ms] dim cache " + stopwatch.elapsed(TimeUnit.MILLISECONDS));
         // Use cuda for RNG if present
