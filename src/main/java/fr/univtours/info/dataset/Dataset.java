@@ -9,6 +9,7 @@ import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
 import java.io.IOException;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -210,6 +211,82 @@ public class Dataset {
          }else {
              System.err.println("[WARNING] couldn't drop table only supported for in memory datasets !");
          }
+    }
+
+    public void setIndex(DatasetDimension a) {
+        String idxName = table.toLowerCase() + "_default_idx_" + a.getPrettyName().replace(' ', '_').toLowerCase();
+        String sql = "CREATE INDEX "+idxName+" ON "+table+" ("+a.getName()+") WITH (fillfactor = 100);";
+
+        Statement createSt = null;
+        try {
+            createSt = conn.createStatement();
+            createSt.executeUpdate(sql) ;
+            createSt.close();
+            System.out.println("[INFO] Created index on " + a.getPrettyName());
+        } catch (SQLException throwables) {
+            //throwables.printStackTrace();
+            System.err.println("[ERROR] setting index on " + a.getPrettyName());
+        }
+    }
+
+    public void setIndex(DatasetDimension... a) {
+        String idxName = table.toLowerCase() + "_default_idx";
+        for (int i = 0; i < a.length; i++) {
+            idxName += "_" + a[0].getPrettyName().replace(' ', '_').toLowerCase();
+        }
+        String sql = "CREATE INDEX "+idxName+" ON "+table+" (";
+        for (int i = 0; i < a.length; i++) {
+            sql += a[0].getName();
+            if (i < a.length - 1)
+                sql += ", ";
+        }
+        sql += ") WITH (fillfactor = 100);";
+
+        Statement createSt = null;
+        try {
+            createSt = conn.createStatement();
+            createSt.executeUpdate(sql) ;
+            createSt.close();
+            System.out.println("[INFO] Created index on " + Arrays.toString(a));
+        } catch (SQLException throwables) {
+            //throwables.printStackTrace();
+            System.err.println("[ERROR] setting index on " + Arrays.toString(a));
+        }
+    }
+
+    public void removeIndex(DatasetDimension a) {
+        String idxName = table.toLowerCase() + "_default_idx_" + a.getPrettyName().replace(' ', '_').toLowerCase();
+        String sql = "DROP INDEX IF EXISTS "+idxName+";";
+
+        Statement createSt = null;
+        try {
+            createSt = conn.createStatement();
+            createSt.executeUpdate(sql) ;
+            createSt.close();
+            System.out.println("[INFO] Dropped index on " + a.getPrettyName());
+        } catch (SQLException throwables) {
+            //throwables.printStackTrace();
+            System.err.println("[ERROR] deleting index on " + a.getPrettyName());
+        }
+    }
+
+    public void removeIndex(DatasetDimension... a) {
+        String idxName = table.toLowerCase() + "_default_idx";
+        for (int i = 0; i < a.length; i++) {
+            idxName += "_" + a[0].getPrettyName().replace(' ', '_').toLowerCase();
+        }
+        String sql = "DROP INDEX IF EXISTS "+idxName+";";
+
+        Statement createSt = null;
+        try {
+            createSt = conn.createStatement();
+            createSt.executeUpdate(sql) ;
+            createSt.close();
+            System.out.println("[INFO] Created index on " + Arrays.toString(a));
+        } catch (SQLException throwables) {
+            //throwables.printStackTrace();
+            System.err.println("[ERROR] setting index on " + Arrays.toString(a));
+        }
     }
 
 }

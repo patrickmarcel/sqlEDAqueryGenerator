@@ -57,7 +57,7 @@ public class HeadlessMode {
             if (cmd.hasOption('d')){
                 DBConfig.CONF_FILE_PATH = cmd.getOptionValue('d');
             } else {
-                DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/insurance.properties";
+                DBConfig.CONF_FILE_PATH = "/home/alex/IdeaProjects/sqlEDAqueryGenerator/src/main/resources/flights.properties";
             }
 
 
@@ -112,7 +112,7 @@ public class HeadlessMode {
                 System.out.println("[DEBUG] raw query body: " + rawBody);
 
                 Insight rawInsight = insightFromJSON(body);
-                List<Insight> valid = StatisticalVerifier.check(List.of(rawInsight), ds, 0.05, 10000, 0.3, config, true);
+                List<Insight> valid = StatisticalVerifier.check(List.of(rawInsight), ds, 0.05, 10000, 0.5, config, true);
 
                 boolean checks = !valid.isEmpty();
 

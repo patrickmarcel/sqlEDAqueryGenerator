@@ -124,7 +124,7 @@ public class AssessQuery extends Query {
             ResultSet rs = pstmt.executeQuery("explain analyze " + this.getSql());
 
             ResultSetMetaData rmsd = rs.getMetaData();
-            rs.beforeFirst();
+            //rs.beforeFirst();
             ResultSetIterator rsit = new ResultSetIterator(rs);
             Object[] tab = null;
             while (rsit.hasNext()) { // move to last for getting execution time
